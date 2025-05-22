@@ -1,5 +1,7 @@
 class Monster:
-    def __init__(self, name: str, health: int, attack_power: int, x: int = 0, y: int = 0):
+    def __init__(
+        self, name: str, health: int, attack_power: int, x: int = 0, y: int = 0
+    ):
         self.name = name
         self.health = health
         self.attack_power = attack_power
@@ -11,6 +13,8 @@ class Monster:
         if self.health < 0:
             self.health = 0
 
-    def attack(self, player_to_attack) -> int: # player_to_attack is Player type, but forward ref
+    def attack(
+        self, player_to_attack
+    ) -> int:  # player_to_attack is Player type, but forward ref
         player_to_attack.take_damage(self.attack_power)
         return self.attack_power

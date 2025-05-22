@@ -1,12 +1,15 @@
-from src.tile import Tile
 from src.item import Item
 from src.monster import Monster
+from src.tile import Tile
+
 
 class WorldMap:
     def __init__(self, width: int, height: int):
         self.width = width
         self.height = height
-        self.grid = [[Tile(tile_type="floor") for _ in range(width)] for _ in range(height)]
+        self.grid = [
+            [Tile(tile_type="floor") for _ in range(width)] for _ in range(height)
+        ]
 
     def get_tile(self, x: int, y: int) -> Tile | None:
         if 0 <= x < self.width and 0 <= y < self.height:

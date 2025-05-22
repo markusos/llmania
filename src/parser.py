@@ -18,14 +18,14 @@ class Parser:
                 return ("move", "east")
             elif argument == "west":
                 return ("move", "west")
-            else: # "move" without valid direction or with other words
+            else:  # "move" without valid direction or with other words
                 return None
         elif command_verb in ["n", "north"]:
-            if not argument or argument == "north": # handles "n" or "north"
-                 return ("move", "north")
+            if not argument or argument == "north":  # handles "n" or "north"
+                return ("move", "north")
         elif command_verb in ["s", "south"]:
             if not argument or argument == "south":
-                 return ("move", "south")
+                return ("move", "south")
         elif command_verb in ["e", "east"]:
             if not argument or argument == "east":
                 return ("move", "east")
@@ -37,47 +37,47 @@ class Parser:
         elif command_verb in ["take", "get"]:
             if argument:
                 return ("take", argument)
-            else: # "take" without argument
+            else:  # "take" without argument
                 return None
 
         # "drop <item>" commands
         elif command_verb == "drop":
             if argument:
                 return ("drop", argument)
-            else: # "drop" without argument
+            else:  # "drop" without argument
                 return None
 
         # "use <item>" commands
         elif command_verb == "use":
             if argument:
                 return ("use", argument)
-            else: # "use" without argument
+            else:  # "use" without argument
                 return None
-                
+
         # "attack <monster>" commands
         elif command_verb in ["attack", "fight"]:
             if argument:
                 return ("attack", argument)
-            else: # "attack" without argument
+            else:  # "attack" without argument
                 return None
 
         # "inventory" or "i" commands
         elif command_verb in ["inventory", "i"]:
-            if not argument: # "inventory" or "i" should not have arguments
+            if not argument:  # "inventory" or "i" should not have arguments
                 return ("inventory", None)
             else:
                 return None
 
         # "look" or "l" commands
         elif command_verb in ["look", "l"]:
-            if not argument: # "look" or "l" should not have arguments
+            if not argument:  # "look" or "l" should not have arguments
                 return ("look", None)
             else:
                 return None
-                
+
         # "quit" or "q" commands
         elif command_verb in ["quit", "q"]:
-            if not argument: # "quit" or "q" should not have arguments
+            if not argument:  # "quit" or "q" should not have arguments
                 return ("quit", None)
             else:
                 return None

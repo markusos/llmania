@@ -1,6 +1,7 @@
 from src.item import Item
 from src.monster import Monster
 
+
 class Player:
     def __init__(self, x: int, y: int, health: int):
         self.x = x
@@ -31,7 +32,7 @@ class Player:
                 item_to_use = item
                 item_idx = i
                 break
-        
+
         if item_to_use is None:
             return "Item not found."
 
@@ -50,9 +51,14 @@ class Player:
 
     def attack_monster(self, monster: Monster) -> int:
         current_attack_power = self.base_attack_power
-        if self.equipped_weapon is not None and self.equipped_weapon.properties.get("type") == "weapon":
-            current_attack_power += self.equipped_weapon.properties.get("attack_bonus", 0)
-        
+        if (
+            self.equipped_weapon is not None
+            and self.equipped_weapon.properties.get("type") == "weapon"
+        ):
+            current_attack_power += self.equipped_weapon.properties.get(
+                "attack_bonus", 0
+            )
+
         monster.take_damage(current_attack_power)
         return current_attack_power
 

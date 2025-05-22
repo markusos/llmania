@@ -5,12 +5,13 @@ description = "A terminal-based roguelike adventure game."
 authors = [{ name = "Your Name", email = "your@email.com" }]
 requires-python = ">=3.8"
 dependencies = [
-    "curses; sys_platform != 'win32'",
     "windows-curses; sys_platform == 'win32'"
 ]
 
-[project.optional-dependencies]
-dev = ["ruff"]
+[dependency-groups]
+dev = [
+    "ruff>=0.11.10",
+]
 
 [tool.uv]
 # uv configuration (if any specific needed in the future)
@@ -24,3 +25,4 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "lf"
+

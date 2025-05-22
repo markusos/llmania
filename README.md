@@ -14,7 +14,7 @@ A new Python project using uv for package management and Ruff for linting/format
    - On Windows: `.venv\Scripts\activate`
 4. **Install dependencies**: Use `uv sync` to install all dependencies defined in `pyproject.toml`. To include development dependencies like `ruff`, run:
    ```bash
-   uv sync --all-extras
+   uv sync --dev
    ```
    Or, for only production dependencies:
    ```bash
