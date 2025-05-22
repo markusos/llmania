@@ -31,7 +31,7 @@ class GameEngine:
 
         command_tuple = None
         if self.input_mode == "movement":
-            self.stdscr.curs_set(0)
+            curses.curs_set(0)
             if key == "KEY_UP" or key == "w" or key == "W":
                 command_tuple = ("move", "north")
             elif key == "KEY_DOWN" or key == "s" or key == "S":
@@ -45,11 +45,11 @@ class GameEngine:
             ):  # 'q' in movement mode switches to command mode
                 self.input_mode = "command"
                 self.current_command_buffer = ""
-                self.stdscr.curs_set(1)  # Show cursor
+                curses.curs_set(1)  # Show cursor
             return command_tuple
 
         elif self.input_mode == "command":
-            self.stdscr.curs_set(1)
+            curses.curs_set(1)
             if len(key) == 1 and key.isprintable():
                 self.current_command_buffer += key
             elif (
@@ -58,7 +58,7 @@ class GameEngine:
                 command_to_parse = self.current_command_buffer
                 self.current_command_buffer = ""
                 self.input_mode = "movement"
-                self.stdscr.curs_set(0)
+                curses.curs_set(0)
                 command_tuple = self.parser.parse_command(command_to_parse)
                 return command_tuple
             elif (
@@ -68,11 +68,11 @@ class GameEngine:
             elif key == "\x1b":  # Escape key
                 self.current_command_buffer = ""
                 self.input_mode = "movement"
-                self.stdscr.curs_set(0)
+                curses.curs_set(0)
             elif key == "q" or key == "Q":  # 'q' or 'Q' to exit command mode
                 self.current_command_buffer = ""
                 self.input_mode = "movement"
-                self.stdscr.curs_set(0)
+                curses.curs_set(0)
             elif key == "KEY_RESIZE":  # Handle resize event
                 self.stdscr.clear()
                 # The next render_map call will redraw based on new screen size
