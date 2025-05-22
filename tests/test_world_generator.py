@@ -1,3 +1,5 @@
+from collections import deque
+
 import pytest
 
 from src.world_generator import WorldGenerator
@@ -61,7 +63,8 @@ def test_generate_map_content(generator):
     # Ensure player start and win positions are different
     assert player_start_pos != win_pos, "Player start and win positions are the same."
 
-    # Ensure there's at least one "floor" tile (already implied by player_start_pos and win_pos being floor)
+    # Ensure there's at least one "floor" tile (already implied by
+    # player_start_pos and win_pos being floor)
     floor_tile_found = False
     for y in range(height):
         for x in range(width):
@@ -74,7 +77,8 @@ def test_generate_map_content(generator):
     assert floor_tile_found, "No floor tiles found on the map."
 
     # Check if some other items and monsters are placed (basic check)
-    # This is probabilistic, but with a large enough map and enough placements, some should exist.
+    # This is probabilistic, but with a large enough map and enough placements,
+    # some should exist.
     # For very small maps, this part of the test might be flaky.
     other_items_count = 0
     monsters_count = 0
@@ -89,14 +93,19 @@ def test_generate_map_content(generator):
                 if tile.monster:
                     monsters_count += 1
 
-    # This is a very loose check, adjust numbers if needed for your generation logic
-    # print(f"Found {other_items_count} other items and {monsters_count} monsters.") # For debugging
+    # This is a very loose check, adjust numbers if needed for your generation
+    # logic
+    # print(f"Found {other_items_count} other items and {monsters_count} monsters.")
+    # For debugging
     # On a 20x20 map, it's highly likely at least one of each is placed.
-    # If not, the placement logic in generator might need review or test conditions adjusted.
+    # If not, the placement logic in generator might need review or test
+    # conditions adjusted.
 
-    # With the new generator placing specific items/monsters, we can be more specific if desired.
+    # With the new generator placing specific items/monsters, we can be more
+    # specific if desired.
     # For now, just checking if some are placed is okay.
-    # The number of placements is (width*height)//15. Item chance 0.15, monster 0.10.
+    # The number of placements is (width*height)//15. Item chance 0.15,
+    # monster 0.10.
     # For 20x20 map (400 tiles), placements = 400/15 = ~26 attempts.
     # Expected other items = 26 * 0.15 * (1 - prob_player_or_win_tile) ~ 3-4 items
     # Expected monsters = 26 * 0.10 * (1 - prob_player_or_win_tile) ~ 2-3 monsters
@@ -124,50 +133,62 @@ def test_generate_map_reproducibility_with_seed(generator):
             tile1 = map1.get_tile(x, y)
             tile2 = map2.get_tile(x, y)
             assert tile1.type == tile2.type, (
-                f"Tile type at ({x},{y}) differs: M1={tile1.type}, M2={tile2.type} with seed {seed}."
+                f"Tile type at ({x},{y}) differs: M1={tile1.type}, "
+                f"M2={tile2.type} with seed {seed}."
             )
 
             # Compare items
             if tile1.item:
                 assert tile2.item is not None, (
-                    f"Tile1 has item '{tile1.item.name}' at ({x},{y}), Tile2 does not. Seed {seed}."
+                    f"Tile1 has item '{tile1.item.name}' at ({x},{y}), "
+                    f"Tile2 does not. Seed {seed}."
                 )
                 assert tile1.item.name == tile2.item.name, (
-                    f"Item names at ({x},{y}) differ: M1='{tile1.item.name}', M2='{tile2.item.name}'. Seed {seed}."
+                    f"Item names at ({x},{y}) differ: M1='{tile1.item.name}', "
+                    f"M2='{tile2.item.name}'. Seed {seed}."
                 )
                 assert tile1.item.description == tile2.item.description, (
-                    f"Item descriptions at ({x},{y}) for '{tile1.item.name}' differ. Seed {seed}."
+                    f"Item descriptions at ({x},{y}) for '{tile1.item.name}' "
+                    f"differ. Seed {seed}."
                 )
                 assert tile1.item.properties == tile2.item.properties, (
-                    f"Item properties at ({x},{y}) for '{tile1.item.name}' differ. Seed {seed}."
+                    f"Item properties at ({x},{y}) for '{tile1.item.name}' "
+                    f"differ. Seed {seed}."
                 )
             else:
                 assert tile2.item is None, (
-                    f"Tile1 has no item at ({x},{y}), Tile2 has '{tile2.item.name}'. Seed {seed}."
+                    f"Tile1 has no item at ({x},{y}), Tile2 has "
+                    f"'{tile2.item.name}'. Seed {seed}."
                 )
 
             # Compare monsters
             if tile1.monster:
                 assert tile2.monster is not None, (
-                    f"Tile1 has monster '{tile1.monster.name}' at ({x},{y}), Tile2 does not. Seed {seed}."
+                    f"Tile1 has monster '{tile1.monster.name}' at ({x},{y}), "
+                    f"Tile2 does not. Seed {seed}."
                 )
                 assert tile1.monster.name == tile2.monster.name, (
-                    f"Monster names at ({x},{y}) differ: M1='{tile1.monster.name}', M2='{tile2.monster.name}'. Seed {seed}."
+                    f"Monster names at ({x},{y}) differ: M1='{tile1.monster.name}', "
+                    f"M2='{tile2.monster.name}'. Seed {seed}."
                 )
                 assert tile1.monster.health == tile2.monster.health, (
-                    f"Monster health at ({x},{y}) for '{tile1.monster.name}' differs. Seed {seed}."
+                    f"Monster health at ({x},{y}) for '{tile1.monster.name}' "
+                    f"differs. Seed {seed}."
                 )
                 assert tile1.monster.attack_power == tile2.monster.attack_power, (
-                    f"Monster AP at ({x},{y}) for '{tile1.monster.name}' differs. Seed {seed}."
+                    f"Monster AP at ({x},{y}) for '{tile1.monster.name}' "
+                    f"differs. Seed {seed}."
                 )
-                # Note: Monster x,y are updated by place_monster, so they should match x,y of the tile.
+                # Note: Monster x,y are updated by place_monster, so they should
+                # match x,y of the tile.
                 assert tile1.monster.x == x
                 assert tile1.monster.y == y
                 assert tile2.monster.x == x
                 assert tile2.monster.y == y
             else:
                 assert tile2.monster is None, (
-                    f"Tile1 has no monster at ({x},{y}), Tile2 has '{tile2.monster.name}'. Seed {seed}."
+                    f"Tile1 has no monster at ({x},{y}), Tile2 has "
+                    f"'{tile2.monster.name}'. Seed {seed}."
                 )
 
 
@@ -185,7 +206,8 @@ def test_generate_map_with_different_seeds(generator):
     # A full map comparison can be complex. Check key differentiating factors:
     # Player start or win position are good indicators.
     # Or, count floor tiles, or check a few specific tile types/contents.
-    # A simple check is to compare the full string representation of the maps (tile types only).
+    # A simple check is to compare the full string representation of the maps
+    # (tile types only).
 
     map1_repr = "\n".join(
         [
@@ -231,9 +253,6 @@ def test_generate_map_with_different_seeds(generator):
 
 
 # BFS helper function for path verification
-from collections import deque
-
-
 def find_path_bfs(
     world_map: WorldMap, start_pos: tuple[int, int], end_pos: tuple[int, int]
 ) -> bool:
@@ -264,7 +283,7 @@ def find_path_bfs(
                     queue.append(
                         ((next_x, next_y), path + [(next_x, next_y)])
                     )  # path list not strictly needed for existence check
-    return False  # No path
+    return False
 
 
 # Test for guaranteed path
@@ -275,14 +294,16 @@ def test_guaranteed_path_exists(generator, seed_val):
     # Using a reasonable size for testing path generation.
     # Smaller maps might have player_start == win_pos if not handled,
     # but current generator logic tries to avoid that.
-    # Edge avoidance in player/win pos selection means width/height should be >=3 for that part.
+    # Edge avoidance in player/win pos selection means width/height should be
+    # >=3 for that part.
     # The path carving itself should work for smaller maps.
     width, height = 10, 10
     if (
         width < 3 or height < 3
     ):  # Skip test if dimensions are too small for edge avoidance logic
         pytest.skip(
-            "Map dimensions too small for current generator's edge avoidance logic in start/win pos."
+            "Map dimensions too small for current generator's edge avoidance "
+            "logic in start/win pos."
         )
 
     world_map, player_start, win_pos = generator.generate_map(
@@ -304,7 +325,8 @@ def test_guaranteed_path_exists(generator, seed_val):
         path_found = find_path_bfs(world_map, player_start, win_pos)
 
     assert path_found, (
-        f"No path found between player_start {player_start} and win_pos {win_pos}. Seed: {seed_val}"
+        f"No path found between player_start {player_start} and "
+        f"win_pos {win_pos}. Seed: {seed_val}"
     )
 
 
@@ -331,7 +353,8 @@ def test_start_win_positions_not_on_edge(generator):
 
 
 def test_start_win_positions_small_maps(generator):
-    # Test behavior for maps < 3x3 where edge avoidance is not possible for randint(1, dim-2)
+    # Test behavior for maps < 3x3 where edge avoidance is not possible for
+    # randint(1, dim-2)
     # Player start and win positions should still be within bounds [0, dim-1]
 
     # Case 1: 2x2 map

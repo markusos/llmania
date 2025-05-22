@@ -48,7 +48,8 @@ def test_set_tile_type_invalid():
     w_map = WorldMap(width=3, height=3)
     assert w_map.set_tile_type(3, 1, "wall") is False  # x out of bounds
     assert w_map.set_tile_type(1, 3, "wall") is False  # y out of bounds
-    # Ensure the type was not changed for an in-bounds tile if an out-of-bounds was attempted
+    # Ensure the type was not changed for an in-bounds tile if an
+    # out-of-bounds was attempted
     tile_in_bounds = w_map.get_tile(0, 0)
     assert tile_in_bounds.type == "floor"
 

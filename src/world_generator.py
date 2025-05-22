@@ -22,7 +22,8 @@ class WorldGenerator:
         # Ensure width/height are large enough for randint(1, dim-2)
         # If width/height is 1 or 2, randint will fail.
         # For simplicity, the problem states "avoid edges for now".
-        # This implies width/height >= 3. If they are smaller, this logic needs adjustment.
+        # This implies width/height >= 3. If they are smaller, this logic needs
+        # adjustment.
         # A robust solution would handle small maps, but following current problem spec.
         if width < 3:  # Ensure player_x can be selected
             player_start_x = 0 if width == 1 else random.randint(0, width - 1)
@@ -116,7 +117,8 @@ class WorldGenerator:
                         next_x,
                         next_y,
                     )  # Walker moves regardless of tile type
-                # If out of bounds, walker effectively stays and tries a new direction next step
+                # If out of bounds, walker effectively stays and tries a new
+                # direction next step
 
         # 5. Collect Floor Tiles, Place Goal Item, Other Items/Monsters
         floor_tiles = []
@@ -132,7 +134,8 @@ class WorldGenerator:
             # Fallback: ensure player_start_pos is floor if nothing else is
             world_map.set_tile_type(player_start_pos[0], player_start_pos[1], "floor")
             floor_tiles.append(player_start_pos)
-            # If win_pos was different and also got obliterated, make it same as player_start_pos
+            # If win_pos was different and also got obliterated, make it same as
+            # player_start_pos
             if win_pos not in floor_tiles:
                 world_map.set_tile_type(
                     win_pos[0], win_pos[1], "floor"
@@ -143,7 +146,8 @@ class WorldGenerator:
         goal_item = Item(
             "Amulet of Yendor", "The object of your quest!", {"type": "quest"}
         )
-        # Ensure win_pos is actually a floor tile before placing. Path carving should ensure this.
+        # Ensure win_pos is actually a floor tile before placing. Path carving
+        # should ensure this.
         if world_map.get_tile(win_pos[0], win_pos[1]).type == "floor":
             world_map.place_item(goal_item, win_pos[0], win_pos[1])
         else:
