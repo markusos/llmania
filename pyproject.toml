@@ -5,11 +5,12 @@ description = "A terminal-based roguelike adventure game."
 authors = [{ name = "Your Name", email = "your@email.com" }]
 requires-python = ">=3.8"
 dependencies = [
-    "windows-curses; sys_platform == 'win32'"
+    "windows-curses; sys_platform == 'win32'",
 ]
 
 [dependency-groups]
 dev = [
+    "pytest>=8.3.5",
     "ruff>=0.11.10",
 ]
 
