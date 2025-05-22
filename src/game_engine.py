@@ -1,8 +1,8 @@
 import curses
 
-from src.parser import Parser
-from src.player import Player
-from src.world_generator import WorldGenerator
+from .parser import Parser
+from .player import Player
+from .world_generator import WorldGenerator
 
 
 class GameEngine:

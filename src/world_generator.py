@@ -1,8 +1,8 @@
 import random
 
-from src.item import Item
-from src.monster import Monster
-from src.world_map import WorldMap
+from .item import Item
+from .monster import Monster
+from .world_map import WorldMap
 
 
 class WorldGenerator:

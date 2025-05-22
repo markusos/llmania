@@ -1,4 +1,4 @@
-from src.game_engine import GameEngine
+from .game_engine import GameEngine
 
 if __name__ == "__main__":
     # You can adjust map_width and map_height here if desired
