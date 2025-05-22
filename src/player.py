@@ -1,5 +1,5 @@
-from .item import Item
-from .monster import Monster
+from src.item import Item
+from src.monster import Monster
 
 
 class Player:

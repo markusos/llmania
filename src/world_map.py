@@ -1,6 +1,6 @@
-from .item import Item
-from .monster import Monster
-from .tile import Tile
+from src.item import Item
+from src.monster import Monster
+from src.tile import Tile
 
 
 class WorldMap:
