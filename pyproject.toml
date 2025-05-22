@@ -1,10 +1,16 @@
 [project]
-name = "my_python_project"
+name = "LLMania"
 version = "0.1.0"
-description = "A new Python project"
+description = "A terminal-based roguelike adventure game."
 authors = [{ name = "Your Name", email = "your@email.com" }]
 requires-python = ">=3.8"
-dependencies = []
+dependencies = [
+    "curses; sys_platform != 'win32'",
+    "windows-curses; sys_platform == 'win32'"
+]
+
+[project.optional-dependencies]
+dev = ["ruff"]
 
 [tool.uv]
 # uv configuration (if any specific needed in the future)
