@@ -2,18 +2,52 @@ import curses
 
 from src.parser import Parser
 from src.player import Player
+from src.tile import TILE_SYMBOLS, ENTITY_SYMBOLS # Added ENTITY_SYMBOLS
 from src.world_generator import WorldGenerator
 
 
 class GameEngine:
-    def __init__(self, map_width: int = 20, map_height: int = 10):
+    def __init__(self, map_width: int = 20, map_height: int = 10, debug_mode: bool = False):
         self.world_generator = WorldGenerator()
         self.parser = Parser()
-        self.stdscr = curses.initscr()
-        curses.noecho()
-        curses.cbreak()
-        self.stdscr.keypad(True)
-        curses.curs_set(0)  # Hide cursor initially
+        self.debug_mode = debug_mode
+        self.PLAYER_SYMBOL = "🧑"
+
+        if not self.debug_mode:
+            self.stdscr = curses.initscr()
+            curses.start_color()  # Initialize color functionality
+            curses.noecho()
+            curses.cbreak()
+            self.stdscr.keypad(True)
+            curses.curs_set(0)  # Hide cursor initially
+
+            # Define color pairs
+            # Pair 1: Floor (Black on Green)
+            curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_GREEN)
+            self.FLOOR_COLOR_PAIR = 1
+            # Pair 2: Wall (Black on White) - Changed for better visibility
+            curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)
+            self.WALL_COLOR_PAIR = 2
+            # Pair 3: Player (Black on Green) - Assuming player emoji is black or dark
+            curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_GREEN)
+            self.PLAYER_COLOR_PAIR = 3
+            # Pair 4: Monster (Black on Green) - Assuming monster emoji is black or dark
+            curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_GREEN)
+            self.MONSTER_COLOR_PAIR = 4
+            # Pair 5: Item (Black on Green) - Assuming item emoji is black or dark
+            curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_GREEN)
+            self.ITEM_COLOR_PAIR = 5
+        else:
+            self.stdscr = None # No curses screen in debug mode
+            # In debug mode, we won't have color pairs, but let's define the attributes
+            # so that code attempting to access them doesn't immediately crash.
+            # They won't be used for actual coloring in debug text output.
+            self.FLOOR_COLOR_PAIR = 0 # 0 is default pair
+            self.WALL_COLOR_PAIR = 0
+            self.PLAYER_COLOR_PAIR = 0
+            self.MONSTER_COLOR_PAIR = 0
+            self.ITEM_COLOR_PAIR = 0
+
         self.input_mode = "movement"  # or "command"
         self.current_command_buffer = ""
         self.world_map, player_start_pos, self.win_pos = (
@@ -85,33 +119,116 @@ class GameEngine:
         # Should only be reached if input_mode is not "movement" or "command"
         return None
 
-    def render_map(self):
+    def render_map(self, debug_render_to_list=False):
+        if debug_render_to_list:
+            output_buffer = []
+            # For debug rendering, let's use the full map height and width
+            # We won't be constrained by curses.LINES or curses.COLS
+            max_y_map = self.world_map.height
+            max_x_map = self.world_map.width
+
+            for y_map in range(max_y_map):
+                row_str = ""
+                for x_map in range(max_x_map):
+                    char_to_draw = ""
+                    if x_map == self.player.x and y_map == self.player.y:
+                        char_to_draw = self.PLAYER_SYMBOL + " " # Pad player symbol
+                    else:
+                        tile = self.world_map.get_tile(x_map, y_map)
+                        if tile:
+                            char_to_draw, display_type = tile.get_display_info()
+                            if display_type == "monster_on_floor":
+                                char_to_draw += " " # Pad monster symbol
+                            elif display_type == "item_on_floor":
+                                char_to_draw += " " # Pad item symbol
+                        else:
+                            char_to_draw = TILE_SYMBOLS["unknown"]
+                    row_str += char_to_draw
+                output_buffer.append(row_str)
+
+            # Add HP, mode, and messages for completeness if needed for debugging
+            output_buffer.append(f"HP: {self.player.health}")
+            output_buffer.append(f"MODE: {self.input_mode.upper()}")
+            if self.input_mode == "command":
+                output_buffer.append(f"> {self.current_command_buffer}")
+            for message in self.message_log: # Log all messages for debug
+                output_buffer.append(message)
+            return output_buffer
+
+        # Original curses rendering code
+        if self.debug_mode: # Should not reach here if debug_render_to_list is True
+            # This part is for safety, actual debug rendering is handled by debug_render_to_list flag
+            print("Error: Curses rendering called in debug mode without debug_render_to_list=True.")
+            return [] # Or raise an exception
+
         self.stdscr.clear()
-        max_y_map = min(self.world_map.height, curses.LINES - 4)
-        max_x_map = min(self.world_map.width, curses.COLS - 1)
+        max_y_curses_rows = min(self.world_map.height, curses.LINES - 4) # Max rows for map on screen
+        max_x_curses_cols = curses.COLS - 1  # Max columns for map on screen
 
-        for y_map in range(max_y_map):
-            for x_map in range(max_x_map):
+        for y_map_idx in range(max_y_curses_rows):
+            current_screen_x = 0 # Tracks the current column position on the screen for this row
+            for x_tile_idx in range(self.world_map.width): # Iterate through map tile indices
+                if current_screen_x >= max_x_curses_cols:
+                    break # Stop drawing this row if we've hit the screen edge
+
                 char_to_draw = ""
-                if x_map == self.player.x and y_map == self.player.y:
-                    char_to_draw = "@"
-                else:
-                    tile = self.world_map.get_tile(x_map, y_map)
-                    char_to_draw = tile.display_char() if tile else "?"
-                try:
-                    self.stdscr.addstr(y_map, x_map, char_to_draw)
-                except curses.error:
-                    pass
+                color_attribute = curses.color_pair(0) # Default color
+                char_width = 1
 
-        hp_line_y = max_y_map
+                if x_tile_idx == self.player.x and y_map_idx == self.player.y:
+                    char_to_draw = self.PLAYER_SYMBOL + " "
+                    color_attribute = curses.color_pair(self.PLAYER_COLOR_PAIR)
+                    char_width = 2
+                else:
+                    tile = self.world_map.get_tile(x_tile_idx, y_map_idx)
+                    if tile:
+                        char_to_draw, display_type = tile.get_display_info()
+                        if display_type == "monster_on_floor":
+                            char_to_draw += " " # Pad monster symbol
+                            color_attribute = curses.color_pair(self.MONSTER_COLOR_PAIR)
+                            char_width = 2
+                        elif display_type == "item_on_floor":
+                            char_to_draw += " " # Pad item symbol
+                            color_attribute = curses.color_pair(self.ITEM_COLOR_PAIR)
+                            char_width = 2
+                        elif display_type == "wall":
+                            color_attribute = curses.color_pair(self.WALL_COLOR_PAIR)
+                            # char_width is 1, already set
+                        elif display_type == "floor":
+                            color_attribute = curses.color_pair(self.FLOOR_COLOR_PAIR)
+                            # char_width is 1, already set
+                        else: # unknown or any other type
+                            color_attribute = curses.color_pair(0) # Default
+                            # char_width is 1, already set
+                    else:
+                        char_to_draw = TILE_SYMBOLS["unknown"]
+                        color_attribute = curses.color_pair(0) # Default
+                        # char_width is 1, already set
+                
+                if current_screen_x + char_width > max_x_curses_cols + 1 : # +1 because addstr writes char_width characters starting at current_screen_x
+                    break # Not enough space to draw this character/emoji
+
+                try:
+                    self.stdscr.addstr(y_map_idx, current_screen_x, char_to_draw, color_attribute)
+                    current_screen_x += char_width
+                except curses.error:
+                    # This might happen if a wide char is at the very edge,
+                    # and addstr tries to write the second half of it out of bounds.
+                    # The check "current_screen_x + char_width > max_x_curses_cols + 1" should prevent most of these.
+                    break # Stop drawing this row
+
+        # UI elements (HP, mode, messages) are drawn below the map
+        hp_line_y = max_y_curses_rows 
+
+        # hp_line_y = max_y_map # This was based on the old max_y_map
         if hp_line_y < curses.LINES:
             hp_text = f"HP: {self.player.health}"
             try:
                 self.stdscr.addstr(hp_line_y, 0, hp_text)
             except curses.error:
                 pass
-        else:
-            hp_line_y = curses.LINES - 1
+        else: # Fallback if map takes too much space
+            hp_line_y = curses.LINES -1 
 
         mode_line_y = hp_line_y + 1
         if mode_line_y < curses.LINES:
@@ -121,40 +238,40 @@ class GameEngine:
             except curses.error:
                 pass
         else:
-            mode_line_y = curses.LINES - 1
+            mode_line_y = curses.LINES -1
 
         message_start_y = mode_line_y + 1
         if self.input_mode == "command":
-            if mode_line_y + 1 < curses.LINES:
+            if mode_line_y + 1 < curses.LINES: # Check if space for command prompt
                 prompt_text = f"> {self.current_command_buffer}"
                 try:
                     self.stdscr.addstr(mode_line_y + 1, 0, prompt_text)
-                    message_start_y = mode_line_y + 2
+                    message_start_y = mode_line_y + 2 # Messages start after prompt
                 except curses.error:
-                    pass
-
-        num_messages_to_display = 5
+                    pass # message_start_y remains mode_line_y + 1
+        
+        num_messages_to_display = 5 
         available_lines_for_messages = curses.LINES - message_start_y
-        if available_lines_for_messages < 0:
-            available_lines_for_messages = 0
-        num_messages_to_display = min(
-            num_messages_to_display, available_lines_for_messages
-        )
+        if available_lines_for_messages < 0: available_lines_for_messages = 0
+        num_messages_to_display = min(num_messages_to_display, available_lines_for_messages)
+        
         start_index = max(0, len(self.message_log) - num_messages_to_display)
         last_messages = self.message_log[start_index:]
 
         for i, message in enumerate(last_messages):
             current_message_y = message_start_y + i
-            if current_message_y < curses.LINES:
-                if len(message) >= curses.COLS:
-                    message = message[: curses.COLS - 1]
+            if current_message_y < curses.LINES: # Ensure message fits on screen
+                # Truncate message if too long for the screen width
+                if len(message) >= curses.COLS: # curses.COLS is width
+                    message = message[:curses.COLS-1] 
                 try:
                     self.stdscr.addstr(current_message_y, 0, message)
-                except curses.error:
-                    break
-            else:
+                except curses.error: # Stop if error (e.g. no more lines)
+                    break 
+            else: # No more lines available
                 break
-        self.stdscr.refresh()
+        if not self.debug_mode:
+            self.stdscr.refresh()
 
     # Renamed from process_command
     def process_command_tuple(
@@ -365,6 +482,10 @@ class GameEngine:
         return adjacent_monsters
 
     def run(self):
+        if self.debug_mode:
+            print("Error: GameEngine.run() called in debug_mode. Use main_debug() in main.py for testing.")
+            return
+
         try:
             self.render_map()
             while not self.game_over:
@@ -373,11 +494,11 @@ class GameEngine:
                     self.process_command_tuple(parsed_command_output)
                 self.render_map()
 
-            self.render_map()
+            self.render_map() # Final render before potential napms
             if self.game_over:
-                curses.napms(2000)
+                curses.napms(2000) # Pause to show final game state/message
         finally:
-            if hasattr(self, "stdscr"):
+            if not self.debug_mode and hasattr(self, "stdscr") and self.stdscr:
                 self.stdscr.keypad(False)
                 curses.echo()
                 curses.nocbreak()

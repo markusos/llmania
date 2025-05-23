@@ -1,49 +1,61 @@
-from src.tile import Tile
+from src.tile import Tile, ENTITY_SYMBOLS, TILE_SYMBOLS
 
 
 def test_tile_initialization_default():
     tile = Tile()
-    assert tile.type == "floor"
+    assert tile.type == "floor" # Changed from tile_type to type
     assert tile.item is None
     assert tile.monster is None
 
 
 def test_tile_initialization_custom():
     tile = Tile("wall")
-    assert tile.type == "wall"
+    assert tile.type == "wall" # Changed from tile_type to type
     assert tile.item is None
     assert tile.monster is None
 
 
-def test_display_char_monster():
+def test_get_display_info_monster(): # Renamed test, method and expected symbol
     tile = Tile()
-    tile.monster = "Goblin"  # Simulate a monster
-    assert tile.display_char() == "M"
+    tile.monster = "Goblin"
+    char, display_type = tile.get_display_info()
+    assert char == ENTITY_SYMBOLS["monster"] # "👹"
+    assert display_type == "monster_on_floor"
 
 
-def test_display_char_item():
+def test_get_display_info_item(): # Renamed test, method and expected symbol
     tile = Tile()
-    tile.item = "Potion"  # Simulate an item
-    assert tile.display_char() == "I"
+    tile.item = "Potion"
+    char, display_type = tile.get_display_info()
+    assert char == ENTITY_SYMBOLS["item"] # "💰"
+    assert display_type == "item_on_floor"
 
 
-def test_display_char_wall():
+def test_get_display_info_wall(): # Renamed test, method and expected symbol
     tile = Tile("wall")
-    assert tile.display_char() == "#"
+    char, display_type = tile.get_display_info()
+    assert char == TILE_SYMBOLS["wall"] # "#"
+    assert display_type == "wall"
 
 
-def test_display_char_floor():
+def test_get_display_info_floor(): # Renamed test, method and expected symbol
     tile = Tile("floor")
-    assert tile.display_char() == "."
+    char, display_type = tile.get_display_info()
+    assert char == TILE_SYMBOLS["floor"] # "."
+    assert display_type == "floor"
 
 
-def test_display_char_unknown():
+def test_get_display_info_unknown(): # Renamed test, method and expected symbol
     tile = Tile("unknown_type")
-    assert tile.display_char() == "?"
+    char, display_type = tile.get_display_info()
+    assert char == TILE_SYMBOLS["unknown"] # "?"
+    assert display_type == "unknown"
 
 
-def test_display_char_item_and_monster():
+def test_get_display_info_item_and_monster(): # Renamed test and method
     tile = Tile()
     tile.monster = "Dragon"
     tile.item = "Gold"
-    assert tile.display_char() == "M"  # Monster should take precedence
+    char, display_type = tile.get_display_info() # Monster should take precedence
+    assert char == ENTITY_SYMBOLS["monster"]
+    assert display_type == "monster_on_floor"
