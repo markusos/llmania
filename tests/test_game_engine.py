@@ -114,8 +114,8 @@ def test_game_engine_initialization_attributes(game_engine_setup):  # Uses fixtu
 
 
 class TestHandleInput:
-    def test_movement_mode_arrow_keys(self, game_engine_setup):
-        engine = game_engine_setup
+    def test_movement_mode_arrow_keys(self, game_engine_and_curses_mock_setup):
+        engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "movement"
         test_cases = {
             "KEY_UP": ("move", "north"),
@@ -135,30 +135,32 @@ class TestHandleInput:
             engine.stdscr.getkey.return_value = key_input
             command = engine.handle_input_and_get_command()
             assert command == expected_command
-            engine.stdscr.curs_set.assert_called_with(0)
+            mock_curses.curs_set.assert_called_with(0)
 
-    def test_movement_mode_switch_to_command_mode_with_q(self, game_engine_setup):
-        engine = game_engine_setup
+    def test_movement_mode_switch_to_command_mode_with_q(
+        self, game_engine_and_curses_mock_setup
+    ):
+        engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "movement"
         engine.stdscr.getkey.return_value = "q"
         command = engine.handle_input_and_get_command()
         assert command is None
         assert engine.input_mode == "command"
         assert engine.current_command_buffer == ""
-        engine.stdscr.curs_set.assert_called_with(1)
+        mock_curses.curs_set.assert_called_with(1)
 
-    def test_command_mode_char_input(self, game_engine_setup):
-        engine = game_engine_setup
+    def test_command_mode_char_input(self, game_engine_and_curses_mock_setup):
+        engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "command"
         engine.current_command_buffer = "get "
         engine.stdscr.getkey.return_value = "s"
         command = engine.handle_input_and_get_command()
         assert command is None
         assert engine.current_command_buffer == "get s"
-        engine.stdscr.curs_set.assert_called_with(1)
+        mock_curses.curs_set.assert_called_with(1)
 
-    def test_command_mode_backspace(self, game_engine_setup):
-        engine = game_engine_setup
+    def test_command_mode_backspace(self, game_engine_and_curses_mock_setup):
+        engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "command"
         engine.current_command_buffer = "drop axe"
         engine.stdscr.getkey.return_value = "KEY_BACKSPACE"
@@ -173,10 +175,12 @@ class TestHandleInput:
         command = engine.handle_input_and_get_command()
         assert command is None
         assert engine.current_command_buffer == "drop "
-        engine.stdscr.curs_set.assert_any_call(1)  # Called multiple times
+        mock_curses.curs_set.assert_any_call(1)  # Called multiple times
 
-    def test_command_mode_enter_parses_command(self, game_engine_setup):
-        engine = game_engine_setup
+    def test_command_mode_enter_parses_command(
+        self, game_engine_and_curses_mock_setup
+    ):
+        engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "command"
         test_typed_command = "use health potion"
         engine.current_command_buffer = test_typed_command
@@ -190,10 +194,12 @@ class TestHandleInput:
             assert returned_command == expected_parsed_command
             assert engine.input_mode == "movement"
             assert engine.current_command_buffer == ""
-            engine.stdscr.curs_set.assert_called_with(0)
+            mock_curses.curs_set.assert_called_with(0)
 
-    def test_command_mode_enter_with_curses_key_enter(self, game_engine_setup):
-        engine = game_engine_setup
+    def test_command_mode_enter_with_curses_key_enter(
+        self, game_engine_and_curses_mock_setup
+    ):
+        engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "command"
         engine.current_command_buffer = "look"
         # Mock getkey to return the integer value of curses.KEY_ENTER
@@ -208,9 +214,10 @@ class TestHandleInput:
             mock_parse.assert_called_once_with("look")
             assert returned_command == expected_parsed_command
             assert engine.input_mode == "movement"
+            # This test previously didn't assert curs_set, so no change needed here for that.
 
-    def test_command_mode_escape_exits(self, game_engine_setup):
-        engine = game_engine_setup
+    def test_command_mode_escape_exits(self, game_engine_and_curses_mock_setup):
+        engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "command"
         engine.current_command_buffer = "look around"
         engine.stdscr.getkey.return_value = "\x1b"
@@ -218,10 +225,10 @@ class TestHandleInput:
         assert command is None
         assert engine.input_mode == "movement"
         assert engine.current_command_buffer == ""
-        engine.stdscr.curs_set.assert_called_with(0)
+        mock_curses.curs_set.assert_called_with(0)
 
-    def test_command_mode_q_exits(self, game_engine_setup):
-        engine = game_engine_setup
+    def test_command_mode_q_exits(self, game_engine_and_curses_mock_setup):
+        engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "command"
         engine.current_command_buffer = "anything"
         engine.stdscr.getkey.return_value = "q"
@@ -229,20 +236,21 @@ class TestHandleInput:
         assert command is None
         assert engine.input_mode == "movement"
         assert engine.current_command_buffer == ""
-        engine.stdscr.curs_set.assert_called_with(0)
+        mock_curses.curs_set.assert_called_with(0)
 
-    def test_command_mode_resize_key(self, game_engine_setup):
-        engine = game_engine_setup
+    def test_command_mode_resize_key(self, game_engine_and_curses_mock_setup):
+        engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "command"
         engine.stdscr.getkey.return_value = "KEY_RESIZE"
         command = engine.handle_input_and_get_command()
         assert command is None
-        engine.stdscr.clear.assert_called_once()
+        engine.stdscr.clear.assert_called_once() # This mocks a method on stdscr, which is fine
         assert engine.input_mode == "command"
+        # No curs_set assertion in this test originally
 
-    def test_getkey_error_returns_none(self, game_engine_setup):
-        engine = game_engine_setup
-        engine.stdscr.getkey.side_effect = curses.error
+    def test_getkey_error_returns_none(self, game_engine_and_curses_mock_setup):
+        engine, mock_curses = game_engine_and_curses_mock_setup
+        engine.stdscr.getkey.side_effect = curses.error # stdscr method mock is fine
         command = engine.handle_input_and_get_command()
         assert command is None
 
