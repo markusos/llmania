@@ -214,7 +214,6 @@ class TestHandleInput:
             mock_parse.assert_called_once_with("look")
             assert returned_command == expected_parsed_command
             assert engine.input_mode == "movement"
-            # This test previously didn't assert curs_set, so no change needed.
 
     def test_command_mode_escape_exits(self, game_engine_and_curses_mock_setup):
         engine, mock_curses = game_engine_and_curses_mock_setup
