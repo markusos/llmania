@@ -45,7 +45,14 @@ def test_take_damage_zero_damage():
 def test_attack_returns_attack_power():
     monster = Monster(name="Dragon", health=100, attack_power=20)
     # Passing None as player, as it's not used yet
-    assert monster.attack(player=None) == 20
+    # Create a dummy player object that has a take_damage method
+    class DummyPlayerForAttack: # Fixed indentation
+        def __init__(self):
+            self.health = 100
+        def take_damage(self, amount):
+            self.health -= amount
+    dummy_player = DummyPlayerForAttack() # Fixed indentation
+    assert monster.attack(dummy_player) == 20
 
 
 def test_attack_with_dummy_player_object():
@@ -55,4 +62,10 @@ def test_attack_with_dummy_player_object():
         pass
 
     player_placeholder = DummyPlayer()
-    assert monster.attack(player=player_placeholder) == 8
+    # Ensure DummyPlayer has take_damage if monster.attack calls it
+    # For this test, if Monster.attack truly needs a player with methods,
+    # the dummy should have them. The current Monster.attack does.
+    def take_damage_mock(amount): # Fixed indentation
+        pass # Mock implementation
+    player_placeholder.take_damage = take_damage_mock # Fixed indentation
+    assert monster.attack(player_placeholder) == 8
