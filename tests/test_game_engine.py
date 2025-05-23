@@ -511,3 +511,111 @@ def test_process_command_tuple_take_no_arg_item_exists(game_engine_setup):
 # (World generator integration tests like
 # test_player_initial_position_is_floor are kept)
 # (Initialization tests are adapted)
+
+
+class TestAttackCommand:
+    def test_attack_adjacent_by_name_success_kill(self, game_engine_setup):
+        engine = game_engine_setup
+        engine.player.x, engine.player.y = 2, 2
+        # Ensure player's attack is sufficient
+        engine.player.base_attack_power = 10
+        bat = Monster("Bat", health=5, attack_power=2)
+        # Place Bat to the north of the player
+        engine.world_map.place_monster(bat, 2, 1)
+
+        engine.process_command_tuple(("attack", "Bat"))
+
+        assert f"You attack the Bat for {engine.player.base_attack_power} damage." in engine.message_log
+        assert "You defeated the Bat!" in engine.message_log
+        assert engine.world_map.get_tile(2, 1).monster is None
+
+    def test_attack_adjacent_no_name_one_target_survives(self, game_engine_setup):
+        engine = game_engine_setup
+        engine.player.x, engine.player.y = 2, 2
+        engine.player.base_attack_power = 3 # Player attack
+        goblin = Monster("Goblin", health=10, attack_power=4) # Goblin is stronger
+        # Place Goblin to the east of the player
+        engine.world_map.place_monster(goblin, 3, 2)
+        initial_goblin_health = goblin.health
+        initial_player_health = engine.player.health
+
+        engine.process_command_tuple(("attack", None))
+
+        assert f"You attack the Goblin for {engine.player.base_attack_power} damage." in engine.message_log
+        assert goblin.health == initial_goblin_health - engine.player.base_attack_power
+        assert f"The Goblin attacks you for {goblin.attack_power} damage." in engine.message_log
+        assert engine.player.health == initial_player_health - goblin.attack_power
+        assert engine.world_map.get_tile(3, 2).monster is goblin # Still alive
+
+    def test_attack_non_existent_monster_by_name(self, game_engine_setup):
+        engine = game_engine_setup
+        engine.player.x, engine.player.y = 2, 2
+        bat = Monster("Bat", health=5, attack_power=2)
+        engine.world_map.place_monster(bat, 2, 1) # North
+
+        engine.process_command_tuple(("attack", "NonExistentMonster"))
+        assert "There is no monster named NonExistentMonster nearby." in engine.message_log
+        assert engine.world_map.get_tile(2,1).monster is bat # Bat is unharmed
+
+    def test_attack_no_adjacent_monsters(self, game_engine_setup):
+        engine = game_engine_setup
+        engine.player.x, engine.player.y = 2, 2
+        # Ensure no monsters are adjacent
+        # Example: check north (2,1), south (2,3), west (1,2), east (3,2)
+        assert engine.world_map.get_tile(2,1).monster is None
+        assert engine.world_map.get_tile(2,3).monster is None
+        assert engine.world_map.get_tile(1,2).monster is None
+        assert engine.world_map.get_tile(3,2).monster is None
+
+
+        engine.process_command_tuple(("attack", None))
+        assert "There is no monster nearby to attack." in engine.message_log
+
+    def test_ambiguity_multiple_same_name_attack_by_name(self, game_engine_setup):
+        engine = game_engine_setup
+        engine.player.x, engine.player.y = 2, 2
+        bat1 = Monster("Bat", health=5, attack_power=2)
+        bat2 = Monster("Bat", health=5, attack_power=2)
+        engine.world_map.place_monster(bat1, 2, 1)  # North
+        engine.world_map.place_monster(bat2, 3, 2)  # East
+
+        engine.process_command_tuple(("attack", "Bat"))
+        assert "Multiple Bats found. Which one?" in engine.message_log
+        assert engine.world_map.get_tile(2,1).monster is bat1 # Unharmed
+        assert engine.world_map.get_tile(3,2).monster is bat2 # Unharmed
+
+    def test_ambiguity_multiple_different_names_attack_no_name(self, game_engine_setup):
+        engine = game_engine_setup
+        engine.player.x, engine.player.y = 2, 2
+        bat = Monster("Bat", health=5, attack_power=2)
+        goblin = Monster("Goblin", health=10, attack_power=3)
+        engine.world_map.place_monster(bat, 2, 1)    # North
+        engine.world_map.place_monster(goblin, 3, 2) # East
+
+        engine.process_command_tuple(("attack", None))
+        # The order of names might vary, so check for both parts
+        assert "Multiple monsters nearby:" in engine.message_log[0]
+        assert "Bat" in engine.message_log[0]
+        assert "Goblin" in engine.message_log[0]
+        assert "Which one to attack?" in engine.message_log[0]
+        assert engine.world_map.get_tile(2,1).monster is bat # Unharmed
+        assert engine.world_map.get_tile(3,2).monster is goblin # Unharmed
+
+    def test_monster_counter_attack_and_player_death(self, game_engine_setup):
+        engine = game_engine_setup
+        engine.player.x, engine.player.y = 2, 2
+        engine.player.health = 5 # Low player health
+        engine.player.base_attack_power = 1 # Low player attack
+        ogre = Monster("Ogre", health=50, attack_power=10) # Strong monster
+        engine.world_map.place_monster(ogre, 2, 1) # North
+        initial_ogre_health = ogre.health
+
+        engine.process_command_tuple(("attack", "Ogre"))
+
+        assert f"You attack the Ogre for {engine.player.base_attack_power} damage." in engine.message_log
+        assert ogre.health == initial_ogre_health - engine.player.base_attack_power
+        assert f"The Ogre attacks you for {ogre.attack_power} damage." in engine.message_log
+        assert engine.player.health <= 0
+        assert "You have been defeated. Game Over." in engine.message_log
+        assert engine.game_over is True
+        assert engine.world_map.get_tile(2,1).monster is ogre # Ogre is still alive

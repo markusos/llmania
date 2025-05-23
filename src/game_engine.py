@@ -306,12 +306,33 @@ class GameEngine:
                     self.message_log.append(f"You see a {tile.item.name} here.")
                 if tile.monster:
                     self.message_log.append(f"There is a {tile.monster.name} here!")
-                if not tile.item and not tile.monster:
+                # Also list adjacent monsters for "look"
+                adjacent_monsters_with_coords = self._get_adjacent_monsters(
+                    self.player.x, self.player.y
+                )
+                if adjacent_monsters_with_coords:
+                    for m, x, y in adjacent_monsters_with_coords:
+                        self.message_log.append(
+                            f"You see a {m.name} at ({x}, {y})."
+                        )
+                elif not tile.item and not tile.monster: # only if no item/monster on current tile AND no adjacent monsters
                     self.message_log.append("The area is clear.")
+
 
         elif verb == "quit":  # This is if "quit" is typed as a command
             self.message_log.append("Quitting game.")
             self.game_over = True
+
+    def _get_adjacent_monsters(
+        self, x: int, y: int
+    ) -> list[tuple["Monster", int, int]]:
+        adjacent_monsters = []
+        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:  # N, S, W, E
+            adj_x, adj_y = x + dx, y + dy
+            tile = self.world_map.get_tile(adj_x, adj_y)
+            if tile and tile.monster:
+                adjacent_monsters.append((tile.monster, adj_x, adj_y))
+        return adjacent_monsters
 
     def run(self):
         try:
