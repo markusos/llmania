@@ -262,33 +262,63 @@ class GameEngine:
             self.message_log.append(message)
 
         elif verb == "attack":
-            tile = self.world_map.get_tile(self.player.x, self.player.y)
-            if tile and tile.monster:
-                if argument is None or tile.monster.name.lower() == argument.lower():
-                    monster = tile.monster
-                    damage_dealt = self.player.attack_monster(monster)
+            adjacent_monsters_with_coords = self._get_adjacent_monsters(
+                self.player.x, self.player.y
+            )
+            target_monster = None
+            target_x, target_y = -1, -1
+
+            if argument: # Monster name provided
+                named_targets = [
+                    (m, mx, my)
+                    for m, mx, my in adjacent_monsters_with_coords
+                    if m.name.lower() == argument.lower()
+                ]
+                if len(named_targets) == 1:
+                    target_monster, target_x, target_y = named_targets[0]
+                elif len(named_targets) > 1:
                     self.message_log.append(
-                        f"You attack the {monster.name} for {damage_dealt} damage."
+                        f"Multiple {argument}s found. Which one?"
                     )
-                    if monster.health <= 0:
-                        self.world_map.remove_monster(self.player.x, self.player.y)
-                        self.message_log.append(f"You defeated the {monster.name}!")
-                    else:
-                        damage_taken = monster.attack(self.player)
-                        self.message_log.append(
-                            f"The {monster.name} attacks you for {damage_taken} damage."
-                        )
-                        if self.player.health <= 0:
-                            self.message_log.append(
-                                "You have been defeated. Game Over."
-                            )
-                            self.game_over = True
+                else: # No monsters by that name found (either none adjacent, or none with that name)
+                    self.message_log.append(
+                        f"There is no monster named {argument} nearby."
+                    )
+            else: # No monster name provided
+                if not adjacent_monsters_with_coords:
+                    self.message_log.append("There is no monster nearby to attack.")
+                elif len(adjacent_monsters_with_coords) == 1:
+                    target_monster, target_x, target_y = (
+                        adjacent_monsters_with_coords[0]
+                    )
+                else: # Multiple monsters, no specific name given
+                    monster_names = ", ".join(
+                        sorted(list(set(m.name for m, _, _ in adjacent_monsters_with_coords)))
+                    )
+                    self.message_log.append(
+                        f"Multiple monsters nearby: {monster_names}. Which one to attack?"
+                    )
+
+            if target_monster and target_x != -1 and target_y != -1:
+                damage_dealt = self.player.attack_monster(target_monster)
+                self.message_log.append(
+                    f"You attack the {target_monster.name} for {damage_dealt} damage."
+                )
+                if target_monster.health <= 0:
+                    self.world_map.remove_monster(target_x, target_y)
+                    self.message_log.append(
+                        f"You defeated the {target_monster.name}!"
+                    )
                 else:
+                    damage_taken = target_monster.attack(self.player)
                     self.message_log.append(
-                        f"There is no monster named {argument} here."
+                        f"The {target_monster.name} attacks you for {damage_taken} damage."
                     )
-            else:
-                self.message_log.append("There is no monster here to attack.")
+                    if self.player.health <= 0:
+                        self.message_log.append("You have been defeated. Game Over.")
+                        self.game_over = True
+            # If no target_monster was identified by the logic above, an appropriate message
+            # should have already been added to self.message_log.
 
         elif verb == "inventory":
             if self.player.inventory:

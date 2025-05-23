@@ -469,21 +469,22 @@ def test_process_command_tuple_attack_no_monster(game_engine_setup):
     engine.player.x, engine.player.y = 1, 1
     engine.world_map.get_tile(1, 1).monster = None  # Ensure no monster
     engine.process_command_tuple(("attack", "ghost"))
-    assert "There is no monster here to attack." in engine.message_log
+    assert "There is no monster named ghost nearby." in engine.message_log # Changed message
 
 
 def test_process_command_tuple_attack_no_arg_monster_exists(game_engine_setup):
     engine = game_engine_setup
     engine.player.x, engine.player.y = 1, 1
     monster = Monster("Goblin", 10, 3)
-    engine.world_map.place_monster(monster, 1, 1)
-    initial_monster_health = monster.health
+    engine.world_map.place_monster(monster, 1, 1) # Monster on the same tile
+    # initial_monster_health = monster.health # Monster won't be attacked
     engine.process_command_tuple(("attack", None))  # No argument for attack
-    assert monster.health < initial_monster_health
-    assert (
-        f"You attack the {monster.name} for "
-        f"{engine.player.base_attack_power} damage." in engine.message_log
-    )
+
+    # New behavior: "attack" command only targets adjacent. Monster on current tile is not "nearby".
+    assert "There is no monster nearby to attack." in engine.message_log
+    assert monster.health == 10 # Monster health should be unchanged
+    # Ensure no attack messages for the monster on the same tile are present
+    assert not any(f"You attack the {monster.name}" in msg for msg in engine.message_log)
 
 
 def test_process_command_tuple_take_no_arg_item_exists(game_engine_setup):
