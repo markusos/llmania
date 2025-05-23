@@ -50,9 +50,8 @@ class GameEngine:
 
         elif self.input_mode == "command":
             curses.curs_set(1)
-            if len(key) == 1 and key.isprintable():
-                self.current_command_buffer += key
-            elif (
+            # Condition for Enter - submit command
+            if (
                 key == "\n" or key == curses.KEY_ENTER
             ):  # KEY_ENTER is an integer, '\n' is a string
                 command_to_parse = self.current_command_buffer
@@ -63,22 +62,28 @@ class GameEngine:
                 return command_tuple  # Return parsed command
             elif key == "KEY_BACKSPACE" or key == "\x08" or key == "\x7f":
                 self.current_command_buffer = self.current_command_buffer[:-1]
+            # Condition for Escape key - abort command, switch to movement
             elif key == "\x1b":  # Escape key
                 self.current_command_buffer = ""
                 self.input_mode = "movement"
                 curses.curs_set(0)
-            elif key == "q" or key == "Q":  # 'q' or 'Q' to exit command mode
+            # Condition for 'q' or 'Q' - abort command, switch to movement
+            elif key == "q" or key == "Q":
                 self.current_command_buffer = ""
                 self.input_mode = "movement"
                 curses.curs_set(0)
+            # Condition for KEY_RESIZE
             elif key == "KEY_RESIZE":  # Handle resize event
                 self.stdscr.clear()
                 # The next render_map call will redraw based on new screen size
+            # Condition for printable characters - append to buffer (should be last)
             elif isinstance(key, str) and len(key) == 1 and key.isprintable():
                 self.current_command_buffer += key
-            return None  # Command not yet submitted or mode switched / unhandled key
+            # If none of the above, command not yet submitted or unhandled key
+            return None
 
-        return None  # Should only be reached if input_mode is neither "movement" nor "command"
+        # Should only be reached if input_mode is not "movement" or "command"
+        return None
 
     def render_map(self):
         self.stdscr.clear()

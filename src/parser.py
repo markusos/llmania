@@ -21,16 +21,16 @@ class Parser:
             else:  # "move" without valid direction or with other words
                 return None
         elif command_verb in ["n", "north"]:
-            if not argument or argument == "north":  # handles "n" or "north"
+            if not argument:  # "n" or "north" should not have arguments
                 return ("move", "north")
         elif command_verb in ["s", "south"]:
-            if not argument or argument == "south":
+            if not argument:  # "s" or "south" should not have arguments
                 return ("move", "south")
         elif command_verb in ["e", "east"]:
-            if not argument or argument == "east":
+            if not argument:  # "e" or "east" should not have arguments
                 return ("move", "east")
         elif command_verb in ["w", "west"]:
-            if not argument or argument == "west":
+            if not argument:  # "w" or "west" should not have arguments
                 return ("move", "west")
 
         # "take <item>" commands
