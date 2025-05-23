@@ -1,5 +1,5 @@
 import curses  # For curses constants like curses.KEY_ENTER,
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -22,7 +22,9 @@ def game_engine_setup():
         mock_curses_fixture.KEY_ENTER = curses.KEY_ENTER  # Make constants available
         # if engine uses them
         mock_curses_fixture.KEY_BACKSPACE = curses.KEY_BACKSPACE
-        mock_curses_fixture.error = curses.error # Ensure 'error' is a proper exception type on the mock
+        mock_curses_fixture.error = (
+            curses.error
+        )  # Ensure 'error' is a proper exception type on the mock
         # KEY_UP etc. are compared as strings by engine, so no need to set them on
         # mock_curses_fixture
 
@@ -45,7 +47,7 @@ def game_engine_setup():
 
         engine.game_over = False
         engine.message_log = []
-        yield engine # Reverted to original
+        yield engine  # Reverted to original
 
 
 @pytest.fixture
@@ -54,7 +56,9 @@ def game_engine_and_curses_mock_setup():
     with patch("src.game_engine.curses") as mock_curses_fixture:
         mock_curses_fixture.KEY_ENTER = curses.KEY_ENTER
         mock_curses_fixture.KEY_BACKSPACE = curses.KEY_BACKSPACE
-        mock_curses_fixture.error = curses.error # Ensure 'error' is a proper exception type on the mock
+        mock_curses_fixture.error = (
+            curses.error
+        )  # Ensure 'error' is a proper exception type on the mock
         with patch.object(
             WorldGenerator,
             "generate_map",
@@ -350,12 +354,15 @@ def test_run_loop_flow_and_quit(
 
 
 # Removed @patch("src.game_engine.curses")
-@patch.object(GameEngine, "handle_input_and_get_command") # Implicit mock creation
-@patch.object(GameEngine, "render_map") # Implicit mock creation
+@patch.object(GameEngine, "handle_input_and_get_command")  # Implicit mock creation
+@patch.object(GameEngine, "render_map")  # Implicit mock creation
 def test_game_engine_run_curses_cleanup_normal_exit(
     mock_render_map, mock_handle_input, game_engine_and_curses_mock_setup
 ):
-    mock_handle_input.return_value = ("quit", None) # Set return_value on the auto-created mock
+    mock_handle_input.return_value = (
+        "quit",
+        None,
+    )  # Set return_value on the auto-created mock
     engine, mock_curses_fixture_from_setup = game_engine_and_curses_mock_setup
     # Wrap process_command_tuple to ensure it sets game_over for "quit"
     original_process_tuple = engine.process_command_tuple
@@ -370,7 +377,9 @@ def test_game_engine_run_curses_cleanup_normal_exit(
     ):
         engine.run()
 
-    engine.stdscr.keypad.assert_called_with(False) # This is on engine.stdscr, which is mock_curses_fixture_from_setup.initscr()
+    engine.stdscr.keypad.assert_called_with(
+        False
+    )  # This is on engine.stdscr, which is mock_curses_fixture_from_setup.initscr()
     mock_curses_fixture_from_setup.echo.assert_called_once()
     mock_curses_fixture_from_setup.nocbreak.assert_called_once()
     mock_curses_fixture_from_setup.endwin.assert_called_once()
@@ -379,18 +388,23 @@ def test_game_engine_run_curses_cleanup_normal_exit(
 # Removed @patch("src.game_engine.curses") for this test too
 @patch.object(
     GameEngine,
-    "handle_input_and_get_command" # Implicit mock creation
+    "handle_input_and_get_command",  # Implicit mock creation
 )
 @patch.object(GameEngine, "render_map")
 def test_game_engine_run_curses_cleanup_on_exception(
     mock_render_map, mock_handle_input, game_engine_and_curses_mock_setup
 ):
-    mock_handle_input.return_value = ("move", "north") # Set return_value on the auto-created mock
+    mock_handle_input.return_value = (
+        "move",
+        "north",
+    )  # Set return_value on the auto-created mock
     mock_render_map.side_effect = Exception("Test rendering error")
     engine, mock_curses_fixture_from_setup = game_engine_and_curses_mock_setup
     with pytest.raises(Exception, match="Test rendering error"):
         engine.run()
-    engine.stdscr.keypad.assert_called_with(False) # This is on engine.stdscr, which is mock_curses_fixture_from_setup.initscr()
+    engine.stdscr.keypad.assert_called_with(
+        False
+    )  # This is on engine.stdscr, which is mock_curses_fixture_from_setup.initscr()
     mock_curses_fixture_from_setup.echo.assert_called_once()
     mock_curses_fixture_from_setup.nocbreak.assert_called_once()
     mock_curses_fixture_from_setup.endwin.assert_called_once()

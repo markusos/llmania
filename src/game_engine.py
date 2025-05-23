@@ -60,7 +60,7 @@ class GameEngine:
                 self.input_mode = "movement"
                 curses.curs_set(0)
                 command_tuple = self.parser.parse_command(command_to_parse)
-                return command_tuple # Return parsed command
+                return command_tuple  # Return parsed command
             elif key == "KEY_BACKSPACE" or key == "\x08" or key == "\x7f":
                 self.current_command_buffer = self.current_command_buffer[:-1]
             elif key == "\x1b":  # Escape key
@@ -78,7 +78,7 @@ class GameEngine:
                 self.current_command_buffer += key
             return None  # Command not yet submitted or mode switched / unhandled key
 
-        return None # Should only be reached if input_mode is neither "movement" nor "command"
+        return None  # Should only be reached if input_mode is neither "movement" nor "command"
 
     def render_map(self):
         self.stdscr.clear()
