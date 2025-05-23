@@ -214,7 +214,6 @@ class TestHandleInput:
             mock_parse.assert_called_once_with("look")
             assert returned_command == expected_parsed_command
             assert engine.input_mode == "movement"
-            # This test previously didn't assert curs_set, so no change needed here for that.
 
     def test_command_mode_escape_exits(self, game_engine_and_curses_mock_setup):
         engine, mock_curses = game_engine_and_curses_mock_setup
@@ -244,7 +243,7 @@ class TestHandleInput:
         engine.stdscr.getkey.return_value = "KEY_RESIZE"
         command = engine.handle_input_and_get_command()
         assert command is None
-        engine.stdscr.clear.assert_called_once() # This mocks a method on stdscr, which is fine
+        engine.stdscr.clear.assert_called_once()  # Mocks stdscr method; fine.
         assert engine.input_mode == "command"
         # No curs_set assertion in this test originally
 

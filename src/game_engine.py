@@ -82,7 +82,8 @@ class GameEngine:
             # If none of the above, command not yet submitted or unhandled key
             return None
 
-        return None  # Should only be reached if input_mode is neither "movement" nor "command"
+        # Should only be reached if input_mode is not "movement" or "command"
+        return None
 
     def render_map(self):
         self.stdscr.clear()
