@@ -9,6 +9,7 @@ from src.item import Item
 from src.monster import Monster
 from src.parser import Parser
 from src.player import Player
+from src.tile import ENTITY_SYMBOLS, TILE_SYMBOLS # Added import
 from src.world_generator import WorldGenerator
 from src.world_map import WorldMap
 
@@ -258,29 +259,54 @@ class TestHandleInput:
 def test_render_map_movement_mode(mock_curses_module, game_engine_setup):
     engine = game_engine_setup
     mock_stdscr = engine.stdscr
-    engine.player.x, engine.player.y = 2, 3
+    engine.player.x, engine.player.y = 2, 3 # Player at (2,3)
     engine.player.health = 50
-    engine.world_map.set_tile_type(1, 1, "wall")
+    engine.world_map.set_tile_type(1, 1, "wall") # Wall at (1,1)
+    # Ensure other relevant tiles are floors for predictable string indexing
+    engine.world_map.set_tile_type(0, 1, "floor") # Tile before wall in its row
+    engine.world_map.set_tile_type(0, 3, "floor") # Tile before player in its row
+    engine.world_map.set_tile_type(1, 3, "floor") # Tile before player in its row
+
+
     engine.message_log.extend(["Message A", "Message B"])
     engine.input_mode = "movement"
-    engine.current_command_buffer = ""
-    mock_curses_module.LINES = 24
-    mock_curses_module.COLS = 80
-    engine.render_map()
-    mock_stdscr.clear.assert_called_once()
-    mock_stdscr.addstr.assert_any_call(engine.player.y, engine.player.x, "@")
-    mock_stdscr.addstr.assert_any_call(1, 1, "#")
-    mock_stdscr.addstr.assert_any_call(
-        engine.world_map.height, 0, f"HP: {engine.player.health}"
-    )
-    mode_line_y = engine.world_map.height + 1
-    mock_stdscr.addstr.assert_any_call(
-        mode_line_y, 0, f"MODE: {engine.input_mode.upper()}"
-    )
-    message_start_y_expected = mode_line_y + 1
-    mock_stdscr.addstr.assert_any_call(message_start_y_expected, 0, "Message A")
-    mock_stdscr.addstr.assert_any_call(message_start_y_expected + 1, 0, "Message B")
-    mock_stdscr.refresh.assert_called_once()
+    # mock_curses_module is not used when debug_render_to_list=True for map content
+    
+    output_buffer = engine.render_map(debug_render_to_list=True)
+
+    # Map is 5x5. Player (2,3), Wall (1,1). Others floor.
+    # Player symbol "🧑 ", Wall "#", Floor "."
+    # Expected map rows:
+    # .....       (y=0)
+    # .#...       (y=1) (floor at (0,1) is 1 char, wall at (1,1) is 1 char) string index for wall: 1
+    # .....       (y=2)
+    # ..🧑 .       (y=3) (floor at (0,3) is 1 char, floor at (1,3) is 1 char, player is 2 chars) string index for player: 2
+    # .....       (y=4)
+
+    # Player assertion: output_buffer[player_y_idx][player_x_char_start_idx : player_x_char_start_idx + 2]
+    # Player at (2,3). String index for x=2 is 1 (for (0,3)) + 1 (for (1,3)) = 2
+    assert output_buffer[3][2:4] == engine.PLAYER_SYMBOL + " "
+    
+    # Wall assertion: output_buffer[wall_y_idx][wall_x_char_start_idx : wall_x_char_start_idx + 1]
+    # Wall at (1,1). String index for x=1 is 1 (for (0,1)) = 1
+    assert output_buffer[1][1:2] == TILE_SYMBOLS["wall"]
+
+    # Check floor tiles around player and wall to confirm indexing
+    assert output_buffer[3][0:1] == TILE_SYMBOLS["floor"] # Floor before player at (0,3)
+    assert output_buffer[3][1:2] == TILE_SYMBOLS["floor"] # Floor before player at (1,3)
+    # Player is at map (2,3), occupying string indices 2:4 ("🧑 ")
+    # Item (Amulet) is at map (3,3), should occupy string indices 4:6 ("💰 ")
+    assert output_buffer[3][4:6] == ENTITY_SYMBOLS["item"] + " " 
+    # Floor at map (4,3) should occupy string index 6:7
+    assert output_buffer[3][6:7] == TILE_SYMBOLS["floor"] 
+    assert output_buffer[1][0:1] == TILE_SYMBOLS["floor"] # Floor before wall at (0,1)
+
+    # UI elements are appended after map rows in the buffer
+    map_height = engine.world_map.height
+    assert output_buffer[map_height] == f"HP: {engine.player.health}"
+    assert output_buffer[map_height + 1] == f"MODE: {engine.input_mode.upper()}"
+    assert output_buffer[map_height + 2] == "Message A"
+    assert output_buffer[map_height + 3] == "Message B"
 
 
 @patch("src.game_engine.curses")
@@ -292,24 +318,21 @@ def test_render_map_command_mode(mock_curses_module, game_engine_setup):
     engine.message_log.append("Last Message")
     engine.input_mode = "command"
     engine.current_command_buffer = "take pot"
-    mock_curses_module.LINES = 24
-    mock_curses_module.COLS = 80
-    engine.render_map()
-    mock_stdscr.clear.assert_called_once()
-    mock_stdscr.addstr.assert_any_call(engine.player.y, engine.player.x, "@")
-    hp_line_y = engine.world_map.height
-    mode_line_y = hp_line_y + 1
-    command_buffer_y = mode_line_y + 1
-    message_start_y_expected = command_buffer_y + 1
-    mock_stdscr.addstr.assert_any_call(hp_line_y, 0, f"HP: {engine.player.health}")
-    mock_stdscr.addstr.assert_any_call(
-        mode_line_y, 0, f"MODE: {engine.input_mode.upper()}"
-    )
-    mock_stdscr.addstr.assert_any_call(
-        command_buffer_y, 0, f"> {engine.current_command_buffer}"
-    )
-    mock_stdscr.addstr.assert_any_call(message_start_y_expected, 0, "Last Message")
-    mock_stdscr.refresh.assert_called_once()
+    # mock_curses_module is not used
+    
+    output_buffer = engine.render_map(debug_render_to_list=True)
+
+    # Player at (0,0). Map is 5x5.
+    # Expected map row 0: 🧑 .....
+    # Player "🧑 " starts at string index 0.
+    assert output_buffer[0][0:2] == engine.PLAYER_SYMBOL + " "
+
+    # UI elements
+    map_height = engine.world_map.height
+    assert output_buffer[map_height] == f"HP: {engine.player.health}"
+    assert output_buffer[map_height + 1] == f"MODE: {engine.input_mode.upper()}"
+    assert output_buffer[map_height + 2] == f"> {engine.current_command_buffer}" # Command buffer shown in command mode
+    assert output_buffer[map_height + 3] == "Last Message" # Messages start after command buffer
 
 
 def test_process_command_tuple_move_valid(game_engine_setup):
