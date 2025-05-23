@@ -9,7 +9,7 @@ from src.item import Item
 from src.monster import Monster
 from src.parser import Parser
 from src.player import Player
-from src.tile import ENTITY_SYMBOLS, TILE_SYMBOLS # Added import
+from src.tile import ENTITY_SYMBOLS, TILE_SYMBOLS  # Added import
 from src.world_generator import WorldGenerator
 from src.world_map import WorldMap
 
@@ -178,9 +178,7 @@ class TestHandleInput:
         assert engine.current_command_buffer == "drop "
         mock_curses.curs_set.assert_any_call(1)  # Called multiple times
 
-    def test_command_mode_enter_parses_command(
-        self, game_engine_and_curses_mock_setup
-    ):
+    def test_command_mode_enter_parses_command(self, game_engine_and_curses_mock_setup):
         engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "command"
         test_typed_command = "use health potion"
@@ -250,7 +248,7 @@ class TestHandleInput:
 
     def test_getkey_error_returns_none(self, game_engine_and_curses_mock_setup):
         engine, mock_curses = game_engine_and_curses_mock_setup
-        engine.stdscr.getkey.side_effect = curses.error # stdscr method mock is fine
+        engine.stdscr.getkey.side_effect = curses.error  # stdscr method mock is fine
         command = engine.handle_input_and_get_command()
         assert command is None
 
@@ -259,19 +257,18 @@ class TestHandleInput:
 def test_render_map_movement_mode(mock_curses_module, game_engine_setup):
     engine = game_engine_setup
     mock_stdscr = engine.stdscr
-    engine.player.x, engine.player.y = 2, 3 # Player at (2,3)
+    engine.player.x, engine.player.y = 2, 3  # Player at (2,3)
     engine.player.health = 50
-    engine.world_map.set_tile_type(1, 1, "wall") # Wall at (1,1)
+    engine.world_map.set_tile_type(1, 1, "wall")  # Wall at (1,1)
     # Ensure other relevant tiles are floors for predictable string indexing
-    engine.world_map.set_tile_type(0, 1, "floor") # Tile before wall in its row
-    engine.world_map.set_tile_type(0, 3, "floor") # Tile before player in its row
-    engine.world_map.set_tile_type(1, 3, "floor") # Tile before player in its row
-
+    engine.world_map.set_tile_type(0, 1, "floor")  # Tile before wall in its row
+    engine.world_map.set_tile_type(0, 3, "floor")  # Tile before player in its row
+    engine.world_map.set_tile_type(1, 3, "floor")  # Tile before player in its row
 
     engine.message_log.extend(["Message A", "Message B"])
     engine.input_mode = "movement"
     # mock_curses_module is not used when debug_render_to_list=True for map content
-    
+
     output_buffer = engine.render_map(debug_render_to_list=True)
 
     # Map is 5x5. Player (2,3), Wall (1,1). Others floor.
@@ -286,20 +283,24 @@ def test_render_map_movement_mode(mock_curses_module, game_engine_setup):
     # Player assertion: output_buffer[player_y_idx][player_x_char_start_idx : player_x_char_start_idx + 2]
     # Player at (2,3). String index for x=2 is 1 (for (0,3)) + 1 (for (1,3)) = 2
     assert output_buffer[3][2:4] == engine.PLAYER_SYMBOL + " "
-    
+
     # Wall assertion: output_buffer[wall_y_idx][wall_x_char_start_idx : wall_x_char_start_idx + 1]
     # Wall at (1,1). String index for x=1 is 1 (for (0,1)) = 1
     assert output_buffer[1][1:2] == TILE_SYMBOLS["wall"]
 
     # Check floor tiles around player and wall to confirm indexing
-    assert output_buffer[3][0:1] == TILE_SYMBOLS["floor"] # Floor before player at (0,3)
-    assert output_buffer[3][1:2] == TILE_SYMBOLS["floor"] # Floor before player at (1,3)
+    assert (
+        output_buffer[3][0:1] == TILE_SYMBOLS["floor"]
+    )  # Floor before player at (0,3)
+    assert (
+        output_buffer[3][1:2] == TILE_SYMBOLS["floor"]
+    )  # Floor before player at (1,3)
     # Player is at map (2,3), occupying string indices 2:4 ("🧑 ")
     # Item (Amulet) is at map (3,3), should occupy string indices 4:6 ("💰 ")
-    assert output_buffer[3][4:6] == ENTITY_SYMBOLS["item"] + " " 
+    assert output_buffer[3][4:6] == ENTITY_SYMBOLS["item"] + " "
     # Floor at map (4,3) should occupy string index 6:7
-    assert output_buffer[3][6:7] == TILE_SYMBOLS["floor"] 
-    assert output_buffer[1][0:1] == TILE_SYMBOLS["floor"] # Floor before wall at (0,1)
+    assert output_buffer[3][6:7] == TILE_SYMBOLS["floor"]
+    assert output_buffer[1][0:1] == TILE_SYMBOLS["floor"]  # Floor before wall at (0,1)
 
     # UI elements are appended after map rows in the buffer
     map_height = engine.world_map.height
@@ -319,7 +320,7 @@ def test_render_map_command_mode(mock_curses_module, game_engine_setup):
     engine.input_mode = "command"
     engine.current_command_buffer = "take pot"
     # mock_curses_module is not used
-    
+
     output_buffer = engine.render_map(debug_render_to_list=True)
 
     # Player at (0,0). Map is 5x5.
@@ -331,8 +332,12 @@ def test_render_map_command_mode(mock_curses_module, game_engine_setup):
     map_height = engine.world_map.height
     assert output_buffer[map_height] == f"HP: {engine.player.health}"
     assert output_buffer[map_height + 1] == f"MODE: {engine.input_mode.upper()}"
-    assert output_buffer[map_height + 2] == f"> {engine.current_command_buffer}" # Command buffer shown in command mode
-    assert output_buffer[map_height + 3] == "Last Message" # Messages start after command buffer
+    assert (
+        output_buffer[map_height + 2] == f"> {engine.current_command_buffer}"
+    )  # Command buffer shown in command mode
+    assert (
+        output_buffer[map_height + 3] == "Last Message"
+    )  # Messages start after command buffer
 
 
 def test_process_command_tuple_move_valid(game_engine_setup):
@@ -492,22 +497,26 @@ def test_process_command_tuple_attack_no_monster(game_engine_setup):
     engine.player.x, engine.player.y = 1, 1
     engine.world_map.get_tile(1, 1).monster = None  # Ensure no monster
     engine.process_command_tuple(("attack", "ghost"))
-    assert "There is no monster named ghost nearby." in engine.message_log # Changed message
+    assert (
+        "There is no monster named ghost nearby." in engine.message_log
+    )  # Changed message
 
 
 def test_process_command_tuple_attack_no_arg_monster_exists(game_engine_setup):
     engine = game_engine_setup
     engine.player.x, engine.player.y = 1, 1
     monster = Monster("Goblin", 10, 3)
-    engine.world_map.place_monster(monster, 1, 1) # Monster on the same tile
+    engine.world_map.place_monster(monster, 1, 1)  # Monster on the same tile
     # initial_monster_health = monster.health # Monster won't be attacked
     engine.process_command_tuple(("attack", None))  # No argument for attack
 
     # New behavior: "attack" command only targets adjacent. Monster on current tile is not "nearby".
     assert "There is no monster nearby to attack." in engine.message_log
-    assert monster.health == 10 # Monster health should be unchanged
+    assert monster.health == 10  # Monster health should be unchanged
     # Ensure no attack messages for the monster on the same tile are present
-    assert not any(f"You attack the {monster.name}" in msg for msg in engine.message_log)
+    assert not any(
+        f"You attack the {monster.name}" in msg for msg in engine.message_log
+    )
 
 
 def test_process_command_tuple_take_no_arg_item_exists(game_engine_setup):
@@ -549,15 +558,18 @@ class TestAttackCommand:
 
         engine.process_command_tuple(("attack", "Bat"))
 
-        assert f"You attack the Bat for {engine.player.base_attack_power} damage." in engine.message_log
+        assert (
+            f"You attack the Bat for {engine.player.base_attack_power} damage."
+            in engine.message_log
+        )
         assert "You defeated the Bat!" in engine.message_log
         assert engine.world_map.get_tile(2, 1).monster is None
 
     def test_attack_adjacent_no_name_one_target_survives(self, game_engine_setup):
         engine = game_engine_setup
         engine.player.x, engine.player.y = 2, 2
-        engine.player.base_attack_power = 3 # Player attack
-        goblin = Monster("Goblin", health=10, attack_power=4) # Goblin is stronger
+        engine.player.base_attack_power = 3  # Player attack
+        goblin = Monster("Goblin", health=10, attack_power=4)  # Goblin is stronger
         # Place Goblin to the east of the player
         engine.world_map.place_monster(goblin, 3, 2)
         initial_goblin_health = goblin.health
@@ -565,32 +577,39 @@ class TestAttackCommand:
 
         engine.process_command_tuple(("attack", None))
 
-        assert f"You attack the Goblin for {engine.player.base_attack_power} damage." in engine.message_log
+        assert (
+            f"You attack the Goblin for {engine.player.base_attack_power} damage."
+            in engine.message_log
+        )
         assert goblin.health == initial_goblin_health - engine.player.base_attack_power
-        assert f"The Goblin attacks you for {goblin.attack_power} damage." in engine.message_log
+        assert (
+            f"The Goblin attacks you for {goblin.attack_power} damage."
+            in engine.message_log
+        )
         assert engine.player.health == initial_player_health - goblin.attack_power
-        assert engine.world_map.get_tile(3, 2).monster is goblin # Still alive
+        assert engine.world_map.get_tile(3, 2).monster is goblin  # Still alive
 
     def test_attack_non_existent_monster_by_name(self, game_engine_setup):
         engine = game_engine_setup
         engine.player.x, engine.player.y = 2, 2
         bat = Monster("Bat", health=5, attack_power=2)
-        engine.world_map.place_monster(bat, 2, 1) # North
+        engine.world_map.place_monster(bat, 2, 1)  # North
 
         engine.process_command_tuple(("attack", "NonExistentMonster"))
-        assert "There is no monster named NonExistentMonster nearby." in engine.message_log
-        assert engine.world_map.get_tile(2,1).monster is bat # Bat is unharmed
+        assert (
+            "There is no monster named NonExistentMonster nearby." in engine.message_log
+        )
+        assert engine.world_map.get_tile(2, 1).monster is bat  # Bat is unharmed
 
     def test_attack_no_adjacent_monsters(self, game_engine_setup):
         engine = game_engine_setup
         engine.player.x, engine.player.y = 2, 2
         # Ensure no monsters are adjacent
         # Example: check north (2,1), south (2,3), west (1,2), east (3,2)
-        assert engine.world_map.get_tile(2,1).monster is None
-        assert engine.world_map.get_tile(2,3).monster is None
-        assert engine.world_map.get_tile(1,2).monster is None
-        assert engine.world_map.get_tile(3,2).monster is None
-
+        assert engine.world_map.get_tile(2, 1).monster is None
+        assert engine.world_map.get_tile(2, 3).monster is None
+        assert engine.world_map.get_tile(1, 2).monster is None
+        assert engine.world_map.get_tile(3, 2).monster is None
 
         engine.process_command_tuple(("attack", None))
         assert "There is no monster nearby to attack." in engine.message_log
@@ -605,16 +624,16 @@ class TestAttackCommand:
 
         engine.process_command_tuple(("attack", "Bat"))
         assert "Multiple Bats found. Which one?" in engine.message_log
-        assert engine.world_map.get_tile(2,1).monster is bat1 # Unharmed
-        assert engine.world_map.get_tile(3,2).monster is bat2 # Unharmed
+        assert engine.world_map.get_tile(2, 1).monster is bat1  # Unharmed
+        assert engine.world_map.get_tile(3, 2).monster is bat2  # Unharmed
 
     def test_ambiguity_multiple_different_names_attack_no_name(self, game_engine_setup):
         engine = game_engine_setup
         engine.player.x, engine.player.y = 2, 2
         bat = Monster("Bat", health=5, attack_power=2)
         goblin = Monster("Goblin", health=10, attack_power=3)
-        engine.world_map.place_monster(bat, 2, 1)    # North
-        engine.world_map.place_monster(goblin, 3, 2) # East
+        engine.world_map.place_monster(bat, 2, 1)  # North
+        engine.world_map.place_monster(goblin, 3, 2)  # East
 
         engine.process_command_tuple(("attack", None))
         # The order of names might vary, so check for both parts
@@ -622,24 +641,30 @@ class TestAttackCommand:
         assert "Bat" in engine.message_log[0]
         assert "Goblin" in engine.message_log[0]
         assert "Which one to attack?" in engine.message_log[0]
-        assert engine.world_map.get_tile(2,1).monster is bat # Unharmed
-        assert engine.world_map.get_tile(3,2).monster is goblin # Unharmed
+        assert engine.world_map.get_tile(2, 1).monster is bat  # Unharmed
+        assert engine.world_map.get_tile(3, 2).monster is goblin  # Unharmed
 
     def test_monster_counter_attack_and_player_death(self, game_engine_setup):
         engine = game_engine_setup
         engine.player.x, engine.player.y = 2, 2
-        engine.player.health = 5 # Low player health
-        engine.player.base_attack_power = 1 # Low player attack
-        ogre = Monster("Ogre", health=50, attack_power=10) # Strong monster
-        engine.world_map.place_monster(ogre, 2, 1) # North
+        engine.player.health = 5  # Low player health
+        engine.player.base_attack_power = 1  # Low player attack
+        ogre = Monster("Ogre", health=50, attack_power=10)  # Strong monster
+        engine.world_map.place_monster(ogre, 2, 1)  # North
         initial_ogre_health = ogre.health
 
         engine.process_command_tuple(("attack", "Ogre"))
 
-        assert f"You attack the Ogre for {engine.player.base_attack_power} damage." in engine.message_log
+        assert (
+            f"You attack the Ogre for {engine.player.base_attack_power} damage."
+            in engine.message_log
+        )
         assert ogre.health == initial_ogre_health - engine.player.base_attack_power
-        assert f"The Ogre attacks you for {ogre.attack_power} damage." in engine.message_log
+        assert (
+            f"The Ogre attacks you for {ogre.attack_power} damage."
+            in engine.message_log
+        )
         assert engine.player.health <= 0
         assert "You have been defeated. Game Over." in engine.message_log
         assert engine.game_over is True
-        assert engine.world_map.get_tile(2,1).monster is ogre # Ogre is still alive
+        assert engine.world_map.get_tile(2, 1).monster is ogre  # Ogre is still alive
