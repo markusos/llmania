@@ -50,20 +50,15 @@ class GameEngine:
 
         elif self.input_mode == "command":
             self.stdscr.curs_set(1)
-            if len(key) == 1 and key.isprintable():
-                self.current_command_buffer += key
-            elif (
-                key == "\n" or key == curses.KEY_ENTER
-            ):  # KEY_ENTER is an integer, '\n' is a string
+            # Check for special keys first
+            if key == "\n" or key == curses.KEY_ENTER:
                 command_to_parse = self.current_command_buffer
                 self.current_command_buffer = ""
                 self.input_mode = "movement"
                 self.stdscr.curs_set(0)
                 command_tuple = self.parser.parse_command(command_to_parse)
-                return command_tuple
-            elif (
-                key == "KEY_BACKSPACE" or key == "\x08" or key == "\x7f"
-            ):  # '\x08' is Backspace, '\x7f' is DEL
+                return command_tuple # Return parsed command
+            elif key == "KEY_BACKSPACE" or key == "\x08" or key == "\x7f":
                 self.current_command_buffer = self.current_command_buffer[:-1]
             elif key == "\x1b":  # Escape key
                 self.current_command_buffer = ""
@@ -76,9 +71,11 @@ class GameEngine:
             elif key == "KEY_RESIZE":  # Handle resize event
                 self.stdscr.clear()
                 # The next render_map call will redraw based on new screen size
-            return None  # Command not yet submitted or mode switched
+            elif isinstance(key, str) and len(key) == 1 and key.isprintable():
+                self.current_command_buffer += key
+            return None  # Command not yet submitted or mode switched / unhandled key
 
-        return None
+        return None # Should only be reached if input_mode is neither "movement" nor "command"
 
     def render_map(self):
         self.stdscr.clear()

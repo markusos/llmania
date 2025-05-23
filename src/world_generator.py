@@ -42,16 +42,28 @@ class WorldGenerator:
         player_start_pos = (player_start_x, player_start_y)
         win_pos = (win_x, win_y)
 
-        while win_pos == player_start_pos:  # Ensure win_pos is different
-            if width < 3:
-                win_x = 0 if width == 1 else random.randint(0, width - 1)
-            else:
-                win_x = random.randint(1, width - 2)
-            if height < 3:
-                win_y = 0 if height == 1 else random.randint(0, height - 1)
-            else:
-                win_y = random.randint(1, height - 2)
-            win_pos = (win_x, win_y)
+        # Ensure win_pos is different from player_start_pos, unless map is too small for them to be different
+        if not (width == 1 and height == 1): # Only try to find a new win_pos if map is larger than 1x1
+            attempts = 0 # Add attempt counter to prevent potential infinite loops on slightly larger small maps
+            max_attempts = (width * height) * 2 # Heuristic for max attempts
+
+            while win_pos == player_start_pos:
+                if attempts >= max_attempts:
+                    # Could not find a different win_pos, break.
+                    # This might happen on very small maps if random choices are unlucky.
+                    # For 1x2, 2x1, 2x2, it should generally find one.
+                    break 
+                if width < 3:
+                    win_x = 0 if width == 1 else random.randint(0, width - 1)
+                else:
+                    win_x = random.randint(1, width - 2)
+                if height < 3:
+                    win_y = 0 if height == 1 else random.randint(0, height - 1)
+                else:
+                    win_y = random.randint(1, height - 2)
+                win_pos = (win_x, win_y)
+                attempts += 1
+        # For a 1x1 map, win_pos will remain == player_start_pos, which is correct.
 
         world_map.set_tile_type(player_start_pos[0], player_start_pos[1], "floor")
         world_map.set_tile_type(win_pos[0], win_pos[1], "floor")
