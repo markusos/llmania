@@ -22,7 +22,6 @@ class Tile:
         self.item = item
 
     def get_display_info(self):
-
         if self.monster:
             return (ENTITY_SYMBOLS["monster"], "monster")
         elif self.item:
