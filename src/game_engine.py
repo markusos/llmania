@@ -124,169 +124,214 @@ class GameEngine:
     def render_map(self, debug_render_to_list=False):
         if debug_render_to_list:
             output_buffer = []
-            # For debug rendering, let's use the full map height and width
-            # We won't be constrained by curses.LINES or curses.COLS
-            max_y_map = self.world_map.height
-            max_x_map = self.world_map.width
+            # Debug rendering for 3x3 grid structure
+            FLOOR_SYMBOL = TILE_SYMBOLS["floor"]
+            # For debug rendering, use full map height and width in terms of tiles
+            map_tile_height = self.world_map.height
+            map_tile_width = self.world_map.width
 
-            for y_map in range(max_y_map):
-                row_str = ""
-                for x_map in range(max_x_map):
-                    char_to_draw = ""
-                    if x_map == self.player.x and y_map == self.player.y:
-                        char_to_draw = self.PLAYER_SYMBOL + " "  # Pad player symbol
+            # Output buffer will store strings, each representing a screen row
+            # Since each tile is 3x3, the screen representation is 3 times larger
+            screen_buffer_height = map_tile_height * 3
+            # Initialize screen_buffer with empty strings for each screen row
+            output_buffer = ["" for _ in range(screen_buffer_height)]
+
+            for y_tile_idx in range(map_tile_height):
+                for x_tile_idx in range(map_tile_width):
+                    current_tile_grid = []
+                    # Determine the 3x3 grid for the current tile
+                    if x_tile_idx == self.player.x and y_tile_idx == self.player.y:
+                        current_tile_grid = [
+                            [FLOOR_SYMBOL, FLOOR_SYMBOL, FLOOR_SYMBOL],
+                            [FLOOR_SYMBOL, self.PLAYER_SYMBOL, FLOOR_SYMBOL],
+                            [FLOOR_SYMBOL, FLOOR_SYMBOL, FLOOR_SYMBOL],
+                        ]
                     else:
-                        tile = self.world_map.get_tile(x_map, y_map)
+                        tile = self.world_map.get_tile(x_tile_idx, y_tile_idx)
                         if tile:
-                            char_to_draw, display_type = tile.get_display_info()
-                            if display_type == "monster_on_floor":
-                                char_to_draw += " "  # Pad monster symbol
-                            elif display_type == "item_on_floor":
-                                char_to_draw += " "  # Pad item symbol
+                            # get_display_info now returns a 3x3 grid and a display_type
+                            grid_data, _ = tile.get_display_info()
+                            current_tile_grid = grid_data
                         else:
-                            char_to_draw = TILE_SYMBOLS["unknown"]
-                    row_str += char_to_draw
-                output_buffer.append(row_str)
+                            # Default unknown grid
+                            unknown_symbol = TILE_SYMBOLS["unknown"]
+                            current_tile_grid = [
+                                [FLOOR_SYMBOL, FLOOR_SYMBOL, FLOOR_SYMBOL],
+                                [FLOOR_SYMBOL, unknown_symbol, FLOOR_SYMBOL],
+                                [FLOOR_SYMBOL, FLOOR_SYMBOL, FLOOR_SYMBOL],
+                            ]
+                    
+                    # Populate the output_buffer with characters from the 3x3 grid
+                    for y_offset in range(3):
+                        y_screen = y_tile_idx * 3 + y_offset
+                        for x_offset in range(3):
+                            char_to_draw = current_tile_grid[y_offset][x_offset]
+                            # Append character to the correct row string in output_buffer
+                            # Ensure the row string is long enough, pad with spaces if necessary
+                            # This simple concatenation works because we build row by row, tile by tile
+                            output_buffer[y_screen] += char_to_draw
+            
+            # After map, add UI elements
+            # Trim empty trailing rows from the map part if any tile column was shorter
+            # This is a simplified approach; for perfect alignment, all rows should extend to max_x_tile_cols * 3
+            # For now, let's just append.
+            final_output_buffer = [row for row in output_buffer if row] # Remove completely empty rows if any logic error
 
-            # Add HP, mode, and messages for completeness if needed for debugging
-            output_buffer.append(f"HP: {self.player.health}")
-            output_buffer.append(f"MODE: {self.input_mode.upper()}")
+            final_output_buffer.append(f"HP: {self.player.health}")
+            final_output_buffer.append(f"MODE: {self.input_mode.upper()}")
             if self.input_mode == "command":
-                output_buffer.append(f"> {self.current_command_buffer}")
+                final_output_buffer.append(f"> {self.current_command_buffer}")
             for message in self.message_log:  # Log all messages for debug
-                output_buffer.append(message)
-            return output_buffer
+                final_output_buffer.append(message)
+            return final_output_buffer
 
         # Original curses rendering code
-        if self.debug_mode:  # Should not reach here if debug_render_to_list is True
-            # This part is for safety, actual debug rendering is handled by debug_render_to_list flag
-            print(
-                "Error: Curses rendering called in debug mode without debug_render_to_list=True."
-            )
-            return []  # Or raise an exception
+        if self.debug_mode:
+            print("Error: Curses rendering called in debug mode without debug_render_to_list=True.")
+            return
 
         self.stdscr.clear()
-        max_y_curses_rows = min(
-            self.world_map.height, curses.LINES - 4
-        )  # Max rows for map on screen
-        max_x_curses_cols = curses.COLS - 1  # Max columns for map on screen
+        FLOOR_SYMBOL = TILE_SYMBOLS["floor"]
+        UI_LINES_BUFFER = 4 # Number of lines reserved for UI at the bottom
 
-        for y_map_idx in range(max_y_curses_rows):
-            current_screen_x = (
-                0  # Tracks the current column position on the screen for this row
-            )
-            for x_tile_idx in range(
-                self.world_map.width
-            ):  # Iterate through map tile indices
-                if current_screen_x >= max_x_curses_cols:
-                    break  # Stop drawing this row if we've hit the screen edge
+        # Calculate max number of TILE rows and TILE columns that can be displayed
+        max_y_tile_rows = min(self.world_map.height, (curses.LINES - UI_LINES_BUFFER) // 3)
+        max_x_tile_cols = (curses.COLS - 1) // 3 # -1 because addstr behavior at edge
 
-                char_to_draw = ""
-                color_attribute = curses.color_pair(0)  # Default color
-                char_width = 1
+        for y_tile_idx in range(max_y_tile_rows):
+            for x_tile_idx in range(self.world_map.width):
+                if x_tile_idx >= max_x_tile_cols:
+                    break # No more space in this screen row for more tiles
 
-                if x_tile_idx == self.player.x and y_map_idx == self.player.y:
-                    char_to_draw = self.PLAYER_SYMBOL + " "
-                    color_attribute = curses.color_pair(self.PLAYER_COLOR_PAIR)
-                    char_width = 2
+                current_tile_grid = []
+                display_type = "unknown" # Default
+
+                if x_tile_idx == self.player.x and y_tile_idx == self.player.y:
+                    display_type = "player"
+                    current_tile_grid = [
+                        [FLOOR_SYMBOL, FLOOR_SYMBOL, FLOOR_SYMBOL],
+                        [FLOOR_SYMBOL, self.PLAYER_SYMBOL, FLOOR_SYMBOL],
+                        [FLOOR_SYMBOL, FLOOR_SYMBOL, FLOOR_SYMBOL],
+                    ]
                 else:
-                    tile = self.world_map.get_tile(x_tile_idx, y_map_idx)
+                    tile = self.world_map.get_tile(x_tile_idx, y_tile_idx)
                     if tile:
-                        char_to_draw, display_type = tile.get_display_info()
-                        if display_type == "monster_on_floor":
-                            char_to_draw += " "  # Pad monster symbol
-                            color_attribute = curses.color_pair(self.MONSTER_COLOR_PAIR)
-                            char_width = 2
-                        elif display_type == "item_on_floor":
-                            char_to_draw += " "  # Pad item symbol
-                            color_attribute = curses.color_pair(self.ITEM_COLOR_PAIR)
-                            char_width = 2
-                        elif display_type == "wall":
+                        current_tile_grid, display_type = tile.get_display_info()
+                    else:
+                        # Should ideally not happen if map is correctly initialized
+                        unknown_symbol = TILE_SYMBOLS["unknown"]
+                        current_tile_grid = [
+                            [FLOOR_SYMBOL, FLOOR_SYMBOL, FLOOR_SYMBOL],
+                            [FLOOR_SYMBOL, unknown_symbol, FLOOR_SYMBOL],
+                            [FLOOR_SYMBOL, FLOOR_SYMBOL, FLOOR_SYMBOL],
+                        ]
+                        display_type = "unknown" # Already default, but explicit
+
+                for y_offset in range(3): # Iterate 3 rows of the tile grid
+                    y_screen = y_tile_idx * 3 + y_offset
+                    # Ensure y_screen is within the map display area (not overlapping UI)
+                    if y_screen >= curses.LINES - UI_LINES_BUFFER:
+                        # This condition should ideally be caught by max_y_tile_rows,
+                        # but as a safeguard, especially if UI_LINES_BUFFER is small.
+                        continue 
+
+                    for x_offset in range(3): # Iterate 3 columns of the tile grid
+                        x_screen = x_tile_idx * 3 + x_offset
+                        # Ensure x_screen is within screen width
+                        if x_screen >= curses.COLS -1: # -1 due to curses behavior at rightmost column
+                            break # Go to next tile row or finish tile
+
+                        char_to_draw = current_tile_grid[y_offset][x_offset]
+                        color_attribute = curses.color_pair(0) # Default
+
+                        if display_type == "wall":
                             color_attribute = curses.color_pair(self.WALL_COLOR_PAIR)
-                            # char_width is 1, already set
                         elif display_type == "floor":
                             color_attribute = curses.color_pair(self.FLOOR_COLOR_PAIR)
-                            # char_width is 1, already set
-                        else:  # unknown or any other type
-                            color_attribute = curses.color_pair(0)  # Default
-                            # char_width is 1, already set
-                    else:
-                        char_to_draw = TILE_SYMBOLS["unknown"]
-                        color_attribute = curses.color_pair(0)  # Default
-                        # char_width is 1, already set
-
-                if (
-                    current_screen_x + char_width > max_x_curses_cols + 1
-                ):  # +1 because addstr writes char_width characters starting at current_screen_x
-                    break  # Not enough space to draw this character/emoji
-
-                try:
-                    self.stdscr.addstr(
-                        y_map_idx, current_screen_x, char_to_draw, color_attribute
-                    )
-                    current_screen_x += char_width
-                except curses.error:
-                    # This might happen if a wide char is at the very edge,
-                    # and addstr tries to write the second half of it out of bounds.
-                    # The check "current_screen_x + char_width > max_x_curses_cols + 1" should prevent most of these.
-                    break  # Stop drawing this row
+                        else: # Player, Monster, Item, Unknown are on a floor-like background
+                            if y_offset == 1 and x_offset == 1: # Center symbol
+                                if display_type == "player":
+                                    color_attribute = curses.color_pair(self.PLAYER_COLOR_PAIR)
+                                elif display_type == "monster":
+                                    color_attribute = curses.color_pair(self.MONSTER_COLOR_PAIR)
+                                elif display_type == "item":
+                                    color_attribute = curses.color_pair(self.ITEM_COLOR_PAIR)
+                                else: # Unknown center symbol
+                                    color_attribute = curses.color_pair(0) # Default
+                            else: # Surrounding symbols for entities
+                                color_attribute = curses.color_pair(self.FLOOR_COLOR_PAIR)
+                        
+                        try:
+                            self.stdscr.addstr(y_screen, x_screen, char_to_draw, color_attribute)
+                        except curses.error:
+                            # Error could occur if char is wide and at edge, or other curses issues.
+                            # Break from drawing this specific tile's remainder.
+                            # The x_screen and y_screen checks should prevent most of these.
+                            break 
+                    if x_screen >= curses.COLS -1 and y_offset < 2 : # If broken from x_offset loop early
+                        pass # allow y_offset loop to continue to try to draw next line of current tile if space
 
         # UI elements (HP, mode, messages) are drawn below the map
-        hp_line_y = max_y_curses_rows
+        # Adjusted Y position for UI elements
+        hp_line_y = max_y_tile_rows * 3 
 
-        # hp_line_y = max_y_map # This was based on the old max_y_map
         if hp_line_y < curses.LINES:
             hp_text = f"HP: {self.player.health}"
             try:
                 self.stdscr.addstr(hp_line_y, 0, hp_text)
             except curses.error:
-                pass
-        else:  # Fallback if map takes too much space
-            hp_line_y = curses.LINES - 1
+                pass # Avoid crash if cannot draw (e.g. screen too small)
+        else: # Fallback if map takes all space (or more)
+             hp_line_y = curses.LINES - UI_LINES_BUFFER # Try to squeeze it in the reserved area
 
         mode_line_y = hp_line_y + 1
-        if mode_line_y < curses.LINES:
+        if mode_line_y < curses.LINES: # Check if space for mode line
             mode_text = f"MODE: {self.input_mode.upper()}"
             try:
                 self.stdscr.addstr(mode_line_y, 0, mode_text)
             except curses.error:
                 pass
-        else:
-            mode_line_y = curses.LINES - 1
+        else: # Fallback
+            mode_line_y = curses.LINES - (UI_LINES_BUFFER -1) if UI_LINES_BUFFER >1 else curses.LINES -1
+
 
         message_start_y = mode_line_y + 1
         if self.input_mode == "command":
-            if mode_line_y + 1 < curses.LINES:  # Check if space for command prompt
+            if message_start_y < curses.LINES: # Check if space for command prompt
                 prompt_text = f"> {self.current_command_buffer}"
                 try:
-                    self.stdscr.addstr(mode_line_y + 1, 0, prompt_text)
-                    message_start_y = mode_line_y + 2  # Messages start after prompt
+                    self.stdscr.addstr(message_start_y, 0, prompt_text)
+                    message_start_y += 1 # Messages start after prompt line
                 except curses.error:
-                    pass  # message_start_y remains mode_line_y + 1
-
-        num_messages_to_display = 5
+                    pass # message_start_y remains as is if prompt fails
+        
+        # Calculate how many messages can be displayed
         available_lines_for_messages = curses.LINES - message_start_y
-        if available_lines_for_messages < 0:
-            available_lines_for_messages = 0
-        num_messages_to_display = min(
-            num_messages_to_display, available_lines_for_messages
-        )
+        if available_lines_for_messages <= 0:
+            num_messages_to_display = 0
+        else:
+            # Display up to a certain number of recent messages, e.g., 2 or 3
+            # depending on UI_LINES_BUFFER and space taken by HP/Mode/Prompt
+            max_possible_messages = available_lines_for_messages
+            num_messages_to_display = min(len(self.message_log), max_possible_messages)
 
         start_index = max(0, len(self.message_log) - num_messages_to_display)
-        last_messages = self.message_log[start_index:]
+        messages_to_display = self.message_log[start_index:]
 
-        for i, message in enumerate(last_messages):
+        for i, message in enumerate(messages_to_display):
             current_message_y = message_start_y + i
-            if current_message_y < curses.LINES:  # Ensure message fits on screen
+            if current_message_y < curses.LINES: # Ensure message fits on screen
                 # Truncate message if too long for the screen width
-                if len(message) >= curses.COLS:  # curses.COLS is width
-                    message = message[: curses.COLS - 1]
+                truncated_message = message
+                if len(message) >= curses.COLS: 
+                    truncated_message = message[: curses.COLS - 1] 
                 try:
-                    self.stdscr.addstr(current_message_y, 0, message)
-                except curses.error:  # Stop if error (e.g. no more lines)
-                    break
-            else:  # No more lines available
+                    self.stdscr.addstr(current_message_y, 0, truncated_message)
+                except curses.error: 
+                    break 
+            else: 
                 break
+        
         if not self.debug_mode:
             self.stdscr.refresh()
 

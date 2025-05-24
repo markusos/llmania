@@ -21,13 +21,25 @@ class Tile:
         self.item = item
 
     def get_display_info(self):
+        FLOOR_SYMBOL = TILE_SYMBOLS["floor"]
+        grid = [[FLOOR_SYMBOL for _ in range(3)] for _ in range(3)]
+        display_type = "unknown"
+
         if self.monster:
-            return (ENTITY_SYMBOLS["monster"], "monster_on_floor")
+            grid[1][1] = ENTITY_SYMBOLS["monster"]
+            display_type = "monster"
         elif self.item:
-            return (ENTITY_SYMBOLS["item"], "item_on_floor")
-        elif self.type == "wall":  # Using self.type now
-            return (TILE_SYMBOLS["wall"], "wall")
-        elif self.type == "floor":  # Using self.type now
-            return (TILE_SYMBOLS["floor"], "floor")
-        else:
-            return (TILE_SYMBOLS["unknown"], "unknown")
+            grid[1][1] = ENTITY_SYMBOLS["item"]
+            display_type = "item"
+        elif self.type == "wall":
+            WALL_SYMBOL = TILE_SYMBOLS["wall"]
+            grid = [[WALL_SYMBOL for _ in range(3)] for _ in range(3)]
+            display_type = "wall"
+        elif self.type == "floor":
+            grid = [[FLOOR_SYMBOL for _ in range(3)] for _ in range(3)]
+            display_type = "floor"
+        else: # Unknown
+            grid[1][1] = TILE_SYMBOLS["unknown"]
+            display_type = "unknown"
+        
+        return grid, display_type
