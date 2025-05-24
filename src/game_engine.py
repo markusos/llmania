@@ -116,7 +116,7 @@ class GameEngine:
                     if x_map == self.player.x and y_map == self.player.y:
                         char_to_draw = self.PLAYER_SYMBOL  # No padding
                     else:
-                        tile = self.world_map.get_tile(x_tile_idx, y_tile_idx)
+                        tile = self.world_map.get_tile(x_map, y_map)
                         if tile:
                             # tile.get_display_info() returns (symbol, type_string)
                             symbol, _ = tile.get_display_info()
@@ -162,7 +162,7 @@ class GameEngine:
                     char_to_draw = self.PLAYER_SYMBOL  # No padding
                     color_attribute = curses.color_pair(self.PLAYER_COLOR_PAIR)
                 else:
-                    tile = self.world_map.get_tile(x_tile_idx, y_tile_idx)
+                    tile = self.world_map.get_tile(x_tile_idx, y_map_idx)
                     if tile:
                         char_to_draw, display_type = tile.get_display_info()
                         if display_type == "monster":

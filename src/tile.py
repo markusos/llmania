@@ -22,10 +22,6 @@ class Tile:
         self.item = item
 
     def get_display_info(self):
-        FLOOR_SYMBOL = TILE_SYMBOLS["floor"]
-        grid = [[FLOOR_SYMBOL for _ in range(3)] for _ in range(3)]
-        display_type = "unknown"
-
         if self.monster:
             return (ENTITY_SYMBOLS["monster"], "monster")
         elif self.item:
