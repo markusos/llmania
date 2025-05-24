@@ -233,7 +233,7 @@ class GameEngine:
                     break
             else:
                 break
-        
+
         if not self.debug_mode:
             self.stdscr.refresh()
 
