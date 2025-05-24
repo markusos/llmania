@@ -25,7 +25,8 @@ def main():
         ):
             engine = GameEngine(map_width=5, map_height=5)
 
-    # Override player and map for specific test scenario if generate_map mock isn't enough
+    # Override player and map for specific test scenario if generate_map mock
+    # isn't enough
     # engine.world_map = WorldMap(5, 5) # Ensure a fresh map if needed
     # engine.player = Player(x=2, y=2, health=20)
     # engine.world_map.get_tile(2,2).type = "floor" # Ensure player's tile is floor
@@ -48,21 +49,20 @@ def main():
         monster_tile.type = "floor"
     else:
         # This case should ideally not happen with a simple map
-        print(
-            f"Error: Monster tile ({monster_x},{monster_y}) is None. Cannot place monster."
-        )
+        print(f"Error: Monster tile ({monster_x},{monster_y}) is None. "
+              "Cannot place monster.")
         return
 
     if not engine.world_map.place_monster(bat, monster_x, monster_y):
-        print(
-            f"Error: Failed to place Bat at ({monster_x},{monster_y}). Tile occupied or invalid?"
-        )
+        print(f"Error: Failed to place Bat at ({monster_x},{monster_y}). "
+              "Tile occupied or invalid?")
         # Check tile explicitly
         tile_at_monster_pos = engine.world_map.get_tile(monster_x, monster_y)
         if tile_at_monster_pos:
-            print(
-                f"Monster tile details: type={tile_at_monster_pos.type}, monster={tile_at_monster_pos.monster}, item={tile_at_monster_pos.item}"
-            )
+            details = (f"type={tile_at_monster_pos.type}, "
+                       f"monster={tile_at_monster_pos.monster}, "
+                       f"item={tile_at_monster_pos.item}")
+            print(f"Monster tile details: {details}")
         return
 
     # Set input mode (optional for this direct call, but good practice)
@@ -92,9 +92,10 @@ def main():
         if bat_health - engine.player.base_attack_power <= 0:
             print("SUCCESS: Bat defeated and removed from map.")
         else:  # Bat should still be there if not defeated
-            print(
-                f"FAILURE: Bat unexpectedly removed or tile became None. Initial health: {bat_health}, Player attack: {engine.player.base_attack_power}"
-            )
+            fail_msg = (f"FAILURE: Bat unexpectedly removed or tile became None. "
+                        f"Initial health: {bat_health}, Player attack: "
+                        f"{engine.player.base_attack_power}")
+            print(fail_msg)
 
     print(f"Player health after combat: {engine.player.health}")
 
