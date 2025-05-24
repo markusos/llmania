@@ -1,6 +1,6 @@
 ENTITY_SYMBOLS = {
-    "monster": "👹",
-    "item": "💰",
+    "monster": "M",
+    "item": "$",
 }
 TILE_SYMBOLS = {
     "wall": "#",  # Using '#' for wall character as per new instructions

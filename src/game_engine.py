@@ -16,7 +16,7 @@ class GameEngine:
         self.world_generator = WorldGenerator()
         self.parser = Parser()
         self.debug_mode = debug_mode
-        self.PLAYER_SYMBOL = "🧑"
+        self.PLAYER_SYMBOL = "@"
 
         if not self.debug_mode:
             self.stdscr = curses.initscr()
