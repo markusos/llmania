@@ -7,9 +7,10 @@ TILE_SYMBOLS = {
     "floor": ".",  # Using '.' for floor character as per new instructions
     "unknown": "?",
 }
-# Note: TILE_REPRESENTATIONS is removed as its functionality is replaced by the above and new logic.
-# The player symbol "🧑" was in TILE_REPRESENTATIONS but not used by Tile class directly.
-# It's handled in GameEngine.render_map.
+# Note: TILE_REPRESENTATIONS is removed as its functionality is replaced
+# by the above and new logic.
+# The player symbol "🧑" was in TILE_REPRESENTATIONS but not used by
+# Tile class directly. It's handled in GameEngine.render_map.
 
 
 class Tile:
@@ -26,20 +27,12 @@ class Tile:
         display_type = "unknown"
 
         if self.monster:
-            grid[1][1] = ENTITY_SYMBOLS["monster"]
-            display_type = "monster"
+            return (ENTITY_SYMBOLS["monster"], "monster")
         elif self.item:
-            grid[1][1] = ENTITY_SYMBOLS["item"]
-            display_type = "item"
+            return (ENTITY_SYMBOLS["item"], "item")
         elif self.type == "wall":
-            WALL_SYMBOL = TILE_SYMBOLS["wall"]
-            grid = [[WALL_SYMBOL for _ in range(3)] for _ in range(3)]
-            display_type = "wall"
+            return (TILE_SYMBOLS["wall"], "wall")
         elif self.type == "floor":
-            grid = [[FLOOR_SYMBOL for _ in range(3)] for _ in range(3)]
-            display_type = "floor"
-        else: # Unknown
-            grid[1][1] = TILE_SYMBOLS["unknown"]
-            display_type = "unknown"
-        
-        return grid, display_type
+            return (TILE_SYMBOLS["floor"], "floor")
+        else:
+            return (TILE_SYMBOLS["unknown"], "unknown")
