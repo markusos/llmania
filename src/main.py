@@ -10,9 +10,10 @@ src_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(src_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-# --- End Path setup ---
 
-from src.game_engine import GameEngine
+from src.game_engine import GameEngine  # noqa: E402
+
+# --- End Path setup ---
 
 # curses import is only needed if the non-debug path directly uses curses.wrapper
 # Since GameEngine handles its own curses initialization/cleanup, direct curses
@@ -42,9 +43,14 @@ def main_debug():
     if map_with_look_messages:
         for row in map_with_look_messages:
             # Print messages and relevant UI lines
-            if (row.startswith("You are at") or row.startswith("You see a") or
-                    row.startswith("There is a") or row.startswith("The area is clear.") or
-                    "HP:" in row or "MODE:" in row):
+            if (
+                row.startswith("You are at")
+                or row.startswith("You see a")
+                or row.startswith("There is a")
+                or row.startswith("The area is clear.")
+                or "HP:" in row
+                or "MODE:" in row
+            ):
                 print(row)
 
     print("\n--- Moving player east ---")
@@ -67,7 +73,7 @@ def main_debug():
             map_chars = ["🧱", "🟩", "🧑", "👹", "💰", "?"]
             ui_indicators = ["HP:", "MODE:", ">"]
             prev_msgs = ["You move east."]
-            
+
             is_map_char = any(row.startswith(s) for s in map_chars)
             is_ui_char = any(s in row for s in ui_indicators)
             is_prev_message = any(s in row for s in prev_msgs)
@@ -96,9 +102,10 @@ if __name__ == "__main__":
             # Attempt final curses cleanup, though GameEngine should handle it.
             try:
                 import curses
+
                 if curses.has_colors():
                     curses.echo()
                     curses.nocbreak()
                     curses.endwin()
             except Exception:
-                pass # Avoid further errors during this fallback cleanup.
+                pass  # Avoid further errors during this fallback cleanup.

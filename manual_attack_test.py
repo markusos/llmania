@@ -49,19 +49,25 @@ def main():
         monster_tile.type = "floor"
     else:
         # This case should ideally not happen with a simple map
-        print(f"Error: Monster tile ({monster_x},{monster_y}) is None. "
-              "Cannot place monster.")
+        print(
+            f"Error: Monster tile ({monster_x},{monster_y}) is None. "
+            "Cannot place monster."
+        )
         return
 
     if not engine.world_map.place_monster(bat, monster_x, monster_y):
-        print(f"Error: Failed to place Bat at ({monster_x},{monster_y}). "
-              "Tile occupied or invalid?")
+        print(
+            f"Error: Failed to place Bat at ({monster_x},{monster_y}). "
+            "Tile occupied or invalid?"
+        )
         # Check tile explicitly
         tile_at_monster_pos = engine.world_map.get_tile(monster_x, monster_y)
         if tile_at_monster_pos:
-            details = (f"type={tile_at_monster_pos.type}, "
-                       f"monster={tile_at_monster_pos.monster}, "
-                       f"item={tile_at_monster_pos.item}")
+            details = (
+                f"type={tile_at_monster_pos.type}, "
+                f"monster={tile_at_monster_pos.monster}, "
+                f"item={tile_at_monster_pos.item}"
+            )
             print(f"Monster tile details: {details}")
         return
 
@@ -92,9 +98,11 @@ def main():
         if bat_health - engine.player.base_attack_power <= 0:
             print("SUCCESS: Bat defeated and removed from map.")
         else:  # Bat should still be there if not defeated
-            fail_msg = (f"FAILURE: Bat unexpectedly removed or tile became None. "
-                        f"Initial health: {bat_health}, Player attack: "
-                        f"{engine.player.base_attack_power}")
+            fail_msg = (
+                f"FAILURE: Bat unexpectedly removed or tile became None. "
+                f"Initial health: {bat_health}, Player attack: "
+                f"{engine.player.base_attack_power}"
+            )
             print(fail_msg)
 
     print(f"Player health after combat: {engine.player.health}")

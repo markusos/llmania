@@ -29,19 +29,19 @@ def game_engine_setup():
         ):
             engine = GameEngine(map_width=5, map_height=5)
 
-        engine.world_map = WorldMap(5, 5) # Overwrite with a simple 5x5 map
+        engine.world_map = WorldMap(5, 5)  # Overwrite with a simple 5x5 map
         # Ensure all tiles are floor initially for predictability
         for y in range(engine.world_map.height):
             for x in range(engine.world_map.width):
-                engine.world_map.get_tile(x,y).type = "floor"
-        
-        engine.player = Player(x=1, y=1, health=20) # Player at (1,1)
-        engine.win_pos = (3, 3) # Win position at (3,3)
+                engine.world_map.get_tile(x, y).type = "floor"
+
+        engine.player = Player(x=1, y=1, health=20)  # Player at (1,1)
+        engine.win_pos = (3, 3)  # Win position at (3,3)
         amulet = Item(
             "Amulet of Yendor", "The object of your quest!", {"type": "quest"}
         )
         engine.world_map.place_item(amulet, engine.win_pos[0], engine.win_pos[1])
-        
+
         engine.game_over = False
         engine.message_log = []
         yield engine
@@ -64,7 +64,7 @@ def game_engine_and_curses_mock_setup():
         engine.world_map = WorldMap(5, 5)
         for y in range(engine.world_map.height):
             for x in range(engine.world_map.width):
-                engine.world_map.get_tile(x,y).type = "floor"
+                engine.world_map.get_tile(x, y).type = "floor"
 
         engine.player = Player(x=1, y=1, health=20)
         engine.win_pos = (3, 3)
@@ -115,13 +115,17 @@ class TestHandleInput:
         engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "movement"
         test_cases = {
-            "KEY_UP": ("move", "north"), "w": ("move", "north"), 
+            "KEY_UP": ("move", "north"),
+            "w": ("move", "north"),
             "W": ("move", "north"),
-            "KEY_DOWN": ("move", "south"), "s": ("move", "south"), 
+            "KEY_DOWN": ("move", "south"),
+            "s": ("move", "south"),
             "S": ("move", "south"),
-            "KEY_LEFT": ("move", "west"), "a": ("move", "west"), 
+            "KEY_LEFT": ("move", "west"),
+            "a": ("move", "west"),
             "A": ("move", "west"),
-            "KEY_RIGHT": ("move", "east"), "d": ("move", "east"), 
+            "KEY_RIGHT": ("move", "east"),
+            "d": ("move", "east"),
             "D": ("move", "east"),
         }
         for key_input, expected_command in test_cases.items():
@@ -160,19 +164,17 @@ class TestHandleInput:
         command = engine.handle_input_and_get_command()
         assert command is None
         assert engine.current_command_buffer == "drop ax"
-        engine.stdscr.getkey.return_value = "\x08" 
+        engine.stdscr.getkey.return_value = "\x08"
         command = engine.handle_input_and_get_command()
         assert command is None
         assert engine.current_command_buffer == "drop a"
-        engine.stdscr.getkey.return_value = "\x7f" 
+        engine.stdscr.getkey.return_value = "\x7f"
         command = engine.handle_input_and_get_command()
         assert command is None
         assert engine.current_command_buffer == "drop "
         mock_curses.curs_set.assert_any_call(1)
 
-    def test_command_mode_enter_parses_command(
-        self, game_engine_and_curses_mock_setup
-    ):
+    def test_command_mode_enter_parses_command(self, game_engine_and_curses_mock_setup):
         engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "command"
         test_typed_command = "use health potion"
@@ -209,7 +211,7 @@ class TestHandleInput:
         engine, mock_curses = game_engine_and_curses_mock_setup
         engine.input_mode = "command"
         engine.current_command_buffer = "look around"
-        engine.stdscr.getkey.return_value = "\x1b" 
+        engine.stdscr.getkey.return_value = "\x1b"
         command = engine.handle_input_and_get_command()
         assert command is None
         assert engine.input_mode == "movement"
@@ -245,7 +247,8 @@ class TestHandleInput:
 
 @patch("src.game_engine.curses")
 def test_render_map_movement_mode(
-    mock_curses_module, game_engine_setup  # mock_curses_module is unused
+    mock_curses_module,
+    game_engine_setup,  # mock_curses_module is unused
 ):
     engine = game_engine_setup
     # Player starts at (1,1) in fixture
@@ -258,14 +261,13 @@ def test_render_map_movement_mode(
     engine.world_map.get_tile(0, 3).type = "floor"
     engine.world_map.get_tile(1, 3).type = "floor"
 
-
     engine.message_log.extend(["Message A", "Message B"])
     engine.input_mode = "movement"
     output_buffer = engine.render_map(debug_render_to_list=True)
 
-    map_height = engine.world_map.height # 5
+    map_height = engine.world_map.height  # 5
 
-    # Expected map (5x5 tiles): Player (P) at (2,3), Wall (W) at (1,1), Item (I) at (3,3)
+    # Expected: Player (P) at (2,3), Wall (W) at (1,1), Item (I) at (3,3) in 5x5 map
     # F F F F F  (y=0)
     # F W F F F  (y=1)
     # F F F F F  (y=2)
@@ -278,12 +280,12 @@ def test_render_map_movement_mode(
     assert output_buffer[1][1] == TILE_SYMBOLS["wall"]
     # Check item (Amulet)
     assert output_buffer[3][3] == ENTITY_SYMBOLS["item"]
-    
+
     # Check some floor tiles
-    assert output_buffer[0][0] == TILE_SYMBOLS["floor"] # (0,0)
-    assert output_buffer[1][0] == TILE_SYMBOLS["floor"] # (0,1)
-    assert output_buffer[3][1] == TILE_SYMBOLS["floor"] # (1,3) Floor next to Player
-    assert output_buffer[4][4] == TILE_SYMBOLS["floor"] # (4,4)
+    assert output_buffer[0][0] == TILE_SYMBOLS["floor"]  # (0,0)
+    assert output_buffer[1][0] == TILE_SYMBOLS["floor"]  # (0,1)
+    assert output_buffer[3][1] == TILE_SYMBOLS["floor"]  # (1,3) Floor next to Player
+    assert output_buffer[4][4] == TILE_SYMBOLS["floor"]  # (4,4)
 
     # UI elements
     assert output_buffer[map_height] == f"HP: {engine.player.health}"
@@ -294,17 +296,18 @@ def test_render_map_movement_mode(
 
 @patch("src.game_engine.curses")
 def test_render_map_command_mode(
-    mock_curses_module, game_engine_setup # mock_curses_module unused
+    mock_curses_module,
+    game_engine_setup,  # mock_curses_module unused
 ):
     engine = game_engine_setup
-    engine.player.x, engine.player.y = 0, 0 # Player at (0,0)
+    engine.player.x, engine.player.y = 0, 0  # Player at (0,0)
     engine.player.health = 25
     engine.message_log.append("Last Message")
     engine.input_mode = "command"
     engine.current_command_buffer = "take pot"
     output_buffer = engine.render_map(debug_render_to_list=True)
 
-    map_height = engine.world_map.height # 5
+    map_height = engine.world_map.height  # 5
 
     # Player at (0,0)
     assert output_buffer[0][0] == engine.PLAYER_SYMBOL
@@ -315,15 +318,14 @@ def test_render_map_command_mode(
     # UI elements
     assert output_buffer[map_height] == f"HP: {engine.player.health}"
     assert output_buffer[map_height + 1] == f"MODE: {engine.input_mode.upper()}"
-    assert output_buffer[map_height + 2] == \
-        f"> {engine.current_command_buffer}"
+    assert output_buffer[map_height + 2] == f"> {engine.current_command_buffer}"
     assert output_buffer[map_height + 3] == "Last Message"
 
 
 def test_process_command_tuple_move_valid(game_engine_setup):
     engine = game_engine_setup
     # Player starts at (1,1) in fixture
-    engine.world_map.get_tile(1, 2).type = "floor" # Ensure south is movable
+    engine.world_map.get_tile(1, 2).type = "floor"  # Ensure south is movable
     engine.process_command_tuple(("move", "south"))
     assert engine.player.x == 1 and engine.player.y == 2
     assert "You move south." in engine.message_log
@@ -331,7 +333,7 @@ def test_process_command_tuple_move_valid(game_engine_setup):
 
 def test_process_command_tuple_take_quest_item(game_engine_setup):
     engine = game_engine_setup
-    engine.player.x, engine.player.y = engine.win_pos # Move player to win_pos
+    engine.player.x, engine.player.y = engine.win_pos  # Move player to win_pos
     engine.process_command_tuple(("take", "Amulet of Yendor"))
     assert "You picked up the Amulet of Yendor! You win!" in engine.message_log
     assert engine.game_over is True
@@ -351,10 +353,12 @@ def test_run_loop_flow_and_quit(
 ):
     engine = game_engine_setup
     mock_handle.side_effect = [("look", None), ("quit", None)]
+
     def process_side_effect(parsed_command):
         engine.message_log.append(f"Processed: {parsed_command}")
-        if parsed_command == ("quit", None): 
+        if parsed_command == ("quit", None):
             engine.game_over = True
+
     mock_process.side_effect = process_side_effect
     engine.run()
     assert engine.game_over is True
@@ -372,10 +376,12 @@ def test_game_engine_run_curses_cleanup_normal_exit(
     mock_handle_input.return_value = ("quit", None)
     engine, mock_curses = game_engine_and_curses_mock_setup
     original_process = engine.process_command_tuple
+
     def side_effect(cmd_tuple):
         original_process(cmd_tuple)
-        if cmd_tuple == ("quit", None): 
+        if cmd_tuple == ("quit", None):
             assert engine.game_over is True
+
     with patch.object(engine, "process_command_tuple", side_effect=side_effect):
         engine.run()
     engine.stdscr.keypad.assert_called_with(False)
@@ -422,7 +428,7 @@ def test_player_start_and_win_positions_differ(game_engine_setup):
 def test_process_command_tuple_drop_item_empty_tile(game_engine_setup):
     engine = game_engine_setup
     # Player starts at (1,1). Ensure tile (1,1) is clear for dropping.
-    engine.world_map.get_tile(1, 1).item = None 
+    engine.world_map.get_tile(1, 1).item = None
     potion = Item("Potion", "Heals", {})
     engine.player.take_item(potion)
     engine.process_command_tuple(("drop", "Potion"))
@@ -445,10 +451,10 @@ def test_process_command_tuple_use_heal_item(game_engine_setup):
 def test_process_command_tuple_attack_no_monster(game_engine_setup):
     engine = game_engine_setup
     # Player at (1,1). Ensure no monster is adjacent.
-    engine.world_map.get_tile(1,0).monster = None # North
-    engine.world_map.get_tile(1,2).monster = None # South
-    engine.world_map.get_tile(0,1).monster = None # West
-    engine.world_map.get_tile(2,1).monster = None # East
+    engine.world_map.get_tile(1, 0).monster = None  # North
+    engine.world_map.get_tile(1, 2).monster = None  # South
+    engine.world_map.get_tile(0, 1).monster = None  # West
+    engine.world_map.get_tile(2, 1).monster = None  # East
     engine.process_command_tuple(("attack", "ghost"))
     assert "There is no monster named ghost nearby." in engine.message_log
 
@@ -457,19 +463,25 @@ def test_process_command_tuple_attack_no_arg_monster_exists(game_engine_setup):
     engine = game_engine_setup
     # Player at (1,1). Place monster adjacent, e.g., at (1,0) North.
     monster = Monster("Goblin", 10, 3)
-    engine.world_map.place_monster(monster, 1, 0) # North of player
-    
+    engine.world_map.place_monster(monster, 1, 0)  # North of player
+
     initial_monster_health = monster.health
     initial_player_health = engine.player.health
-    engine.player.base_attack_power = 5 # Set player attack for predictability
+    engine.player.base_attack_power = 5  # Set player attack for predictability
 
-    engine.process_command_tuple(("attack", None)) # Attack with no argument
-    
+    engine.process_command_tuple(("attack", None))  # Attack with no argument
+
     # Monster should be attacked
-    assert f"You attack the Goblin for {engine.player.base_attack_power} damage." in engine.message_log
+    assert (
+        f"You attack the Goblin for {engine.player.base_attack_power} damage."
+        in engine.message_log
+    )
     assert monster.health == initial_monster_health - engine.player.base_attack_power
     # Monster should retaliate
-    assert f"The Goblin attacks you for {monster.attack_power} damage." in engine.message_log
+    assert (
+        f"The Goblin attacks you for {monster.attack_power} damage."
+        in engine.message_log
+    )
     assert engine.player.health == initial_player_health - monster.attack_power
 
 
@@ -477,7 +489,7 @@ def test_process_command_tuple_take_no_arg_item_exists(game_engine_setup):
     engine = game_engine_setup
     # Player at (1,1)
     item = Item("Rock", "", {})
-    engine.world_map.place_item(item, 1, 1) # Item at player's location
+    engine.world_map.place_item(item, 1, 1)  # Item at player's location
     engine.process_command_tuple(("take", None))
     assert item.name in [i.name for i in engine.player.inventory]
     assert engine.world_map.get_tile(1, 1).item is None
@@ -487,13 +499,15 @@ def test_process_command_tuple_take_no_arg_item_exists(game_engine_setup):
 class TestAttackCommand:
     def test_attack_adjacent_by_name_success_kill(self, game_engine_setup):
         engine = game_engine_setup
-        engine.player.x, engine.player.y = 2, 2 # Move player for space
+        engine.player.x, engine.player.y = 2, 2  # Move player for space
         engine.player.base_attack_power = 10
         bat = Monster("Bat", health=5, attack_power=2)
-        engine.world_map.place_monster(bat, 2, 1) # North
+        engine.world_map.place_monster(bat, 2, 1)  # North
         engine.process_command_tuple(("attack", "Bat"))
-        assert (f"You attack the Bat for {engine.player.base_attack_power} damage."
-                in engine.message_log)
+        assert (
+            f"You attack the Bat for {engine.player.base_attack_power} damage."
+            in engine.message_log
+        )
         assert "You defeated the Bat!" in engine.message_log
         assert engine.world_map.get_tile(2, 1).monster is None
 
@@ -502,14 +516,18 @@ class TestAttackCommand:
         engine.player.x, engine.player.y = 2, 2
         engine.player.base_attack_power = 3
         goblin = Monster("Goblin", health=10, attack_power=4)
-        engine.world_map.place_monster(goblin, 3, 2) # East
+        engine.world_map.place_monster(goblin, 3, 2)  # East
         init_gob_hp, init_plyr_hp = goblin.health, engine.player.health
         engine.process_command_tuple(("attack", None))
-        assert (f"You attack the Goblin for {engine.player.base_attack_power} damage."
-                in engine.message_log)
+        assert (
+            f"You attack the Goblin for {engine.player.base_attack_power} damage."
+            in engine.message_log
+        )
         assert goblin.health == init_gob_hp - engine.player.base_attack_power
-        assert (f"The Goblin attacks you for {goblin.attack_power} damage."
-                in engine.message_log)
+        assert (
+            f"The Goblin attacks you for {goblin.attack_power} damage."
+            in engine.message_log
+        )
         assert engine.player.health == init_plyr_hp - goblin.attack_power
         assert engine.world_map.get_tile(3, 2).monster is goblin
 
@@ -517,10 +535,11 @@ class TestAttackCommand:
         engine = game_engine_setup
         engine.player.x, engine.player.y = 2, 2
         bat = Monster("Bat", health=5, attack_power=2)
-        engine.world_map.place_monster(bat, 2, 1) # North
+        engine.world_map.place_monster(bat, 2, 1)  # North
         engine.process_command_tuple(("attack", "NonExistentMonster"))
-        assert ("There is no monster named NonExistentMonster nearby."
-                in engine.message_log)
+        assert (
+            "There is no monster named NonExistentMonster nearby." in engine.message_log
+        )
         assert engine.world_map.get_tile(2, 1).monster is bat
 
     def test_attack_no_adjacent_monsters(self, game_engine_setup):
@@ -529,10 +548,12 @@ class TestAttackCommand:
         # Ensure no monsters are adjacent by clearing tiles around (2,2)
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
-                if dx == 0 and dy == 0: continue
-                tile_to_clear = engine.world_map.get_tile(2+dx, 2+dy)
-                if tile_to_clear: tile_to_clear.monster = None
-        
+                if dx == 0 and dy == 0:
+                    continue
+                tile_to_clear = engine.world_map.get_tile(2 + dx, 2 + dy)
+                if tile_to_clear:
+                    tile_to_clear.monster = None
+
         engine.process_command_tuple(("attack", None))
         assert "There is no monster nearby to attack." in engine.message_log
 
@@ -541,30 +562,30 @@ class TestAttackCommand:
         engine.player.x, engine.player.y = 2, 2
         bat1 = Monster("Bat", health=5, attack_power=2)
         bat2 = Monster("Bat", health=5, attack_power=2)
-        engine.world_map.place_monster(bat1, 2, 1) # North
-        engine.world_map.place_monster(bat2, 3, 2) # East
+        engine.world_map.place_monster(bat1, 2, 1)  # North
+        engine.world_map.place_monster(bat2, 3, 2)  # East
         engine.process_command_tuple(("attack", "Bat"))
         assert "Multiple Bats found. Which one?" in engine.message_log
-        assert engine.world_map.get_tile(2,1).monster is bat1 
-        assert engine.world_map.get_tile(3,2).monster is bat2
+        assert engine.world_map.get_tile(2, 1).monster is bat1
+        assert engine.world_map.get_tile(3, 2).monster is bat2
 
-    def test_ambiguity_multiple_different_names_attack_no_name(
-        self, game_engine_setup
-    ):
+    def test_ambiguity_multiple_different_names_attack_no_name(self, game_engine_setup):
         engine = game_engine_setup
         engine.player.x, engine.player.y = 2, 2
         bat = Monster("Bat", health=5, attack_power=2)
         goblin = Monster("Goblin", health=10, attack_power=3)
-        engine.world_map.place_monster(bat, 2, 1) # North
-        engine.world_map.place_monster(goblin, 3, 2) # East
+        engine.world_map.place_monster(bat, 2, 1)  # North
+        engine.world_map.place_monster(goblin, 3, 2)  # East
         engine.process_command_tuple(("attack", None))
         # Message can have names in either order
-        assert "Multiple monsters nearby:" in engine.message_log[0] 
-        assert "Bat" in engine.message_log[0] 
-        assert "Goblin" in engine.message_log[0] 
-        assert "Which one to attack?" in engine.message_log[0]
-        assert engine.world_map.get_tile(2,1).monster is bat 
-        assert engine.world_map.get_tile(3,2).monster is goblin
+        assert "Multiple monsters nearby:" in engine.message_log[0]
+        assert "Bat" in engine.message_log[0]
+        assert "Goblin" in engine.message_log[0]
+        assert (
+            "Which one?" in engine.message_log[0]
+        )  # Changed "Which one to attack?" to "Which one?"
+        assert engine.world_map.get_tile(2, 1).monster is bat
+        assert engine.world_map.get_tile(3, 2).monster is goblin
 
     def test_monster_counter_attack_and_player_death(self, game_engine_setup):
         engine = game_engine_setup
@@ -572,14 +593,18 @@ class TestAttackCommand:
         engine.player.health = 5
         engine.player.base_attack_power = 1
         ogre = Monster("Ogre", health=50, attack_power=10)
-        engine.world_map.place_monster(ogre, 2, 1) # North
+        engine.world_map.place_monster(ogre, 2, 1)  # North
         init_ogre_hp = ogre.health
         engine.process_command_tuple(("attack", "Ogre"))
-        assert (f"You attack the Ogre for {engine.player.base_attack_power} damage."
-                in engine.message_log)
+        assert (
+            f"You attack the Ogre for {engine.player.base_attack_power} damage."
+            in engine.message_log
+        )
         assert ogre.health == init_ogre_hp - engine.player.base_attack_power
-        assert (f"The Ogre attacks you for {ogre.attack_power} damage."
-                in engine.message_log)
+        assert (
+            f"The Ogre attacks you for {ogre.attack_power} damage."
+            in engine.message_log
+        )
         assert engine.player.health <= 0
         assert "You have been defeated. Game Over." in engine.message_log
         assert engine.game_over is True
