@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from src.item import Item
+# Removed: from src.item import Item (F401 - unused if only for type hints)
 
 if TYPE_CHECKING:
     from src.player import Player
@@ -37,9 +37,7 @@ class InventoryManager:
                     player.y,
                 ) == win_pos and item_taken.properties.get("type") == "quest"
                 if is_quest_win:
-                    message_log.append(
-                        "You picked up the Amulet of Yendor! You win!"
-                    )
+                    message_log.append("You picked up the Amulet of Yendor! You win!")
                     game_won = True
             else:
                 # This case should ideally not be reached if can_take is true
@@ -81,11 +79,14 @@ class InventoryManager:
             else:
                 player.inventory.append(item_to_drop)  # Player picks it back up
                 # If item was unequipped, re-equip it as it couldn't be dropped
-                if player.equipped_weapon is None and item_to_drop.properties.get("type") == "weapon":
+                # If item was unequipped, re-equip if it's a weapon
+                is_weapon = item_to_drop.properties.get("type") == "weapon"
+                if player.equipped_weapon is None and is_weapon:
                     player.equipped_weapon = item_to_drop
                     # No message here as it's like the drop was cancelled.
-                msg = f"You can't drop {item_to_drop.name} here, space occupied."
-                message_log.append(msg)
+                message_log.append(
+                    f"You can't drop {item_to_drop.name} here, space occupied."
+                )
         else:
             message_log.append(f"You don't have a {item_name} to drop.")
 
@@ -111,23 +112,31 @@ class InventoryManager:
                     player.inventory.remove(item_to_use)
                 else:
                     message_log.append(
-                        f"You use the {item_to_use.name}, but you are already at full health."
+                        f"You use the {item_to_use.name}, "
+                        "but you are already at full health."
                     )
                     # Not removing item if it wasn't effectively used.
             elif item_type == "weapon":
                 if player.equipped_weapon == item_to_use:
-                    player.equipped_weapon = None # Unequip
+                    player.equipped_weapon = None  # Unequip
                     message_log.append(f"You unequip the {item_to_use.name}.")
                 else:
-                    if player.equipped_weapon: # Unequip current weapon first
-                        message_log.append(f"You unequip the {player.equipped_weapon.name}.")
-                    player.equipped_weapon = item_to_use # Equip new weapon
+                    if player.equipped_weapon:  # Unequip current weapon first
+                        message_log.append(
+                            f"You unequip the {player.equipped_weapon.name}."
+                        )
+                    player.equipped_weapon = item_to_use  # Equip new weapon
                     message_log.append(f"You equip the {item_to_use.name}.")
                 # Weapon is not removed from inventory upon equipping
-            elif item_type == "cursed": # Example of a cursed item
+            elif item_type == "cursed":  # Example of a cursed item
                 player.health -= item_to_use.properties.get("damage", 5)
-                message_log.append(f"The {item_to_use.name} is cursed! You take {item_to_use.properties.get('damage', 5)} damage.")
-                player.inventory.remove(item_to_use) # Cursed item is consumed/destroys itself
+                damage = item_to_use.properties.get("damage", 5)
+                player.health -= damage
+                message_log.append(
+                    f"The {item_to_use.name} is cursed! You take {damage} damage."
+                )
+                # Cursed item is consumed/destroys itself
+                player.inventory.remove(item_to_use)
                 if player.health <= 0:
                     message_log.append("The cursed item has led to your demise!")
                     player_died = True

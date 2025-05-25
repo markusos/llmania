@@ -94,7 +94,7 @@ class TestInputHandler(unittest.TestCase):
 
         command = self.input_handler.handle_input_and_get_command()
         self.assertIsNone(command)  # No command parsed or returned
-        self.mock_parser.parse_command.assert_not_called() # Parser not called
+        self.mock_parser.parse_command.assert_not_called()  # Parser not called
         self.assertEqual(
             self.input_handler.get_input_mode(), "movement"
         )  # Switch to movement

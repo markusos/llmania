@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.player import Player  # For type hinting
 
+
 class Monster:
     def __init__(
         self, name: str, health: int, attack_power: int, x: int = 0, y: int = 0
