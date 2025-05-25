@@ -59,10 +59,16 @@ class Player:
                 "attack_bonus", 0
             )
 
-        monster.take_damage(current_attack_power)
-        return current_attack_power
+        # Call monster.take_damage() ONCE and store its result.
+        monster_take_damage_result = monster.take_damage(current_attack_power)
+        return {
+            "damage_dealt": current_attack_power,
+            "monster_defeated": monster_take_damage_result["defeated"],
+            "monster_name": monster.name,
+        }
 
-    def take_damage(self, amount: int):
-        self.health -= amount
+    def take_damage(self, damage: int) -> dict:
+        self.health -= damage
         if self.health < 0:
             self.health = 0
+        return {"damage_taken": damage, "is_defeated": self.health <= 0}
