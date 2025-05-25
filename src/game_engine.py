@@ -21,30 +21,25 @@ class GameEngine:
         self.debug_mode = debug_mode
         # self.PLAYER_SYMBOL = "@" # Removed
 
-        if not self.debug_mode:
-            self.stdscr = curses.initscr()
-            # curses.start_color() # Moved to Renderer
-            curses.noecho()  # Moved to Renderer (effectively, as Renderer does it)
-            curses.cbreak()  # Moved to Renderer (effectively, as Renderer does it)
-            self.stdscr.keypad(
-                True
-            )  # Moved to Renderer (effectively, as Renderer does it)
-            # curses.curs_set(0)   # Moved to Renderer
-            # Color pair initializations removed
-        else:
-            self.stdscr = None
-            # Removed color pair defaults as they are handled by Renderer's else block
+        # self.stdscr is no longer initialized here directly by GameEngine
+        # Curses initialization is now handled by the Renderer.
 
         self.world_map, player_start_pos, self.win_pos = (
             self.world_generator.generate_map(map_width, map_height, seed=None)
         )
-        # Instantiate InputHandler after stdscr might be initialized
-        self.input_handler = InputHandler(self.stdscr, self.parser)
-        # Instantiate Renderer after stdscr and world_map are initialized
-        player_symbol = "@"  # Define player symbol locally for renderer
+
+        # Instantiate Renderer first, as it initializes stdscr
+        player_symbol = "@"  # Define player symbol
         self.renderer = Renderer(
-            self.stdscr, self.world_map.width, self.world_map.height, player_symbol
+            debug_mode=self.debug_mode, # Pass debug_mode
+            map_width=self.world_map.width,
+            map_height=self.world_map.height,
+            player_symbol=player_symbol
         )
+
+        # Instantiate InputHandler, passing stdscr from the renderer
+        self.input_handler = InputHandler(self.renderer.stdscr, self.parser)
+        
         self.command_processor = CommandProcessor()  # Instantiate CommandProcessor
 
         self.player = Player(x=player_start_pos[0], y=player_start_pos[1], health=20)
