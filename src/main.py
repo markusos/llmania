@@ -27,8 +27,17 @@ def main_debug():
     # Initialize game engine
     game = GameEngine(map_width=20, map_height=10, debug_mode=True)
 
-    map_representation = game.render_map(debug_render_to_list=True)
-
+    # Initial render
+    map_representation = game.renderer.render_all(
+        player_x=game.player.x,
+        player_y=game.player.y,
+        player_health=game.player.health,
+        world_map=game.world_map,
+        input_mode=game.input_handler.get_input_mode(),
+        current_command_buffer=game.input_handler.get_command_buffer(),
+        message_log=game.message_log,
+        debug_render_to_list=True,
+    )
     if map_representation:
         print("--- Initial Map State ---")
         for row in map_representation:
@@ -38,48 +47,98 @@ def main_debug():
 
     # --- Test basic interactions ---
     print("\n--- Player initial 'look' ---")
-    game.process_command_tuple(("look", None))
-    map_with_look_messages = game.render_map(debug_render_to_list=True)
+    game.message_log.clear()  # Clear log for fresh messages
+    game.command_processor.process_command(
+        parsed_command_tuple=("look", None),
+        player=game.player,
+        world_map=game.world_map,
+        message_log=game.message_log,
+        win_pos=game.win_pos,
+    )
+    map_with_look_messages = game.renderer.render_all(
+        player_x=game.player.x,
+        player_y=game.player.y,
+        player_health=game.player.health,
+        world_map=game.world_map,
+        input_mode=game.input_handler.get_input_mode(),
+        current_command_buffer=game.input_handler.get_command_buffer(),
+        message_log=game.message_log,
+        debug_render_to_list=True,
+    )
     if map_with_look_messages:
-        for row in map_with_look_messages:
-            # Print messages and relevant UI lines
-            if (
-                row.startswith("You are at")
-                or row.startswith("You see a")
-                or row.startswith("There is a")
-                or row.startswith("The area is clear.")
-                or "HP:" in row
-                or "MODE:" in row
-            ):
+        # Print only new messages from the message_log part of the output
+        # The render_all output includes the map, UI, and then messages.
+        # We need to identify where messages start. A simple heuristic:
+        # messages usually appear after the command prompt line if in command mode,
+        # or after HP/MODE lines.
+        print("--- Output after 'look' (filtered for messages) ---")
+        ui_and_map_lines = game.world_map.height + 3
+        # Approx map height + HP, MODE, (optional CMD prompt)
+        for i, row in enumerate(map_with_look_messages):
+            # Heuristic to find messages
+            is_message_line = any(
+                msg_part in row for msg_part in game.message_log if msg_part
+            )
+            if i >= ui_and_map_lines or is_message_line:
                 print(row)
 
     print("\n--- Moving player east ---")
-    game.process_command_tuple(("move", "east"))
-    map_after_move = game.render_map(debug_render_to_list=True)
+    game.message_log.clear()  # Clear log for fresh messages
+    game.command_processor.process_command(
+        parsed_command_tuple=("move", "east"),
+        player=game.player,
+        world_map=game.world_map,
+        message_log=game.message_log,
+        win_pos=game.win_pos,
+    )
+    map_after_move = game.renderer.render_all(
+        player_x=game.player.x,
+        player_y=game.player.y,
+        player_health=game.player.health,
+        world_map=game.world_map,
+        input_mode=game.input_handler.get_input_mode(),
+        current_command_buffer=game.input_handler.get_command_buffer(),
+        message_log=game.message_log,
+        debug_render_to_list=True,
+    )
     if map_after_move:
-        print("--- Map After Move ---")
+        print("--- Map After Move (full output) ---")
         for row in map_after_move:
             print(row)
+        print("--- Messages after 'move' ---")
+        for msg in game.message_log:  # Directly print from game.message_log
+            print(msg)
     else:
         print("Failed to render map after move.")
 
     print("\n--- Attempting to 'take' an item ---")
-    game.process_command_tuple(("take", None))
-    map_after_take_attempt = game.render_map(debug_render_to_list=True)
+    game.message_log.clear()  # Clear log for fresh messages
+    # Example: Assume there's no item at the starting location after moving east.
+    game.command_processor.process_command(
+        parsed_command_tuple=("take", None),
+        player=game.player,
+        world_map=game.world_map,
+        message_log=game.message_log,
+        win_pos=game.win_pos,
+    )
+    map_after_take_attempt = game.renderer.render_all(
+        player_x=game.player.x,
+        player_y=game.player.y,
+        player_health=game.player.health,
+        world_map=game.world_map,
+        input_mode=game.input_handler.get_input_mode(),
+        current_command_buffer=game.input_handler.get_command_buffer(),
+        message_log=game.message_log,
+        debug_render_to_list=True,
+    )
     if map_after_take_attempt:
         print("--- Messages after 'take' attempt ---")
-        for row in map_after_take_attempt:
-            # Exclude map, previous messages, and general UI
-            map_chars = ["🧱", "🟩", "🧑", "👹", "💰", "?"]
-            ui_indicators = ["HP:", "MODE:", ">"]
-            prev_msgs = ["You move east."]
-
-            is_map_char = any(row.startswith(s) for s in map_chars)
-            is_ui_char = any(s in row for s in ui_indicators)
-            is_prev_message = any(s in row for s in prev_msgs)
-
-            if not (is_map_char or is_ui_char or is_prev_message):
-                print(row)
+        # Print messages directly from game.message_log as it's populated
+        # by CommandProcessor
+        for msg in game.message_log:
+            print(msg)
+    else:
+        print("Failed to render map after take attempt.")
 
 
 if __name__ == "__main__":

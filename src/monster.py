@@ -1,3 +1,9 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.player import Player  # For type hinting
+
+
 class Monster:
     def __init__(
         self, name: str, health: int, attack_power: int, x: int = 0, y: int = 0
@@ -8,13 +14,18 @@ class Monster:
         self.x = x
         self.y = y
 
-    def take_damage(self, amount: int):
-        self.health -= amount
+    def take_damage(self, damage: int) -> dict:
+        self.health -= damage
         if self.health < 0:
             self.health = 0
+        return {"damage_taken": damage, "defeated": self.health <= 0}
 
-    def attack(
-        self, player_to_attack
-    ) -> int:  # player_to_attack is Player type, but forward ref
-        player_to_attack.take_damage(self.attack_power)
-        return self.attack_power
+    def attack(self, player: "Player") -> dict:  # player is Player type, forward ref
+        damage_to_deal = self.attack_power
+        player_damage_result = player.take_damage(damage_to_deal)
+        return {
+            "damage_dealt_to_player": damage_to_deal,
+            "player_is_defeated": player_damage_result[
+                "is_defeated"
+            ],  # Ensure key matches Player.take_damage
+        }
