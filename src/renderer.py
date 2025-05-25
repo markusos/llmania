@@ -4,19 +4,20 @@ from src.tile import TILE_SYMBOLS
 
 
 class Renderer:
-    def __init__(self, stdscr, map_width: int, map_height: int, player_symbol: str):
-        self.stdscr = stdscr
+    def __init__(self, debug_mode: bool, map_width: int, map_height: int, player_symbol: str):
+        self.debug_mode = debug_mode
         self.map_width = map_width
         self.map_height = map_height
         self.player_symbol = player_symbol
+        self.stdscr = None
 
-        if (
-            self.stdscr
-        ):  # Only initialize curses if stdscr is provided (not in debug_mode)
-            curses.start_color()
+        if not self.debug_mode:
+            self.stdscr = curses.initscr()
             curses.noecho()
             curses.cbreak()
-            self.stdscr.keypad(True)
+            if self.stdscr: # Ensure stdscr is not None before keypad
+                self.stdscr.keypad(True)
+            curses.start_color()
             curses.curs_set(0)  # Default to hidden cursor
 
             # Initialize color pairs

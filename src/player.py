@@ -1,4 +1,5 @@
-from src.item import Item
+from typing import Optional, List # Added for type hinting
+from src.item import Item # Kept for type hinting
 from src.monster import Monster
 
 
@@ -7,49 +8,15 @@ class Player:
         self.x = x
         self.y = y
         self.health = health
-        self.inventory = []
+        self.inventory: List[Item] = [] # Type hinted
         self.base_attack_power = 2
-        self.equipped_weapon = None
+        self.equipped_weapon: Optional[Item] = None # Type hinted
 
     def move(self, dx: int, dy: int):
         self.x += dx
         self.y += dy
 
-    def take_item(self, item: Item):
-        self.inventory.append(item)
-
-    def drop_item(self, item_name: str) -> Item | None:
-        for i, item in enumerate(self.inventory):
-            if item.name == item_name:
-                return self.inventory.pop(i)
-        return None
-
-    def use_item(self, item_name: str) -> str:
-        item_to_use = None
-        item_idx = -1
-        for i, item in enumerate(self.inventory):
-            if item.name == item_name:
-                item_to_use = item
-                item_idx = i
-                break
-
-        if item_to_use is None:
-            return "Item not found."
-
-        item_type = item_to_use.properties.get("type")
-        if item_type == "heal":
-            heal_amount = item_to_use.properties.get("amount", 0)
-            self.health += heal_amount
-            self.inventory.pop(item_idx)
-            return f"Used {item_name}, healed by {heal_amount} HP."
-        elif item_type == "weapon":
-            self.equipped_weapon = item_to_use
-            # Do not remove weapon from inventory upon equipping
-            return f"Equipped {item_name}."
-        else:
-            return f"Cannot use {item_name}."
-
-    def attack_monster(self, monster: Monster) -> int:
+    def attack_monster(self, monster: Monster) -> dict: # Return type changed to dict
         current_attack_power = self.base_attack_power
         if (
             self.equipped_weapon is not None
@@ -62,7 +29,7 @@ class Player:
         # Call monster.take_damage() ONCE and store its result.
         monster_take_damage_result = monster.take_damage(current_attack_power)
         return {
-            "damage_dealt": current_attack_power,
+            "damage_dealt": current_attack_power, # damage_dealt was current_attack_power
             "monster_defeated": monster_take_damage_result["defeated"],
             "monster_name": monster.name,
         }
