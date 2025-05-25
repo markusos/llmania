@@ -120,7 +120,7 @@ class TestCommandProcessor(unittest.TestCase):
         # Player at (1,1), attempts to move to (1,0) (north)
         # Monster is at (1,0)
         mock_monster = MagicMock(spec=Monster)
-        mock_monster.name = "Goblin" # Ensure .name attribute is set
+        mock_monster.name = "Goblin"  # Ensure .name attribute is set
         self.mock_world_map.get_tile.return_value = MagicMock(monster=mock_monster)
         self.mock_world_map.is_valid_move.return_value = (
             True  # Path is "valid" but occupied by monster
@@ -134,7 +134,7 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_take_item_exists(self):
         mock_item = MagicMock(spec=Item, properties={"type": "heal"})
-        mock_item.name = "Potion" # Ensure .name attribute is set
+        mock_item.name = "Potion"  # Ensure .name attribute is set
         self.mock_world_map.get_tile.return_value = MagicMock(item=mock_item)
         self.mock_world_map.remove_item.return_value = mock_item  # Successfully removed
 
@@ -151,7 +151,7 @@ class TestCommandProcessor(unittest.TestCase):
         # Player at win_pos
         self.mock_player.x, self.mock_player.y = self.win_pos
         quest_item = MagicMock(spec=Item, properties={"type": "quest"})
-        quest_item.name = "Amulet" # Ensure .name attribute is set
+        quest_item.name = "Amulet"  # Ensure .name attribute is set
         self.mock_world_map.get_tile.return_value = MagicMock(item=quest_item)
         self.mock_world_map.remove_item.return_value = quest_item
 
@@ -173,7 +173,7 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_drop_item_space_available(self):
         mock_item_to_drop = MagicMock(spec=Item)
-        mock_item_to_drop.name = "Sword" # Ensure .name attribute is set
+        mock_item_to_drop.name = "Sword"  # Ensure .name attribute is set
         self.mock_player.drop_item.return_value = mock_item_to_drop  # Player drops it
         self.mock_world_map.get_tile.return_value = MagicMock(
             item=None
@@ -190,7 +190,7 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_drop_item_no_space(self):
         mock_item_to_drop = MagicMock(spec=Item)
-        mock_item_to_drop.name = "Shield" # Ensure .name attribute is set
+        mock_item_to_drop.name = "Shield"  # Ensure .name attribute is set
         self.mock_player.drop_item.return_value = mock_item_to_drop
         self.mock_world_map.get_tile.return_value = MagicMock(
             item=MagicMock(spec=Item)
@@ -252,7 +252,7 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_attack_monster_defeated(self):
         mock_monster = MagicMock(spec=Monster)
-        mock_monster.name = "Rat" # Set the attribute
+        mock_monster.name = "Rat"  # Set the attribute
         self.command_processor._get_adjacent_monsters = MagicMock(
             return_value=[(mock_monster, 2, 1)]
         )
@@ -274,7 +274,7 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_attack_monster_survives_player_survives(self):
         mock_monster = MagicMock(spec=Monster)
-        mock_monster.name = "Orc" # Ensure .name attribute is set
+        mock_monster.name = "Orc"  # Ensure .name attribute is set
         self.command_processor._get_adjacent_monsters = MagicMock(
             return_value=[(mock_monster, 2, 1)]
         )
@@ -301,7 +301,7 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_attack_monster_survives_player_defeated(self):
         mock_monster = MagicMock(spec=Monster)
-        mock_monster.name = "Dragon" # Ensure .name attribute is set
+        mock_monster.name = "Dragon"  # Ensure .name attribute is set
         self.command_processor._get_adjacent_monsters = MagicMock(
             return_value=[(mock_monster, 2, 1)]
         )
@@ -327,7 +327,7 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_attack_no_monster_specified_one_nearby(self):
         mock_monster = MagicMock(spec=Monster)
-        mock_monster.name = "Slime" # Ensure .name attribute is set
+        mock_monster.name = "Slime"  # Ensure .name attribute is set
         self.command_processor._get_adjacent_monsters = MagicMock(
             return_value=[(mock_monster, 1, 2)]
         )
@@ -346,9 +346,9 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_attack_no_monster_specified_multiple_nearby(self):
         mock_monster1 = MagicMock(spec=Monster)
-        mock_monster1.name = "Imp" # Ensure .name attribute is set
+        mock_monster1.name = "Imp"  # Ensure .name attribute is set
         mock_monster2 = MagicMock(spec=Monster)
-        mock_monster2.name = "Bat" # Ensure .name attribute is set
+        mock_monster2.name = "Bat"  # Ensure .name attribute is set
         self.command_processor._get_adjacent_monsters = MagicMock(
             return_value=[(mock_monster1, 0, 1), (mock_monster2, 2, 1)]
         )
@@ -370,7 +370,7 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_attack_specified_monster_not_found(self):
         mock_monster_present = MagicMock(spec=Monster)
-        mock_monster_present.name = "Wolf" # Ensure .name attribute is set
+        mock_monster_present.name = "Wolf"  # Ensure .name attribute is set
         self.command_processor._get_adjacent_monsters = MagicMock(
             return_value=[(mock_monster_present, 0, 1)]
         )
@@ -382,9 +382,9 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_inventory_has_items(self):
         item1 = MagicMock(spec=Item)
-        item1.name = "Dagger" # Ensure .name attribute is set
+        item1.name = "Dagger"  # Ensure .name attribute is set
         item2 = MagicMock(spec=Item)
-        item2.name = "Rope" # Ensure .name attribute is set
+        item2.name = "Rope"  # Ensure .name attribute is set
         self.mock_player.inventory = [item1, item2]
 
         result = self.common_process_command(("inventory", None))
@@ -404,7 +404,9 @@ class TestCommandProcessor(unittest.TestCase):
             return_value=[]
         )  # No adjacent monsters
 
-        result = self.common_process_command(("look", None)) # Restore result assignment
+        result = self.common_process_command(
+            ("look", None)
+        )  # Restore result assignment
 
         self.assertIn("You are at (1, 1).", self.message_log)
         self.assertIn("The area is clear.", self.message_log)
@@ -412,7 +414,7 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_look_item_present(self):
         mock_item = MagicMock(spec=Item)
-        mock_item.name = "Key" # Ensure .name attribute is set
+        mock_item.name = "Key"  # Ensure .name attribute is set
         self.mock_world_map.get_tile.return_value = MagicMock(
             item=mock_item, monster=None
         )
@@ -423,7 +425,7 @@ class TestCommandProcessor(unittest.TestCase):
 
     def test_process_command_look_monster_present_on_tile(self):
         mock_monster_on_tile = MagicMock(spec=Monster)
-        mock_monster_on_tile.name = "Spider" # Ensure .name attribute is set
+        mock_monster_on_tile.name = "Spider"  # Ensure .name attribute is set
         self.mock_world_map.get_tile.return_value = MagicMock(
             item=None, monster=mock_monster_on_tile
         )
@@ -437,7 +439,7 @@ class TestCommandProcessor(unittest.TestCase):
             item=None, monster=None
         )  # Current tile clear
         mock_adj_monster = MagicMock(spec=Monster)
-        mock_adj_monster.name = "Zombie" # Ensure .name attribute is set
+        mock_adj_monster.name = "Zombie"  # Ensure .name attribute is set
         # _get_adjacent_monsters will be called by the 'look' logic itself.
         # So, we mock its return value directly for the CommandProcessor instance.
         self.command_processor._get_adjacent_monsters = MagicMock(

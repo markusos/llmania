@@ -29,10 +29,14 @@ def main_debug():
 
     # Initial render
     map_representation = game.renderer.render_all(
-        player_x=game.player.x, player_y=game.player.y, player_health=game.player.health,
-        world_map=game.world_map, input_mode=game.input_handler.get_input_mode(),
-        current_command_buffer=game.input_handler.get_command_buffer(), message_log=game.message_log,
-        debug_render_to_list=True
+        player_x=game.player.x,
+        player_y=game.player.y,
+        player_health=game.player.health,
+        world_map=game.world_map,
+        input_mode=game.input_handler.get_input_mode(),
+        current_command_buffer=game.input_handler.get_command_buffer(),
+        message_log=game.message_log,
+        debug_render_to_list=True,
     )
     if map_representation:
         print("--- Initial Map State ---")
@@ -43,16 +47,23 @@ def main_debug():
 
     # --- Test basic interactions ---
     print("\n--- Player initial 'look' ---")
-    game.message_log.clear() # Clear log for fresh messages
+    game.message_log.clear()  # Clear log for fresh messages
     game.command_processor.process_command(
-        parsed_command_tuple=("look", None), player=game.player,
-        world_map=game.world_map, message_log=game.message_log, win_pos=game.win_pos
+        parsed_command_tuple=("look", None),
+        player=game.player,
+        world_map=game.world_map,
+        message_log=game.message_log,
+        win_pos=game.win_pos,
     )
     map_with_look_messages = game.renderer.render_all(
-        player_x=game.player.x, player_y=game.player.y, player_health=game.player.health,
-        world_map=game.world_map, input_mode=game.input_handler.get_input_mode(),
-        current_command_buffer=game.input_handler.get_command_buffer(), message_log=game.message_log,
-        debug_render_to_list=True
+        player_x=game.player.x,
+        player_y=game.player.y,
+        player_health=game.player.health,
+        world_map=game.world_map,
+        input_mode=game.input_handler.get_input_mode(),
+        current_command_buffer=game.input_handler.get_command_buffer(),
+        message_log=game.message_log,
+        debug_render_to_list=True,
     )
     if map_with_look_messages:
         # Print only new messages from the message_log part of the output
@@ -61,50 +72,69 @@ def main_debug():
         # messages usually appear after the command prompt line if in command mode,
         # or after HP/MODE lines.
         print("--- Output after 'look' (filtered for messages) ---")
-        ui_and_map_lines = game.world_map.height + 3 # Approx map height + HP, MODE, (optional CMD prompt)
+        ui_and_map_lines = game.world_map.height + 3
+        # Approx map height + HP, MODE, (optional CMD prompt)
         for i, row in enumerate(map_with_look_messages):
-            if i >= ui_and_map_lines or any(msg_part in row for msg_part in game.message_log if msg_part): # Heuristic to find messages
-                 print(row)
-
+            # Heuristic to find messages
+            is_message_line = any(
+                msg_part in row for msg_part in game.message_log if msg_part
+            )
+            if i >= ui_and_map_lines or is_message_line:
+                print(row)
 
     print("\n--- Moving player east ---")
-    game.message_log.clear() # Clear log for fresh messages
+    game.message_log.clear()  # Clear log for fresh messages
     game.command_processor.process_command(
-        parsed_command_tuple=("move", "east"), player=game.player,
-        world_map=game.world_map, message_log=game.message_log, win_pos=game.win_pos
+        parsed_command_tuple=("move", "east"),
+        player=game.player,
+        world_map=game.world_map,
+        message_log=game.message_log,
+        win_pos=game.win_pos,
     )
     map_after_move = game.renderer.render_all(
-        player_x=game.player.x, player_y=game.player.y, player_health=game.player.health,
-        world_map=game.world_map, input_mode=game.input_handler.get_input_mode(),
-        current_command_buffer=game.input_handler.get_command_buffer(), message_log=game.message_log,
-        debug_render_to_list=True
+        player_x=game.player.x,
+        player_y=game.player.y,
+        player_health=game.player.health,
+        world_map=game.world_map,
+        input_mode=game.input_handler.get_input_mode(),
+        current_command_buffer=game.input_handler.get_command_buffer(),
+        message_log=game.message_log,
+        debug_render_to_list=True,
     )
     if map_after_move:
         print("--- Map After Move (full output) ---")
         for row in map_after_move:
             print(row)
         print("--- Messages after 'move' ---")
-        for msg in game.message_log: # Directly print from game.message_log
+        for msg in game.message_log:  # Directly print from game.message_log
             print(msg)
     else:
         print("Failed to render map after move.")
 
     print("\n--- Attempting to 'take' an item ---")
-    game.message_log.clear() # Clear log for fresh messages
+    game.message_log.clear()  # Clear log for fresh messages
     # Example: Assume there's no item at the starting location after moving east.
     game.command_processor.process_command(
-        parsed_command_tuple=("take", None), player=game.player,
-        world_map=game.world_map, message_log=game.message_log, win_pos=game.win_pos
+        parsed_command_tuple=("take", None),
+        player=game.player,
+        world_map=game.world_map,
+        message_log=game.message_log,
+        win_pos=game.win_pos,
     )
     map_after_take_attempt = game.renderer.render_all(
-        player_x=game.player.x, player_y=game.player.y, player_health=game.player.health,
-        world_map=game.world_map, input_mode=game.input_handler.get_input_mode(),
-        current_command_buffer=game.input_handler.get_command_buffer(), message_log=game.message_log,
-        debug_render_to_list=True
+        player_x=game.player.x,
+        player_y=game.player.y,
+        player_health=game.player.health,
+        world_map=game.world_map,
+        input_mode=game.input_handler.get_input_mode(),
+        current_command_buffer=game.input_handler.get_command_buffer(),
+        message_log=game.message_log,
+        debug_render_to_list=True,
     )
     if map_after_take_attempt:
         print("--- Messages after 'take' attempt ---")
-        # Print messages directly from game.message_log as it's now populated by CommandProcessor
+        # Print messages directly from game.message_log as it's populated
+        # by CommandProcessor
         for msg in game.message_log:
             print(msg)
     else:

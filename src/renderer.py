@@ -4,50 +4,46 @@ from src.tile import TILE_SYMBOLS
 
 
 class Renderer:
-    def __init__(self, debug_mode: bool, map_width: int, map_height: int, player_symbol: str):
+    def __init__(
+        self, debug_mode: bool, map_width: int, map_height: int, player_symbol: str
+    ):
         self.debug_mode = debug_mode
         self.map_width = map_width
         self.map_height = map_height
         self.player_symbol = player_symbol
-        self.stdscr = None
+        self.stdscr = None  # Will be set if not in debug_mode
 
-        if not self.debug_mode:
-            self.stdscr = curses.initscr()
-            curses.noecho()
-            curses.cbreak()
-            if self.stdscr: # Ensure stdscr is not None before keypad
-                self.stdscr.keypad(True)
-            curses.start_color()
-            curses.curs_set(0)  # Default to hidden cursor
-
-            # Initialize color pairs
-            # TODO: Define specific colors for these pairs later
-            curses.init_pair(
-                1, curses.COLOR_BLACK, curses.COLOR_GREEN
-            )  # Example: Floor
-            self.FLOOR_COLOR_PAIR = 1
-            curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)  # Example: Wall
-            self.WALL_COLOR_PAIR = 2
-            curses.init_pair(
-                3, curses.COLOR_BLACK, curses.COLOR_GREEN
-            )  # Example: Player
-            self.PLAYER_COLOR_PAIR = 3
-            curses.init_pair(
-                4, curses.COLOR_BLACK, curses.COLOR_GREEN
-            )  # Example: Monster
-            self.MONSTER_COLOR_PAIR = 4
-            curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Example: Item
-            self.ITEM_COLOR_PAIR = 5
-            # Add more color pairs (e.g., specific items, monsters, UI text)
-            curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Default text
-            self.DEFAULT_TEXT_COLOR_PAIR = 6
-        else:  # In debug_mode, stdscr is None, provide default values for color pairs
+        if self.debug_mode:
+            # In debug_mode, stdscr remains None, provide default values for color pairs
             self.FLOOR_COLOR_PAIR = 0
             self.WALL_COLOR_PAIR = 0
             self.PLAYER_COLOR_PAIR = 0
             self.MONSTER_COLOR_PAIR = 0
             self.ITEM_COLOR_PAIR = 0
             self.DEFAULT_TEXT_COLOR_PAIR = 0
+        else:
+            # Not in debug_mode, initialize curses
+            self.stdscr = curses.initscr()
+            curses.start_color()  # Must be called before init_pair
+            curses.noecho()
+            curses.cbreak()
+            if self.stdscr:  # Ensure stdscr is not None (it should be if not debug)
+                self.stdscr.keypad(True)
+            curses.curs_set(0)  # Default to hidden cursor
+
+            # Initialize color pairs
+            curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Floor
+            self.FLOOR_COLOR_PAIR = 1
+            curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)  # Wall
+            self.WALL_COLOR_PAIR = 2
+            curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Player
+            self.PLAYER_COLOR_PAIR = 3
+            curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Monster
+            self.MONSTER_COLOR_PAIR = 4
+            curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Item
+            self.ITEM_COLOR_PAIR = 5
+            curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Default text
+            self.DEFAULT_TEXT_COLOR_PAIR = 6
 
     def render_all(
         self,
@@ -60,6 +56,12 @@ class Renderer:
         message_log: list[str],
         debug_render_to_list: bool = False,
     ):
+        if not debug_render_to_list and not self.stdscr:
+            # Curses rendering needs stdscr.
+            # Handles cases like debug_mode=True in GameEngine but this flag is False,
+            # or test_render_all_curses_mode_stdscr_none.
+            return
+
         if debug_render_to_list:
             output_buffer = []
             # For debug rendering, use full map height and width from world_map
@@ -91,19 +93,7 @@ class Renderer:
                 output_buffer.append(message)
             return output_buffer
 
-        # Main rendering path using curses
-        if (
-            not self.stdscr
-        ):  # Should not happen if not debug_render_to_list and stdscr is None
-            # This case implies debug_mode is True but debug_render_to_list is False,
-            # which is an invalid state for curses rendering.
-            # Or, stdscr was not initialized properly.
-            # print(
-            #   "Error: Curses rendering called when stdscr is not available "
-            #   "and not in debug_render_to_list mode."
-            # )
-            return
-
+        # Main rendering path using curses (stdscr is guaranteed)
         self.stdscr.clear()
         UI_LINES_BUFFER = 4  # Number of lines for UI
 
@@ -230,8 +220,10 @@ class Renderer:
             self.stdscr.refresh()
 
     def cleanup_curses(self):
-        if self.stdscr:  # Only run if stdscr was initialized
+        if self.stdscr:  # Only run if stdscr was initialized (i.e., not debug_mode)
             self.stdscr.keypad(False)
             curses.echo()
             curses.nocbreak()
             curses.endwin()
+        # If self.stdscr is None (debug_mode was True), do nothing.
+        # This addresses test_cleanup_curses_stdscr_none.

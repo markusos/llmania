@@ -28,9 +28,8 @@ class TestGameEngine(unittest.TestCase):
         # Mock curses functions GameEngine might call in __init__
         self.mock_stdscr = MagicMock()
         mock_curses_module.initscr.return_value = self.mock_stdscr
-        mock_curses_module.error = (
-            curses.error
-        )  # Allow curses.error to be raised
+        mock_curses_module.error = curses.error  # Allow curses.error to be raised
+        mock_curses_module.napms = MagicMock()  # Mock napms to prevent initscr error
 
         # Setup mock WorldGenerator
         self.mock_world_gen_instance = MockWorldGenerator.return_value
@@ -128,17 +127,34 @@ class TestGameEngine(unittest.TestCase):
         self.assertEqual(self.game_engine.message_log, [])
         self.assertEqual(self.game_engine.debug_mode, False)
 
-    def test_run_loop_single_command_then_quit(self):
+    @patch("src.game_engine.curses.napms")  # Patch napms specifically for this test
+    def test_run_loop_single_command_then_quit(self, mock_napms):
+        # mock_napms is now an argument passed by @patch
         # Simulate one command, then a quit command
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
             ("move", "north"),  # First command
             ("quit", None),  # Second command to exit loop
         ]
 
-        # Mock command processor result for 'move'
-        self.mock_command_processor_instance.process_command.return_value = {
-            "game_over": False
-        }
+        # Mock command processor results for 'move' and 'quit'
+        def process_cmd_side_effect(
+            parsed_cmd_tuple, player, world_map, msg_log, win_pos_arg
+        ):
+            if parsed_cmd_tuple == ("quit", None):
+                # Ensure msg log updated if other tests expect it
+                # msg_log.append("Quitting game.") # e.g.
+                return {"game_over": True}
+            # Default for other commands
+            return {"game_over": False}
+
+        self.mock_command_processor_instance.process_command.side_effect = (
+            process_cmd_side_effect
+        )
+
+        # Reset game state before running. This is important if tests modify
+        # state and affect their own potential re-runs, or if test order matters.
+        self.game_engine.game_over = False
+        self.game_engine.message_log.clear()
 
         self.game_engine.run()
 
@@ -183,32 +199,7 @@ class TestGameEngine(unittest.TestCase):
         )
 
         # Check game_over state (should be True after 'quit')
-        # The mock for process_command needs to set game_over for the quit command
-        # Re-doing side effect for process_command for this test:
-        def process_cmd_side_effect(
-            parsed_cmd, player, world_map, msg_log, win_pos_arg
-        ):
-            if parsed_cmd == ("quit", None):
-                return {"game_over": True}
-            return {"game_over": False}
-
-        self.mock_command_processor_instance.process_command.side_effect = (
-            process_cmd_side_effect
-        )
-
-        # Re-run with the refined side effect
-        self.game_engine.game_over = False  # Reset for re-run logic
-        self.game_engine.message_log.clear()
-        self.mock_input_handler_instance.handle_input_and_get_command.reset_mock()
-        self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
-            ("move", "north"),
-            ("quit", None),
-        ]
-        self.mock_renderer_instance.render_all.reset_mock()
-
-        self.game_engine.run()  # This will now use the new side_effect
-
-        self.assertTrue(self.game_engine.game_over)
+        self.assertTrue(self.game_engine.game_over)  # Should pass without re-run
         self.mock_renderer_instance.cleanup_curses.assert_called_once()
 
     def test_run_loop_game_over_from_command(self):
@@ -219,17 +210,16 @@ class TestGameEngine(unittest.TestCase):
         self.mock_command_processor_instance.process_command.return_value = {
             "game_over": True
         }
-        self.game_engine.debug_mode = False 
+        self.game_engine.debug_mode = False
 
-        with patch('curses.napms') as mock_napms: 
+        with patch("curses.napms") as mock_napms:
             self.game_engine.run()
             # napms is only called if game_over is True AND not in debug_mode
             if self.game_engine.game_over and not self.game_engine.debug_mode:
                 mock_napms.assert_called_once_with(2000)
             # If game_over is False or debug_mode is True, napms should not be called
             elif not (self.game_engine.game_over and not self.game_engine.debug_mode):
-                 mock_napms.assert_not_called()
-
+                mock_napms.assert_not_called()
 
         self.mock_input_handler_instance.handle_input_and_get_command.assert_called_once()
         self.mock_command_processor_instance.process_command.assert_called_once()
@@ -242,13 +232,13 @@ class TestGameEngine(unittest.TestCase):
     def test_run_loop_debug_mode_no_curses_cleanup(self, mock_curses_for_debug_engine):
         # Create a new GameEngine instance with debug_mode=True
         # We need to re-patch dependencies for this specific instance
-        with patch("src.game_engine.WorldGenerator") as MockWG_debug, \
-             patch("src.game_engine.InputHandler") as MockIH_debug, \
-             patch("src.game_engine.Renderer") as MockR_debug, \
-             patch("src.game_engine.CommandProcessor") as MockCP_debug, \
-             patch("src.game_engine.Parser"), \
-             patch("src.game_engine.Player") as MockPl_debug: # MockP_debug unused
-
+        with patch("src.game_engine.WorldGenerator") as MockWG_debug, patch(
+            "src.game_engine.InputHandler"
+        ) as MockIH_debug, patch("src.game_engine.Renderer") as MockR_debug, patch(
+            "src.game_engine.CommandProcessor"
+        ) as MockCP_debug, patch("src.game_engine.Parser"), patch(
+            "src.game_engine.Player"
+        ) as MockPl_debug:  # MockP_debug unused
             mock_wg_inst_debug = MockWG_debug.return_value
             mock_wm_inst_debug = MagicMock(spec=WorldMap)
             mock_wm_inst_debug.width = 10
@@ -306,15 +296,15 @@ class TestGameEngine(unittest.TestCase):
         self.mock_command_processor_instance.process_command.return_value = {
             "game_over": True
         }  # For the quit
-        self.game_engine.debug_mode = False 
+        self.game_engine.debug_mode = False
 
-        with patch('curses.napms') as mock_napms: 
+        with patch("curses.napms") as mock_napms:
             self.game_engine.run()
             if self.game_engine.game_over and not self.game_engine.debug_mode:
                 mock_napms.assert_called_once_with(2000)
             elif not (self.game_engine.game_over and not self.game_engine.debug_mode):
-                 mock_napms.assert_not_called()
-            
+                mock_napms.assert_not_called()
+
         self.assertEqual(
             self.mock_input_handler_instance.handle_input_and_get_command.call_count, 2
         )
