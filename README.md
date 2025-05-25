@@ -2,6 +2,8 @@
 
 A Python project to test what happens when you let an AI Agent write a roguelike game from scratch.
 
+This repo is used to test out the capabilities of [Jules](https://jules.google/) an AI agent from Google, and to see how well it can write a game from scratch. The game is a simple roguelike game, where the player can move around a map, pick up items, and fight monsters.
+
 ## Setup
 
 1. **Install uv**: If you don't have `uv` installed, follow the official installation instructions at [https://docs.astral.sh/uv/getting-started/installation/](https://docs.astral.sh/uv/getting-started/installation/). These instructions cover various platforms and methods.
@@ -27,7 +29,7 @@ A Python project to test what happens when you let an AI Agent write a roguelike
 To run the game, execute the following command in your terminal:
 
 ```bash
-python src/main.py
+uv run python src/main.py
 ```
 
 ### Gameplay
