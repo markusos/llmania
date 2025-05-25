@@ -9,7 +9,7 @@ TILE_SYMBOLS = {
 }
 # Note: TILE_REPRESENTATIONS is removed as its functionality is replaced
 # by the above and new logic.
-# The player symbol "🧑" was in TILE_REPRESENTATIONS but not used by
+# The player symbol "@" was in TILE_REPRESENTATIONS but not used by
 # Tile class directly. It's handled in GameEngine.render_map.
 
 

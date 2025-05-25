@@ -26,7 +26,7 @@ class InputHandler:
                 return ("move", "west")
             elif key in ["KEY_RIGHT", "d", "D"]:
                 return ("move", "east")
-            elif key in ["q", "Q"]:
+            elif key in ["`", "~"]:
                 self.input_mode = "command"
                 self.current_command_buffer = ""
                 curses.curs_set(1)
@@ -65,8 +65,8 @@ class InputHandler:
                 curses.curs_set(0)
                 return None
             elif (
-                key in ["q", "Q"] and not self.current_command_buffer
-            ):  # q/Q to exit command mode if buffer is empty
+                key in ["`", "~"] and not self.current_command_buffer
+            ):  # tilde key to exit command mode if buffer is empty
                 self.input_mode = "movement"
                 curses.curs_set(0)
                 return None

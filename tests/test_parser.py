@@ -187,6 +187,7 @@ def test_parse_look_with_argument(parser):
         ("q", ("quit", None)),
         ("QUIT", ("quit", None)),  # Case insensitivity
         ("  q  ", ("quit", None)),  # Extra spaces
+        ("exit ", ("quit", None)),
     ],
 )
 def test_parse_quit_commands(parser, command_input, expected_output):

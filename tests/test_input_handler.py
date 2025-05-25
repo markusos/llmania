@@ -59,9 +59,9 @@ class TestInputHandler(unittest.TestCase):
                 self.assertEqual(command, expected_command)
                 self.mock_curs_set.assert_called_with(0)  # Cursor hidden in movement
 
-    def test_movement_to_command_mode_with_q(self):
+    def test_movement_to_command_mode_with_tilde(self):
         self.input_handler.input_mode = "movement"
-        self.mock_stdscr.getkey.return_value = "q"
+        self.mock_stdscr.getkey.return_value = "`"
         command = self.input_handler.handle_input_and_get_command()
         self.assertIsNone(command)  # Mode switch doesn't return a command
         self.assertEqual(self.input_handler.get_input_mode(), "command")
@@ -121,20 +121,20 @@ class TestInputHandler(unittest.TestCase):
         self.assertEqual(self.input_handler.get_command_buffer(), "")
         self.mock_curs_set.assert_called_with(0)
 
-    def test_command_mode_q_key_empty_buffer(self):
+    def test_command_mode_tide_key_empty_buffer(self):
         self.input_handler.input_mode = "command"
         self.input_handler.current_command_buffer = ""
-        self.mock_stdscr.getkey.return_value = "q"
+        self.mock_stdscr.getkey.return_value = "`"
 
         command = self.input_handler.handle_input_and_get_command()
         self.assertIsNone(command)
         self.assertEqual(self.input_handler.get_input_mode(), "movement")
         self.mock_curs_set.assert_called_with(0)
 
-    def test_command_mode_q_key_non_empty_buffer(self):
+    def test_command_mode_tilde_key_non_empty_buffer(self):
         self.input_handler.input_mode = "command"
         self.input_handler.current_command_buffer = "test"
-        self.mock_stdscr.getkey.return_value = "q"  # 'q' is a printable character
+        self.mock_stdscr.getkey.return_value = "`"
 
         command = self.input_handler.handle_input_and_get_command()
         self.assertIsNone(command)
@@ -142,8 +142,8 @@ class TestInputHandler(unittest.TestCase):
             self.input_handler.get_input_mode(), "command"
         )  # Stays in command mode
         self.assertEqual(
-            self.input_handler.get_command_buffer(), "testq"
-        )  # 'q' appended
+            self.input_handler.get_command_buffer(), "test`"
+        )  # '`' appended
         self.mock_curs_set.assert_called_with(1)
 
     def test_command_mode_add_character_to_buffer(self):

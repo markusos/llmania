@@ -48,14 +48,14 @@ class Parser:
                 return None
 
         # "use <item>" commands
-        elif command_verb == "use":
+        elif command_verb in ["use", "u"]:
             if argument:
                 return ("use", argument)
             else:  # "use" without argument
                 return None
 
         # "attack <monster>" commands
-        elif command_verb in ["attack", "fight"]:
+        elif command_verb in ["attack", "fight", "f"]:
             if argument:
                 return ("attack", argument)
             else:  # "attack" without argument
@@ -76,7 +76,7 @@ class Parser:
                 return None
 
         # "quit" or "q" commands
-        elif command_verb in ["quit", "q"]:
+        elif command_verb in ["quit", "q", "exit"]:
             if not argument:  # "quit" or "q" should not have arguments
                 return ("quit", None)
             else:

@@ -1,6 +1,6 @@
 # LLMania
 
-A new Python project using uv for package management and Ruff for linting/formatting.
+A Python project to test what happens when you let an AI Agent write a roguelike game from scratch.
 
 ## Setup
 
@@ -36,9 +36,9 @@ The game is a terminal-based roguelike adventure.
 
 - **Movement:** Use the arrow keys (Up, Down, Left, Right) or W, A, S, D keys to move your character.
 - **Command Mode:**
-    - Press `q` to switch to command mode. The input prompt will change to `> `.
+    - Press Tilde (`~`) to switch to command mode. The input prompt will change to `> `.
     - In command mode, type commands and press Enter.
-    - Press `q` or `Escape` while in command mode to return to movement mode.
+    - Press Tilde (`~`) or `Escape` while in command mode to return to movement mode.
 
 ### Available Commands (in Command Mode)
 
