@@ -38,7 +38,7 @@ class Parser:
                 return ("move", argument)
             else:
                 # "move" with an invalid or missing direction
-                return None # Or potentially ("move", None) if we want to message "Move where?"
+                return None  # Or potentially ("move", None) if we want to message "Move where?"
         elif command_verb in ["n", "north"]:
             if not argument:  # Shorthand directions should not have further arguments
                 return ("move", "north")
@@ -57,43 +57,43 @@ class Parser:
         elif command_verb in ["take", "get"]:
             if argument:  # Argument (item name) is required
                 return ("take", argument)
-            else: # "take" without specifying an item
-                return ("take", None) # Let CommandProcessor handle "Take what?"
+            else:  # "take" without specifying an item
+                return ("take", None)  # Let CommandProcessor handle "Take what?"
 
         # "drop <item>"
         elif command_verb == "drop":
             if argument:  # Argument (item name) is required
                 return ("drop", argument)
-            else: # "drop" without specifying an item
-                return ("drop", None) # Let CommandProcessor handle "Drop what?"
+            else:  # "drop" without specifying an item
+                return ("drop", None)  # Let CommandProcessor handle "Drop what?"
 
         # "use <item>" or "u <item>"
         elif command_verb in ["use", "u"]:
             if argument:  # Argument (item name) is required
                 return ("use", argument)
-            else: # "use" without specifying an item
-                return ("use", None) # Let CommandProcessor handle "Use what?"
+            else:  # "use" without specifying an item
+                return ("use", None)  # Let CommandProcessor handle "Use what?"
 
         # --- Combat Commands ---
         # "attack <monster>" or "fight <monster>" or "f <monster>"
         elif command_verb in ["attack", "fight", "f"]:
             # Argument (monster name) is optional; CommandProcessor can auto-target if one monster.
-            return ("attack", argument) # Pass argument whether it's None or a name
+            return ("attack", argument)  # Pass argument whether it's None or a name
 
         # --- Information Commands ---
         # "inventory" or "i"
         elif command_verb in ["inventory", "i"]:
             if not argument:  # These commands should not have arguments
                 return ("inventory", None)
-            else: # e.g. "inventory sword" is invalid
+            else:  # e.g. "inventory sword" is invalid
                 return None
 
         # "look" or "l"
         elif command_verb in ["look", "l"]:
             if not argument:  # "look" should not have arguments
                 return ("look", None)
-            else: # e.g. "look monster" is not supported by this basic "look"
-                return None # A more advanced parser might handle "look <target>"
+            else:  # e.g. "look monster" is not supported by this basic "look"
+                return None  # A more advanced parser might handle "look <target>"
 
         # --- Game Control Commands ---
         # "quit" or "q" or "exit"

@@ -38,7 +38,9 @@ class GameEngine:
 
         # Generate the game world, player starting position, and winning position.
         self.world_map, player_start_pos, self.winning_position = (
-            self.world_generator.generate_map(map_width, map_height, seed=None) # Consider making seed configurable for testing
+            self.world_generator.generate_map(
+                map_width, map_height, seed=None
+            )  # Consider making seed configurable for testing
         )
 
         # Instantiate Renderer first, as it handles curses initialization (if not in debug_mode).
@@ -58,7 +60,7 @@ class GameEngine:
         # Initialize the player at the starting position with default health.
         self.player = Player(x=player_start_pos[0], y=player_start_pos[1], health=20)
         self.game_over = False  # Flag to control the main game loop.
-        self.message_log = []   # Stores messages to be displayed to the player.
+        self.message_log = []  # Stores messages to be displayed to the player.
 
     # Note: Methods like handle_input_and_get_command, render_map,
     # process_command_tuple, and _get_adjacent_monsters were removed as their
@@ -76,7 +78,7 @@ class GameEngine:
                 "Error: GameEngine.run() called in debug_mode. "
                 "Use main_debug() in main.py for testing."
             )
-            self.game_over = True # Set game_over to true to satisfy test conditions expecting no loop.
+            self.game_over = True  # Set game_over to true to satisfy test conditions expecting no loop.
             # Perform a single render to a list for debug inspection, as expected by some tests.
             self.renderer.render_all(
                 player_x=self.player.x,
@@ -86,7 +88,7 @@ class GameEngine:
                 input_mode=self.input_handler.get_input_mode(),
                 current_command_buffer=self.input_handler.get_command_buffer(),
                 message_log=self.message_log,
-                debug_render_to_list=True, # Ensure output is to list for debug
+                debug_render_to_list=True,  # Ensure output is to list for debug
             )
             return
 
@@ -100,7 +102,7 @@ class GameEngine:
                 input_mode=self.input_handler.get_input_mode(),
                 current_command_buffer=self.input_handler.get_command_buffer(),
                 message_log=self.message_log,
-                debug_render_to_list=self.debug_mode, # Should be False here for curses
+                debug_render_to_list=self.debug_mode,  # Should be False here for curses
             )
 
             while not self.game_over:
@@ -138,7 +140,7 @@ class GameEngine:
                     input_mode=self.input_handler.get_input_mode(),
                     current_command_buffer=self.input_handler.get_command_buffer(),
                     message_log=self.message_log,
-                    debug_render_to_list=self.debug_mode, # Should be False here
+                    debug_render_to_list=self.debug_mode,  # Should be False here
                 )
 
             # After the game loop ends (game_over is True):
@@ -148,10 +150,10 @@ class GameEngine:
                 player_y=self.player.y,
                 player_health=self.player.health,
                 world_map=self.world_map,
-                input_mode=self.input_handler.get_input_mode(), # Show final mode
-                current_command_buffer=self.input_handler.get_command_buffer(), # Show final buffer
-                message_log=self.message_log, # Show final messages
-                debug_render_to_list=self.debug_mode, # Should be False here
+                input_mode=self.input_handler.get_input_mode(),  # Show final mode
+                current_command_buffer=self.input_handler.get_command_buffer(),  # Show final buffer
+                message_log=self.message_log,  # Show final messages
+                debug_render_to_list=self.debug_mode,  # Should be False here
             )
 
             # Pause briefly to let the player see the final game over screen.

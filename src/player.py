@@ -67,7 +67,9 @@ class Player:
             self.equipped_weapon is not None
             and self.equipped_weapon.properties.get("type") == "weapon"
         ):
-            current_attack_power += self.equipped_weapon.properties.get("attack_bonus", 0)
+            current_attack_power += self.equipped_weapon.properties.get(
+                "attack_bonus", 0
+            )
 
         monster_take_damage_result = monster.take_damage(current_attack_power)
         return {
@@ -132,7 +134,7 @@ class Player:
         """
         item_to_drop = self._find_item_in_inventory(item_name)
         if not item_to_drop:
-            return None # Item not found, no message here.
+            return None  # Item not found, no message here.
 
         # If the item to drop is the currently equipped weapon, unequip it.
         if self.equipped_weapon == item_to_drop:
@@ -164,12 +166,14 @@ class Player:
         item_type = item_to_use.properties.get("type")
 
         if item_type == "weapon":
-            if self.equipped_weapon == item_to_use: # Trying to use equipped weapon
-                self.equipped_weapon = None # Unequip it
+            if self.equipped_weapon == item_to_use:  # Trying to use equipped weapon
+                self.equipped_weapon = None  # Unequip it
                 return f"You unequip {item_to_use.name}."
-            else: # Equip new weapon (or re-equip if it was different)
+            else:  # Equip new weapon (or re-equip if it was different)
                 unequip_message = ""
-                if self.equipped_weapon: # If another weapon was equipped, unequip it first
+                if (
+                    self.equipped_weapon
+                ):  # If another weapon was equipped, unequip it first
                     unequip_message = f"You unequip {self.equipped_weapon.name}. "
                 self.equipped_weapon = item_to_use
                 return f"{unequip_message}Equipped {item_to_use.name}."
@@ -179,7 +183,7 @@ class Player:
             self.health -= damage
             if self.health < 0:
                 self.health = 0
-            self.inventory.remove(item_to_use) # Cursed items are consumed
+            self.inventory.remove(item_to_use)  # Cursed items are consumed
             # Message clearly indicates damage and that item is cursed.
             # If health drops to 0, CommandProcessor will handle game over.
             return f"The {item_to_use.name} is cursed! You take {damage} damage."
@@ -188,14 +192,16 @@ class Player:
             if self.health == self.max_health:
                 # Player is already at full health.
                 # Item is not consumed in this case as per current logic.
-                return f"You use {item_to_use.name}, but you are already at full health."
+                return (
+                    f"You use {item_to_use.name}, but you are already at full health."
+                )
 
             heal_amount = item_to_use.properties.get("amount", 0)
             healed_actually = min(heal_amount, self.max_health - self.health)
-            
-            self.health += healed_actually # Apply healing
 
-            if healed_actually > 0: # Item consumed only if it had a positive effect
+            self.health += healed_actually  # Apply healing
+
+            if healed_actually > 0:  # Item consumed only if it had a positive effect
                 self.inventory.remove(item_to_use)
                 return f"Used {item_to_use.name}, healed by {healed_actually} HP."
             else:

@@ -1,7 +1,5 @@
 from src.item import Item
 from src.monster import Monster
-from src.item import Item  # Required for type hinting Item objects
-from src.monster import Monster  # Required for type hinting Monster objects
 from src.tile import Tile
 
 
@@ -65,7 +63,7 @@ class WorldMap:
         if tile:
             tile.type = tile_type  # Update the tile's base type
             return True
-        return False # Tile not found (out of bounds)
+        return False  # Tile not found (out of bounds)
 
     def is_valid_move(self, x: int, y: int) -> bool:
         """
@@ -103,7 +101,7 @@ class WorldMap:
         if tile and tile.item is None:  # Check if tile exists and is empty of items
             tile.item = item
             return True
-        return False # Tile not found or already has an item
+        return False  # Tile not found or already has an item
 
     def remove_item(self, x: int, y: int) -> Item | None:
         """
@@ -121,7 +119,7 @@ class WorldMap:
             item_removed = tile.item
             tile.item = None  # Clear the item from the tile
             return item_removed
-        return None # No item to remove or tile not found
+        return None  # No item to remove or tile not found
 
     def place_monster(self, monster: Monster, x: int, y: int) -> bool:
         """
@@ -138,12 +136,14 @@ class WorldMap:
             True if the monster was successfully placed, False otherwise.
         """
         tile = self.get_tile(x, y)
-        if tile and tile.monster is None:  # Check if tile exists and is empty of monsters
+        if (
+            tile and tile.monster is None
+        ):  # Check if tile exists and is empty of monsters
             tile.monster = monster
             monster.x = x  # Update monster's own position tracking
             monster.y = y
             return True
-        return False # Tile not found or already has a monster
+        return False  # Tile not found or already has a monster
 
     def remove_monster(self, x: int, y: int) -> Monster | None:
         """
@@ -161,4 +161,4 @@ class WorldMap:
             monster_removed = tile.monster
             tile.monster = None  # Clear the monster from the tile
             return monster_removed
-        return None # No monster to remove or tile not found
+        return None  # No monster to remove or tile not found

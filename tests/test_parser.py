@@ -24,7 +24,10 @@ def test_parse_unrecognized_command(parser):
     assert parser.parse_command("take") == ("take", None)  # "take" without argument
     assert parser.parse_command("drop") == ("drop", None)  # "drop" without argument
     assert parser.parse_command("use") == ("use", None)  # "use" without argument
-    assert parser.parse_command("attack") == ("attack", None)  # "attack" without argument
+    assert parser.parse_command("attack") == (
+        "attack",
+        None,
+    )  # "attack" without argument
     assert parser.parse_command("inventory now") is None  # "inventory" with argument
     assert parser.parse_command("look around") is None  # "look" with argument
     assert parser.parse_command("quit now") is None  # "quit" with argument

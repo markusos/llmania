@@ -1,11 +1,11 @@
 # Defines the symbols used for rendering different entities and tile types on the map.
 ENTITY_SYMBOLS = {
     "monster": "M",  # Symbol for monsters
-    "item": "$",     # Symbol for items
+    "item": "$",  # Symbol for items
 }
 TILE_SYMBOLS = {
-    "wall": "#",     # Symbol for wall tiles
-    "floor": ".",    # Symbol for floor tiles
+    "wall": "#",  # Symbol for wall tiles
+    "floor": ".",  # Symbol for floor tiles
     "unknown": "?",  # Symbol for unknown or undefined tiles
 }
 # Note: The TILE_REPRESENTATIONS dictionary was previously here but has been
@@ -40,8 +40,8 @@ class Tile:
             item: An Item object if an item is on this tile. Defaults to None.
         """
         self.type = tile_type  # The base type of the tile (e.g., "wall", "floor")
-        self.monster = monster    # Monster object on the tile, if any
-        self.item = item          # Item object on the tile, if any
+        self.monster = monster  # Monster object on the tile, if any
+        self.item = item  # Item object on the tile, if any
 
     def get_display_info(self) -> tuple[str, str]:
         """

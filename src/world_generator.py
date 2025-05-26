@@ -12,9 +12,7 @@ class WorldGenerator:
     the goal item's location, and placement of other items and monsters.
     """
 
-    def _initialize_map(
-        self, width: int, height: int, seed: Optional[int]
-    ) -> WorldMap:
+    def _initialize_map(self, width: int, height: int, seed: Optional[int]) -> WorldMap:
         """
         Initializes a new WorldMap of the given dimensions, filled entirely with walls.
         If a seed is provided, it initializes the random number generator.
@@ -28,7 +26,9 @@ class WorldGenerator:
             A WorldMap instance.
         """
         if seed is not None:
-            random.seed(seed) # Initialize RNG for deterministic generation if seed is given
+            random.seed(
+                seed
+            )  # Initialize RNG for deterministic generation if seed is given
 
         world_map = WorldMap(width, height)
         # Fill the entire map with wall tiles initially
@@ -55,10 +55,10 @@ class WorldGenerator:
             A tuple containing (player_start_pos, original_win_pos).
         """
         # Select player start X, avoiding edges if map is wide enough
-        if width < 3: # For maps 1 or 2 cells wide
+        if width < 3:  # For maps 1 or 2 cells wide
             player_start_x = 0 if width == 1 else random.randint(0, width - 1)
             win_x = 0 if width == 1 else random.randint(0, width - 1)
-        else: # For maps 3+ cells wide, keep away from edge
+        else:  # For maps 3+ cells wide, keep away from edge
             player_start_x = random.randint(1, width - 2)
             win_x = random.randint(1, width - 2)
 
@@ -76,19 +76,27 @@ class WorldGenerator:
         # Ensure win_pos is different from player_start_pos, unless map is 1x1.
         if not (width == 1 and height == 1):
             attempts = 0
-            max_attempts = (width * height) * 2 # Heuristic to prevent infinite loops
+            max_attempts = (width * height) * 2  # Heuristic to prevent infinite loops
             while original_win_pos == player_start_pos:
                 if attempts >= max_attempts:
                     # If too many attempts, it's possible all valid spots are the same as player_start_pos
                     # (e.g. on a 1x2 map, if player starts at (0,0), win_pos must be (0,1) or vice-versa).
                     # This loop primarily handles larger maps where random chance might pick same spot.
-                    break 
+                    break
                 # Reselect win_pos coordinates using the same edge-avoidance logic
-                win_x = random.randint(1, width - 2) if width >=3 else (0 if width == 1 else random.randint(0, width-1))
-                win_y = random.randint(1, height - 2) if height >=3 else (0 if height == 1 else random.randint(0, height-1))
+                win_x = (
+                    random.randint(1, width - 2)
+                    if width >= 3
+                    else (0 if width == 1 else random.randint(0, width - 1))
+                )
+                win_y = (
+                    random.randint(1, height - 2)
+                    if height >= 3
+                    else (0 if height == 1 else random.randint(0, height - 1))
+                )
                 original_win_pos = (win_x, win_y)
                 attempts += 1
-        
+
         # Set the selected positions to be floor tiles
         world_map.set_tile_type(player_start_pos[0], player_start_pos[1], "floor")
         world_map.set_tile_type(original_win_pos[0], original_win_pos[1], "floor")
@@ -117,24 +125,26 @@ class WorldGenerator:
         curr_x, curr_y = start_pos
         dx = end_pos[0] - curr_x
         dy = end_pos[1] - curr_y
-        steps = max(abs(dx), abs(dy)) # Number of steps needed for the longer axis
+        steps = max(abs(dx), abs(dy))  # Number of steps needed for the longer axis
 
-        if steps == 0: # Start and end are the same point
+        if steps == 0:  # Start and end are the same point
             if 0 <= curr_x < map_width and 0 <= curr_y < map_height:
-                 path_points.append(start_pos)
+                path_points.append(start_pos)
         else:
             x_increment = dx / steps
             y_increment = dy / steps
             # Iterate for each step, calculating and rounding coordinates
-            for i in range(steps + 1): # Include the end point
+            for i in range(steps + 1):  # Include the end point
                 px = round(curr_x + i * x_increment)
                 py = round(curr_y + i * y_increment)
                 # Ensure path points are within map bounds before adding to path list
                 if 0 <= px < map_width and 0 <= py < map_height:
                     path_points.append((px, py))
-        
+
         # Set all unique points in the path to "floor"
-        for px, py in set(path_points): # Use set to avoid redundant calls for same tile
+        for px, py in set(
+            path_points
+        ):  # Use set to avoid redundant calls for same tile
             # Double check bounds, though round() might take it out.
             if 0 <= px < map_width and 0 <= py < map_height:
                 world_map.set_tile_type(px, py, "floor")
@@ -160,24 +170,25 @@ class WorldGenerator:
         walk_length = (map_width * map_height) // 10  # Max length of each walk
 
         # Collect all current floor tiles to use as potential start points for walks
-        current_floor_tiles = self._collect_floor_tiles(world_map, map_width, map_height)
-        if not current_floor_tiles: # Should not happen if path carving was done
-            current_floor_tiles = [player_start_pos] # Fallback
+        current_floor_tiles = self._collect_floor_tiles(
+            world_map, map_width, map_height
+        )
+        if not current_floor_tiles:  # Should not happen if path carving was done
+            current_floor_tiles = [player_start_pos]  # Fallback
 
-        walk_start_points = [player_start_pos] # Always start one walk from player
+        walk_start_points = [player_start_pos]  # Always start one walk from player
         # Add more random start points for other walks, if enough floor tiles exist
         for _ in range(num_walks - 1):
             if current_floor_tiles:
                 walk_start_points.append(random.choice(current_floor_tiles))
-            else: # Should not be reached if current_floor_tiles has at least player_start_pos
+            else:  # Should not be reached if current_floor_tiles has at least player_start_pos
                 walk_start_points.append(player_start_pos)
-
 
         for walk_start_x, walk_start_y in walk_start_points:
             current_x, current_y = walk_start_x, walk_start_y
             for _ in range(walk_length):
                 # Choose a random cardinal direction
-                directions = [(0, -1), (0, 1), (-1, 0), (1, 0)] # N, S, W, E
+                directions = [(0, -1), (0, 1), (-1, 0), (1, 0)]  # N, S, W, E
                 dx_walk, dy_walk = random.choice(directions)
                 next_x, next_y = current_x + dx_walk, current_y + dy_walk
 
@@ -237,19 +248,25 @@ class WorldGenerator:
         goal_item = Item(
             "Amulet of Yendor", "The object of your quest!", {"type": "quest"}
         )
-        actual_win_pos = original_win_pos # Assume original is fine initially
+        actual_win_pos = original_win_pos  # Assume original is fine initially
 
         # Check if original_win_pos is a valid floor tile for placing the item.
-        tile_at_original_win = world_map.get_tile(original_win_pos[0], original_win_pos[1])
+        tile_at_original_win = world_map.get_tile(
+            original_win_pos[0], original_win_pos[1]
+        )
         if tile_at_original_win and tile_at_original_win.type == "floor":
             world_map.place_item(goal_item, original_win_pos[0], original_win_pos[1])
         else:
             # Fallback: original_win_pos is not a floor tile (e.g., if random walks overwrote it, though unlikely).
             # Try to place on any other available floor tile, avoiding player_start_pos if possible.
-            available_floor_for_goal = [tile for tile in floor_tiles if tile != player_start_pos]
-            if not available_floor_for_goal and floor_tiles: # Only player_start_pos is floor
-                 available_floor_for_goal = floor_tiles # Allow placing on player_start_pos if it's the only option
-            
+            available_floor_for_goal = [
+                tile for tile in floor_tiles if tile != player_start_pos
+            ]
+            if (
+                not available_floor_for_goal and floor_tiles
+            ):  # Only player_start_pos is floor
+                available_floor_for_goal = floor_tiles  # Allow placing on player_start_pos if it's the only option
+
             if available_floor_for_goal:
                 chosen_pos = random.choice(available_floor_for_goal)
                 actual_win_pos = chosen_pos
@@ -260,11 +277,16 @@ class WorldGenerator:
                 # but we ensure the item is placed somewhere.
                 actual_win_pos = player_start_pos
                 # Ensure player_start_pos is floor if it somehow wasn't
-                if world_map.get_tile(player_start_pos[0], player_start_pos[1]).type != "floor":
-                    world_map.set_tile_type(player_start_pos[0], player_start_pos[1], "floor")
+                if (
+                    world_map.get_tile(player_start_pos[0], player_start_pos[1]).type
+                    != "floor"
+                ):
+                    world_map.set_tile_type(
+                        player_start_pos[0], player_start_pos[1], "floor"
+                    )
                 world_map.place_item(goal_item, actual_win_pos[0], actual_win_pos[1])
         return actual_win_pos
-        
+
     def _place_additional_entities(
         self,
         world_map: WorldMap,
@@ -287,27 +309,30 @@ class WorldGenerator:
             map_width: The width of the map.
             map_height: The height of the map.
         """
-        if not floor_tiles: # No floor tiles to place entities on.
+        if not floor_tiles:  # No floor tiles to place entities on.
             return
 
         # Determine number of entities to try placing based on map size.
-        num_placements = (map_width * map_height) // 15 # Example density
-        
+        num_placements = (map_width * map_height) // 15  # Example density
+
         # Filter floor_tiles to get spots available for random entities.
         # Exclude player start and the goal item's location.
         available_floor_tiles_for_entities = [
-            tile for tile in floor_tiles 
+            tile
+            for tile in floor_tiles
             if tile != player_start_pos and tile != actual_win_pos
         ]
 
         for _ in range(num_placements):
-            if not available_floor_tiles_for_entities: # No more valid spots
+            if not available_floor_tiles_for_entities:  # No more valid spots
                 break
 
             # Choose a random available tile and remove it from list to ensure unique placement per attempt
-            chosen_tile_index = random.randrange(len(available_floor_tiles_for_entities))
+            chosen_tile_index = random.randrange(
+                len(available_floor_tiles_for_entities)
+            )
             chosen_tile_pos = available_floor_tiles_for_entities.pop(chosen_tile_index)
-            
+
             # Check if the chosen tile object is indeed empty (it should be, as we picked from available floor)
             tile_obj = world_map.get_tile(chosen_tile_pos[0], chosen_tile_pos[1])
             if tile_obj and tile_obj.item is None and tile_obj.monster is None:
@@ -315,17 +340,35 @@ class WorldGenerator:
                 if random.random() < 0.15:  # 15% chance to place an item
                     # Randomly choose between a health potion and a dagger
                     if random.random() < 0.5:
-                        item_to_place = Item("Health Potion", "Restores some HP.", {"type": "heal", "amount": 10})
+                        item_to_place = Item(
+                            "Health Potion",
+                            "Restores some HP.",
+                            {"type": "heal", "amount": 10},
+                        )
                     else:
-                        item_to_place = Item("Dagger", "A small blade.", {"type": "weapon", "attack_bonus": 2, "verb": "stabs"})
-                    world_map.place_item(item_to_place, chosen_tile_pos[0], chosen_tile_pos[1])
-                elif random.random() < 0.10:  # 10% chance to place a monster (after failing item placement)
+                        item_to_place = Item(
+                            "Dagger",
+                            "A small blade.",
+                            {"type": "weapon", "attack_bonus": 2, "verb": "stabs"},
+                        )
+                    world_map.place_item(
+                        item_to_place, chosen_tile_pos[0], chosen_tile_pos[1]
+                    )
+                elif (
+                    random.random() < 0.10
+                ):  # 10% chance to place a monster (after failing item placement)
                     # Randomly choose between a goblin and a bat
                     if random.random() < 0.5:
-                        monster_to_place = Monster("Goblin", 10, 3, x=chosen_tile_pos[0], y=chosen_tile_pos[1])
+                        monster_to_place = Monster(
+                            "Goblin", 10, 3, x=chosen_tile_pos[0], y=chosen_tile_pos[1]
+                        )
                     else:
-                        monster_to_place = Monster("Bat", 5, 2, x=chosen_tile_pos[0], y=chosen_tile_pos[1])
-                    world_map.place_monster(monster_to_place, chosen_tile_pos[0], chosen_tile_pos[1])
+                        monster_to_place = Monster(
+                            "Bat", 5, 2, x=chosen_tile_pos[0], y=chosen_tile_pos[1]
+                        )
+                    world_map.place_monster(
+                        monster_to_place, chosen_tile_pos[0], chosen_tile_pos[1]
+                    )
 
     def generate_map(
         self, width: int, height: int, seed: int | None = None
@@ -372,12 +415,16 @@ class WorldGenerator:
             # This is a fallback for an unexpected state.
             # Ensure player_start_pos is floor and add it to floor_tiles.
             world_map.set_tile_type(player_start_pos[0], player_start_pos[1], "floor")
-            if player_start_pos not in floor_tiles: floor_tiles.append(player_start_pos)
-            
+            if player_start_pos not in floor_tiles:
+                floor_tiles.append(player_start_pos)
+
             # Also ensure original_win_pos is floor if it's different and map is not 1x1.
-            if original_win_pos != player_start_pos or (width==1 and height==1):
-                 world_map.set_tile_type(original_win_pos[0], original_win_pos[1], "floor")
-                 if original_win_pos not in floor_tiles: floor_tiles.append(original_win_pos)
+            if original_win_pos != player_start_pos or (width == 1 and height == 1):
+                world_map.set_tile_type(
+                    original_win_pos[0], original_win_pos[1], "floor"
+                )
+                if original_win_pos not in floor_tiles:
+                    floor_tiles.append(original_win_pos)
 
         # Place the goal item and get its final position.
         actual_win_pos = self._place_goal_item(

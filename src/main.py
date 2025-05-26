@@ -7,6 +7,7 @@ This script handles:
 - Providing a debug mode for testing game mechanics without the curses interface.
 - Basic error handling for the game loop.
 """
+
 import os
 import sys
 import traceback
@@ -24,7 +25,9 @@ try:
 except NameError:
     # __file__ might not be defined if running in certain environments (e.g. some REPLs)
     # Fallback or log an error if necessary. For typical script execution, this is fine.
-    print("Warning: Could not automatically set up sys.path. Ensure project root is in PYTHONPATH.")
+    print(
+        "Warning: Could not automatically set up sys.path. Ensure project root is in PYTHONPATH."
+    )
 
 
 from src.game_engine import GameEngine  # noqa: E402 (ignore import not at top of file)
@@ -62,7 +65,7 @@ def main_debug():
         input_mode=game.input_handler.get_input_mode(),
         current_command_buffer=game.input_handler.get_command_buffer(),
         message_log=game.message_log,
-        debug_render_to_list=True, # Explicitly true for clarity in main_debug
+        debug_render_to_list=True,  # Explicitly true for clarity in main_debug
     )
     if map_representation:
         print("\n--- Initial Map Display (as list of strings) ---")
@@ -86,18 +89,21 @@ def main_debug():
     )
     # Render and display output after 'look'
     output_after_look = game.renderer.render_all(
-        player_x=game.player.x, player_y=game.player.y, player_health=game.player.health,
-        world_map=game.world_map, input_mode=game.input_handler.get_input_mode(),
+        player_x=game.player.x,
+        player_y=game.player.y,
+        player_health=game.player.health,
+        world_map=game.world_map,
+        input_mode=game.input_handler.get_input_mode(),
         current_command_buffer=game.input_handler.get_command_buffer(),
-        message_log=game.message_log, debug_render_to_list=True
+        message_log=game.message_log,
+        debug_render_to_list=True,
     )
     if output_after_look:
         print("--- Output after 'look' ---")
-        for row in output_after_look: # Display full output for context
+        for row in output_after_look:  # Display full output for context
             print(row)
     else:
         print("Error: Failed to render after 'look'.")
-
 
     print("\n--- Simulating 'move east' command ---")
     game.message_log.clear()
@@ -109,10 +115,14 @@ def main_debug():
         winning_position=game.winning_position,
     )
     output_after_move = game.renderer.render_all(
-        player_x=game.player.x, player_y=game.player.y, player_health=game.player.health,
-        world_map=game.world_map, input_mode=game.input_handler.get_input_mode(),
+        player_x=game.player.x,
+        player_y=game.player.y,
+        player_health=game.player.health,
+        world_map=game.world_map,
+        input_mode=game.input_handler.get_input_mode(),
         current_command_buffer=game.input_handler.get_command_buffer(),
-        message_log=game.message_log, debug_render_to_list=True
+        message_log=game.message_log,
+        debug_render_to_list=True,
     )
     if output_after_move:
         print("--- Output after 'move east' ---")
@@ -121,22 +131,25 @@ def main_debug():
     else:
         print("Error: Failed to render after 'move east'.")
 
-
     print("\n--- Simulating 'take' command (expecting 'nothing to take') ---")
     game.message_log.clear()
     # Assuming player moved to an empty spot.
     game.command_processor.process_command(
-        parsed_command_tuple=("take", None), # Or specify a non-existent item
+        parsed_command_tuple=("take", None),  # Or specify a non-existent item
         player=game.player,
         world_map=game.world_map,
         message_log=game.message_log,
         winning_position=game.winning_position,
     )
     output_after_take = game.renderer.render_all(
-        player_x=game.player.x, player_y=game.player.y, player_health=game.player.health,
-        world_map=game.world_map, input_mode=game.input_handler.get_input_mode(),
+        player_x=game.player.x,
+        player_y=game.player.y,
+        player_health=game.player.health,
+        world_map=game.world_map,
+        input_mode=game.input_handler.get_input_mode(),
         current_command_buffer=game.input_handler.get_command_buffer(),
-        message_log=game.message_log, debug_render_to_list=True
+        message_log=game.message_log,
+        debug_render_to_list=True,
     )
     if output_after_take:
         print("--- Output after 'take' attempt ---")
@@ -144,7 +157,7 @@ def main_debug():
             print(row)
     else:
         print("Error: Failed to render after 'take' attempt.")
-    
+
     print("\n--- Debug Mode Finished ---")
 
 
@@ -174,8 +187,9 @@ if __name__ == "__main__":
             # Attempt to restore terminal state if curses was involved.
             # This is a fallback; GameEngine should handle its own cleanup.
             try:
-                import curses # Import here to avoid dependency if not used.
-                if curses.has_colors(): # Check if curses was initialized
+                import curses  # Import here to avoid dependency if not used.
+
+                if curses.has_colors():  # Check if curses was initialized
                     curses.echo()
                     curses.nocbreak()
                     curses.endwin()

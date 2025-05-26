@@ -28,7 +28,9 @@ class Renderer:
         self.map_width = map_width
         self.map_height = map_height
         self.player_symbol = player_symbol
-        self.stdscr = None  # Will be set to the curses screen object if not in debug_mode
+        self.stdscr = (
+            None  # Will be set to the curses screen object if not in debug_mode
+        )
 
         if self.debug_mode:
             # In debug_mode, stdscr remains None. Color pairs are not used for list rendering.
@@ -51,17 +53,25 @@ class Renderer:
 
             # Define color pairs used for different game elements.
             # Format: curses.init_pair(pair_number, foreground_color, background_color)
-            curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_GREEN)   # Floor
+            curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Floor
             self.FLOOR_COLOR_PAIR = 1
             curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)  # Wall
             self.WALL_COLOR_PAIR = 2
-            curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Player (Same as floor for now)
+            curses.init_pair(
+                3, curses.COLOR_BLACK, curses.COLOR_GREEN
+            )  # Player (Same as floor for now)
             self.PLAYER_COLOR_PAIR = 3
-            curses.init_pair(4, curses.COLOR_RED, curses.COLOR_GREEN)    # Monster (Distinct color)
+            curses.init_pair(
+                4, curses.COLOR_RED, curses.COLOR_GREEN
+            )  # Monster (Distinct color)
             self.MONSTER_COLOR_PAIR = 4
-            curses.init_pair(5, curses.COLOR_YELLOW, curses.COLOR_GREEN) # Item (Distinct color)
+            curses.init_pair(
+                5, curses.COLOR_YELLOW, curses.COLOR_GREEN
+            )  # Item (Distinct color)
             self.ITEM_COLOR_PAIR = 5
-            curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Default text (e.g., for UI)
+            curses.init_pair(
+                6, curses.COLOR_WHITE, curses.COLOR_BLACK
+            )  # Default text (e.g., for UI)
             self.DEFAULT_TEXT_COLOR_PAIR = 6
 
     def render_all(
@@ -102,7 +112,9 @@ class Renderer:
             print("Error: Renderer.stdscr not initialized for curses rendering.")
             return None
 
-        if debug_render_to_list or self.debug_mode: # If general debug_mode, always render to list.
+        if (
+            debug_render_to_list or self.debug_mode
+        ):  # If general debug_mode, always render to list.
             output_buffer = []
             # Render map content
             # Use the full dimensions of the world_map for list-based rendering.
@@ -115,10 +127,14 @@ class Renderer:
                     else:
                         tile = world_map.get_tile(x_map, y_map)
                         if tile:
-                            symbol, _ = tile.get_display_info() # Disregard display_type for simple char rendering
+                            symbol, _ = (
+                                tile.get_display_info()
+                            )  # Disregard display_type for simple char rendering
                             char_to_draw = symbol
                         else:
-                            char_to_draw = TILE_SYMBOLS.get("unknown", "?") # Use .get for safety
+                            char_to_draw = TILE_SYMBOLS.get(
+                                "unknown", "?"
+                            )  # Use .get for safety
                     row_str += char_to_draw
                 output_buffer.append(row_str)
 
@@ -134,12 +150,12 @@ class Renderer:
         # --- Curses-based rendering path ---
         # This part executes only if not (debug_render_to_list or self.debug_mode),
         # which means self.stdscr should be valid.
-        if not self.stdscr: # Safeguard if somehow stdscr is None here
+        if not self.stdscr:  # Safeguard if somehow stdscr is None here
             print("Critical Error: stdscr is None during curses rendering attempt.")
             return None
 
         self.stdscr.clear()  # Clear the screen before drawing new content.
-        
+
         # Define a buffer for UI lines at the bottom of the screen.
         # This includes lines for HP, Mode, Command Input, and some messages.
         UI_LINES_BUFFER = 4
@@ -157,14 +173,18 @@ class Renderer:
         # Map rendering area: from y=0 up to (terminal height - UI buffer).
         max_y_curses_rows = min(self.map_height, curses_lines - UI_LINES_BUFFER)
         # Map rendering area: from x=0 up to (terminal width - 1 for safety).
-        max_x_curses_cols = curses_cols -1 # Max characters per line, leave one for safety margin
+        max_x_curses_cols = (
+            curses_cols - 1
+        )  # Max characters per line, leave one for safety margin
 
         # Render the map tiles
-        for y_map_idx in range(max_y_curses_rows): # Iterate over visible map rows
-            current_screen_x = 0 # Current character column on the screen for this row
-            for x_tile_idx in range(self.map_width): # Iterate over map tiles in this row
+        for y_map_idx in range(max_y_curses_rows):  # Iterate over visible map rows
+            current_screen_x = 0  # Current character column on the screen for this row
+            for x_tile_idx in range(
+                self.map_width
+            ):  # Iterate over map tiles in this row
                 if current_screen_x >= max_x_curses_cols:
-                    break # Stop if we exceed screen width for this row
+                    break  # Stop if we exceed screen width for this row
 
                 char_to_draw = ""
                 color_attribute = curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR)
@@ -192,44 +212,61 @@ class Renderer:
 
                 try:
                     # Add the character to the screen at (y_map_idx, current_screen_x)
-                    self.stdscr.addstr(y_map_idx, current_screen_x, char_to_draw, color_attribute)
+                    self.stdscr.addstr(
+                        y_map_idx, current_screen_x, char_to_draw, color_attribute
+                    )
                 except curses.error:
                     # Stop drawing this row if an error occurs (e.g., drawing outside window bounds
                     # due to a very small terminal window that changed size).
-                    break 
+                    break
                 current_screen_x += 1
 
         # --- UI Rendering ---
         # Calculate starting Y position for UI elements, placed after the map.
         # hp_line_y is the first line after the map rendering area.
         hp_line_y = max_y_curses_rows
-        if hp_line_y < curses_lines: # Ensure there's space for HP line
+        if hp_line_y < curses_lines:  # Ensure there's space for HP line
             try:
-                self.stdscr.addstr(hp_line_y, 0, f"HP: {player_health}", curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR))
+                self.stdscr.addstr(
+                    hp_line_y,
+                    0,
+                    f"HP: {player_health}",
+                    curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
+                )
             except curses.error:
-                pass # Avoid crash if cannot draw (e.g. terminal too small)
+                pass  # Avoid crash if cannot draw (e.g. terminal too small)
         # If hp_line_y >= curses_lines, there's no space; it will be skipped.
 
         # Mode line is one line below HP.
         mode_line_y = hp_line_y + 1
-        if mode_line_y < curses_lines: # Ensure there's space for Mode line
+        if mode_line_y < curses_lines:  # Ensure there's space for Mode line
             try:
-                self.stdscr.addstr(mode_line_y, 0, f"MODE: {input_mode.upper()}", curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR))
+                self.stdscr.addstr(
+                    mode_line_y,
+                    0,
+                    f"MODE: {input_mode.upper()}",
+                    curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
+                )
             except curses.error:
                 pass
-        
+
         # Message log starts one line below Mode, or below command buffer if in command mode.
         message_start_y = mode_line_y + 1
         if input_mode == "command":
-            if message_start_y < curses_lines: # Ensure space for command prompt
+            if message_start_y < curses_lines:  # Ensure space for command prompt
                 try:
                     prompt = f"> {current_command_buffer}"
                     # Truncate prompt if it's wider than the screen.
-                    self.stdscr.addstr(message_start_y, 0, prompt[:curses_cols -1], curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR))
+                    self.stdscr.addstr(
+                        message_start_y,
+                        0,
+                        prompt[: curses_cols - 1],
+                        curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
+                    )
                     message_start_y += 1  # Next line for messages
                 except curses.error:
                     pass
-        
+
         # Render Message Log
         # Calculate how many lines are available for the message log.
         available_lines_for_log = curses_lines - message_start_y
@@ -238,32 +275,41 @@ class Renderer:
             num_messages_to_display = min(len(message_log), available_lines_for_log)
             # Get the slice of messages to display (most recent ones).
             start_message_idx = max(0, len(message_log) - num_messages_to_display)
-            
+
             for i, message in enumerate(message_log[start_message_idx:]):
                 current_message_y = message_start_y + i
                 # This check should be redundant due to num_messages_to_display calculation,
                 # but kept as a safeguard.
-                if current_message_y < curses_lines: 
-                    truncated_msg = message[:curses_cols -1] # Truncate message to fit width
+                if current_message_y < curses_lines:
+                    truncated_msg = message[
+                        : curses_cols - 1
+                    ]  # Truncate message to fit width
                     try:
-                        self.stdscr.addstr(current_message_y, 0, truncated_msg, curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR))
+                        self.stdscr.addstr(
+                            current_message_y,
+                            0,
+                            truncated_msg,
+                            curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
+                        )
                     except curses.error:
-                        break # Stop if drawing fails
+                        break  # Stop if drawing fails
                 else:
-                    break # No more lines available for messages
+                    break  # No more lines available for messages
 
-        self.stdscr.refresh() # Refresh the physical screen to show changes.
-        return None # Curses rendering doesn't return a list of strings.
+        self.stdscr.refresh()  # Refresh the physical screen to show changes.
+        return None  # Curses rendering doesn't return a list of strings.
 
     def cleanup_curses(self):
         """
         Restores the terminal to its normal operating mode.
         This should be called before the program exits if curses was used.
         """
-        if self.stdscr and not self.debug_mode : # Only run if stdscr was initialized and not in general debug_mode
-            self.stdscr.keypad(False) # Disable special key processing.
-            curses.echo()             # Turn echoing back on.
-            curses.nocbreak()         # Restore buffered input mode.
-            curses.endwin()           # Restore terminal to original state.
+        if (
+            self.stdscr and not self.debug_mode
+        ):  # Only run if stdscr was initialized and not in general debug_mode
+            self.stdscr.keypad(False)  # Disable special key processing.
+            curses.echo()  # Turn echoing back on.
+            curses.nocbreak()  # Restore buffered input mode.
+            curses.endwin()  # Restore terminal to original state.
         # If self.stdscr is None (e.g., debug_mode was True or curses init failed),
         # or if general debug_mode is true, no curses cleanup is needed.

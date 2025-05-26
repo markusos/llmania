@@ -357,7 +357,9 @@ class TestCommandProcessor(unittest.TestCase):
         result = self.common_process_command(
             ("attack", "Ghost")
         )  # Attack 'Ghost', but only 'Wolf' is present
-        self.assertIn("No monster named 'Ghost' nearby.", self.message_log)  # Updated assertion
+        self.assertIn(
+            "No monster named 'Ghost' nearby.", self.message_log
+        )  # Updated assertion
         self.assertFalse(result["game_over"])
 
     def test_process_command_inventory_has_items(self):

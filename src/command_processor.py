@@ -88,7 +88,9 @@ class CommandProcessor:
                 player.move(dx, dy)
                 message_log.append(f"You move {argument}.")
                 if (player.x, player.y) == winning_position:
-                    win_tile = world_map.get_tile(winning_position[0], winning_position[1])
+                    win_tile = world_map.get_tile(
+                        winning_position[0], winning_position[1]
+                    )
                     if (
                         win_tile
                         and win_tile.item
@@ -243,15 +245,17 @@ class CommandProcessor:
             bool: True if the game is over as a result of this command, False otherwise.
         """
         if argument is None:
-            message_log.append("Drop what?") # Parser should ideally prevent this with required arg
+            message_log.append(
+                "Drop what?"
+            )  # Parser should ideally prevent this with required arg
             return False
 
         # Store whether the item to be dropped is currently equipped
         item_is_equipped_weapon = False
-        if player.equipped_weapon and argument: # argument is item_name
+        if player.equipped_weapon and argument:  # argument is item_name
             if player.equipped_weapon.name.lower() == argument.lower():
                 item_is_equipped_weapon = True
-        
+
         # Player class handles if item exists in inventory
         dropped_item = player.drop_item(argument)
 
@@ -259,7 +263,7 @@ class CommandProcessor:
             message_log.append(f"You don't have a {argument} to drop.")
             return False
 
-        if item_is_equipped_weapon: # This check needs dropped_item to be not None
+        if item_is_equipped_weapon:  # This check needs dropped_item to be not None
             message_log.append(f"You unequip the {dropped_item.name}.")
 
         tile = world_map.get_tile(player.x, player.y)
@@ -291,10 +295,12 @@ class CommandProcessor:
             bool: True if the game is over as a result of this command, False otherwise.
         """
         if argument is None:
-            message_log.append("Use what?") # Parser should ideally prevent this
+            message_log.append("Use what?")  # Parser should ideally prevent this
             return False
 
-        use_message = player.use_item(argument) # Player.use_item handles internal logic and messages
+        use_message = player.use_item(
+            argument
+        )  # Player.use_item handles internal logic and messages
         message_log.append(use_message)
 
         # Check if using the item resulted in player's death (e.g., a cursed item)
@@ -312,11 +318,14 @@ class CommandProcessor:
             # If player.use_item's message isn't clear about death, uncommenting the line below
             # or a similar one might be useful.
             # message_log.append("You have succumbed to a cursed item! Game Over.")
-            return True # Game over
+            return True  # Game over
         return False
 
     def _select_attack_target(
-        self, argument: Optional[str], adj_monsters: list[tuple["Monster", int, int]], message_log: list[str]
+        self,
+        argument: Optional[str],
+        adj_monsters: list[tuple["Monster", int, int]],
+        message_log: list[str],
     ) -> Optional[tuple["Monster", int, int]]:
         """
         Selects a target monster from adjacent monsters based on argument or proximity.
@@ -334,7 +343,7 @@ class CommandProcessor:
             return None
 
         target_monster = None
-        target_m_x, target_m_y = 0, 0 # Initialize with placeholder values
+        target_m_x, target_m_y = 0, 0  # Initialize with placeholder values
 
         if argument:  # Monster name specified by player
             # Find the monster by name (case-insensitive)
@@ -358,10 +367,12 @@ class CommandProcessor:
                 f"Multiple monsters nearby: {', '.join(monster_names)}. Which one?"
             )
             return None
-        
+
         # This check should ideally be redundant if the logic above is correct.
         if not target_monster:
-            message_log.append("Error: Could not select a target monster.") # Should not happen
+            message_log.append(
+                "Error: Could not select a target monster."
+            )  # Should not happen
             return None
 
         return target_monster, target_m_x, target_m_y
@@ -386,10 +397,10 @@ class CommandProcessor:
             bool: True if the game is over as a result of this command, False otherwise.
         """
         adj_monsters = self._get_adjacent_monsters(player.x, player.y, world_map)
-        
+
         target_info = self._select_attack_target(argument, adj_monsters, message_log)
         if target_info is None:
-            return False # Game not over, target selection failed or no target, message already logged
+            return False  # Game not over, target selection failed or no target, message already logged
 
         target_monster, target_m_x, target_m_y = target_info
 
@@ -403,7 +414,7 @@ class CommandProcessor:
         if attack_res["monster_defeated"]:
             message_log.append(f"You defeated the {target_monster.name}!")
             world_map.remove_monster(target_m_x, target_m_y)
-            return False # Monster defeated, game not over
+            return False  # Monster defeated, game not over
 
         # Monster attacks back if not defeated
         monster_attack_res = target_monster.attack(player)
