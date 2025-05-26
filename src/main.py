@@ -8,6 +8,7 @@ This script handles:
 - Basic error handling for the game loop.
 """
 
+import argparse
 import os
 import sys
 import traceback
@@ -162,13 +163,33 @@ def main_debug():
 
 
 if __name__ == "__main__":
-    # Check for a "--debug" command-line argument to run main_debug().
-    if "--debug" in sys.argv:
+    parser = argparse.ArgumentParser(description="Run the text-based adventure game.")
+    parser.add_argument(
+        "--debug", action="store_true", help="Run the game in debug mode."
+    )
+    parser.add_argument(
+        "--ai", action="store_true", help="Activate AI mode for automated gameplay."
+    )
+    parser.add_argument(
+        "--ai_sleep",
+        type=float,
+        default=0.5,
+        help="Delay in seconds between AI actions.",
+    )
+    args = parser.parse_args()
+
+    if args.debug:
         main_debug()
     else:
         # Initialize and run the game with the curses interface.
         # Larger map for the actual game.
-        game = GameEngine(map_width=30, map_height=15, debug_mode=False)
+        game = GameEngine(
+            map_width=30,
+            map_height=15,
+            debug_mode=False,
+            ai_active=args.ai,
+            ai_sleep_duration=args.ai_sleep,
+        )
         try:
             game.run()
         except Exception as e:

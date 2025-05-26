@@ -1,7 +1,10 @@
 import curses
+import time
 
+from src.ai_logic import AILogic
 from src.command_processor import CommandProcessor  # Import CommandProcessor
 from src.input_handler import InputHandler
+from src.message_log import MessageLog
 
 # Assuming these are first-party imports
 from src.parser import Parser
@@ -20,7 +23,12 @@ class GameEngine:
     """
 
     def __init__(
-        self, map_width: int = 20, map_height: int = 10, debug_mode: bool = False
+        self,
+        map_width: int = 20,
+        map_height: int = 10,
+        debug_mode: bool = False,
+        ai_active: bool = False,
+        ai_sleep_duration: float = 0.5,
     ):
         """
         Initializes the game engine and its components.
@@ -30,10 +38,15 @@ class GameEngine:
             map_height: The height of the game map.
             debug_mode: If True, the game runs in a mode suitable for debugging
                         (e.g., without curses screen initialization).
+            ai_active: If True, AI controls the player.
+            ai_sleep_duration: Time in seconds AI waits between actions.
         """
         self.world_generator = WorldGenerator()
         self.parser = Parser()
         self.debug_mode = debug_mode
+        self.ai_active = ai_active
+        self.ai_sleep_duration = ai_sleep_duration
+        self.ai_logic = None
         # Player symbol is now defined and passed to Renderer directly.
 
         # Generate the game world, player starting position, and winning position.
@@ -60,7 +73,14 @@ class GameEngine:
         # Initialize the player at the starting position with default health.
         self.player = Player(x=player_start_pos[0], y=player_start_pos[1], health=20)
         self.game_over = False  # Flag to control the main game loop.
-        self.message_log = []  # Stores messages to be displayed to the player.
+        self.message_log = MessageLog(max_messages=5)  # Use MessageLog class
+
+        if self.ai_active:
+            self.ai_logic = AILogic(
+                player=self.player,
+                world_map=self.world_map,
+                message_log=self.message_log,
+            )
 
     # Note: Methods like handle_input_and_get_command, render_map,
     # process_command_tuple, and _get_adjacent_monsters were removed as their
@@ -107,19 +127,33 @@ class GameEngine:
 
             while not self.game_over:
                 # Handle player input and parse it into a command.
-                parsed_command_output = (
-                    self.input_handler.handle_input_and_get_command()
-                )
+                parsed_command_output = None
+                if self.ai_active and self.ai_logic:
+                    if self.ai_sleep_duration > 0:
+                        time.sleep(self.ai_sleep_duration)
+                    # Pass the current game state to get_next_action.
+                    # AILogic already has player, world_map, message_log from its init.
+                    # If it needs more dynamic info in the future, it can be passed here.
+                    parsed_command_output = self.ai_logic.get_next_action()
+
+                    # Optional: Add a message to the log indicating AI is thinking or acting.
+                    # self.message_log.append("AI is pondering its next move...")
+                    # This might make the log noisy, consider if it's really needed.
+                else:
+                    parsed_command_output = (
+                        self.input_handler.handle_input_and_get_command()
+                    )
 
                 if parsed_command_output:
-                    # Clear previous messages before processing a new command.
-                    self.message_log.clear()
+                    # self.message_log.clear() # Removed: MessageLog handles history limit
 
                     # If the game is already marked as over (e.g., by a previous command
                     # that allows further input before full loop termination),
                     # just show a message.
                     if self.game_over:
-                        self.message_log.append("The game is over.")
+                        self.message_log.add_message(
+                            "The game is over."
+                        )  # Use add_message
                     else:
                         # Process the command and get results (e.g., if game is now over).
                         results = self.command_processor.process_command(

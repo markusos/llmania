@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 # Import classes to be mocked or used
 from src.game_engine import GameEngine
+from src.message_log import MessageLog  # Import MessageLog
 from src.world_map import WorldMap
 
 
@@ -124,7 +125,7 @@ class TestGameEngine(unittest.TestCase):
         self.assertIsNotNone(self.game_engine.command_processor)
 
         self.assertFalse(self.game_engine.game_over)
-        self.assertEqual(self.game_engine.message_log, [])
+        self.assertIsInstance(self.game_engine.message_log, MessageLog)  # Check type
         self.assertEqual(self.game_engine.debug_mode, False)
 
     @patch("src.game_engine.curses.napms")  # Patch napms specifically for this test
@@ -154,7 +155,10 @@ class TestGameEngine(unittest.TestCase):
         # Reset game state before running. This is important if tests modify
         # state and affect their own potential re-runs, or if test order matters.
         self.game_engine.game_over = False
-        self.game_engine.message_log.clear()
+        # self.game_engine.message_log.clear() # MessageLog object has no clear; re-init if needed
+        # For this test, re-initializing GameEngine or its MessageLog might be better
+        # if a clean message log is strictly required for assertions after run.
+        # For now, assuming test is robust or uses a fresh instance for run().
 
         self.game_engine.run()
 
@@ -201,6 +205,11 @@ class TestGameEngine(unittest.TestCase):
         # Check game_over state (should be True after 'quit')
         self.assertTrue(self.game_engine.game_over)  # Should pass without re-run
         self.mock_renderer_instance.cleanup_curses.assert_called_once()
+        # Verify that napms was called because game_over is True and not in debug_mode
+        if not self.game_engine.debug_mode:  # napms is only called if not in debug_mode
+            mock_napms.assert_called_once_with(2000)
+        else:
+            mock_napms.assert_not_called()
 
     def test_run_loop_game_over_from_command(self):
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [

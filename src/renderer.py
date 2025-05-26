@@ -1,5 +1,6 @@
 import curses
 
+from src.message_log import MessageLog
 from src.tile import TILE_SYMBOLS
 
 
@@ -82,7 +83,7 @@ class Renderer:
         world_map,  # Type hint: world_map: "WorldMap" (requires from __future__ import annotations or string literal)
         input_mode: str,
         current_command_buffer: str,
-        message_log: list[str],
+        message_log: MessageLog,  # Updated type hint
         debug_render_to_list: bool = False,
     ) -> list[str] | None:
         """
@@ -143,8 +144,16 @@ class Renderer:
             output_buffer.append(f"MODE: {input_mode.upper()}")
             if input_mode == "command":
                 output_buffer.append(f"> {current_command_buffer}")
-            for message in message_log:
-                output_buffer.append(message)
+
+            # Debug mode: Get messages from MessageLog object
+            messages_for_debug = message_log.get_messages()
+            if messages_for_debug:
+                for msg_debug in messages_for_debug:
+                    output_buffer.append(msg_debug)
+            else:
+                # Optional: indicate no messages, or just leave blank
+                # output_buffer.append("No messages.")
+                pass
             return output_buffer
 
         # --- Curses-based rendering path ---
@@ -271,30 +280,56 @@ class Renderer:
         # Calculate how many lines are available for the message log.
         available_lines_for_log = curses_lines - message_start_y
         if available_lines_for_log > 0:
-            # Display the most recent messages that fit in the available lines.
-            num_messages_to_display = min(len(message_log), available_lines_for_log)
-            # Get the slice of messages to display (most recent ones).
-            start_message_idx = max(0, len(message_log) - num_messages_to_display)
+            messages_to_render = (
+                message_log.get_messages()
+            )  # Get messages from MessageLog object
 
-            for i, message in enumerate(message_log[start_message_idx:]):
+            # Display the most recent messages that fit in the available lines.
+            num_messages_to_display = min(
+                len(messages_to_render), available_lines_for_log
+            )  # Use len(messages_to_render)
+
+            # Get the slice of messages to display (most recent ones).
+            # If len(messages_to_render) is less than num_messages_to_display, this correctly takes all.
+            start_message_idx = max(
+                0, len(messages_to_render) - num_messages_to_display
+            )
+
+            rendered_message_count = 0
+            for i, message_text in enumerate(messages_to_render[start_message_idx:]):
                 current_message_y = message_start_y + i
-                # This check should be redundant due to num_messages_to_display calculation,
-                # but kept as a safeguard.
-                if current_message_y < curses_lines:
-                    truncated_msg = message[
-                        : curses_cols - 1
-                    ]  # Truncate message to fit width
+                if (
+                    current_message_y < curses_lines
+                ):  # Check screen bounds for this message
+                    truncated_msg = message_text[: curses_cols - 1]
                     try:
+                        self.stdscr.move(current_message_y, 0)
+                        self.stdscr.clrtoeol()  # Clear the line
                         self.stdscr.addstr(
                             current_message_y,
                             0,
                             truncated_msg,
                             curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
                         )
+                        rendered_message_count += 1
                     except curses.error:
-                        break  # Stop if drawing fails
+                        break
                 else:
-                    break  # No more lines available for messages
+                    break
+
+            # Clear any remaining lines in the message area if fewer than max_messages were shown
+            # Assuming message_log.max_messages was 5 as per GameEngine setup.
+            # This clears lines that might have old messages if current log is shorter.
+            max_log_display_lines = (
+                message_log.max_messages
+            )  # Use actual max_messages from the log object
+            for i in range(rendered_message_count, max_log_display_lines):
+                current_message_y = message_start_y + i
+                if current_message_y < curses_lines:  # Check screen bounds
+                    self.stdscr.move(current_message_y, 0)
+                    self.stdscr.clrtoeol()
+                else:
+                    break
 
         self.stdscr.refresh()  # Refresh the physical screen to show changes.
         return None  # Curses rendering doesn't return a list of strings.
