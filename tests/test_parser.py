@@ -21,10 +21,10 @@ def test_parse_unrecognized_command(parser):
     assert (
         parser.parse_command("n north") is None
     )  # "n" with argument "north" is not explicitly defined as valid
-    assert parser.parse_command("take") is None  # "take" without argument
-    assert parser.parse_command("drop") is None  # "drop" without argument
-    assert parser.parse_command("use") is None  # "use" without argument
-    assert parser.parse_command("attack") is None  # "attack" without argument
+    assert parser.parse_command("take") == ("take", None)  # "take" without argument
+    assert parser.parse_command("drop") == ("drop", None)  # "drop" without argument
+    assert parser.parse_command("use") == ("use", None)  # "use" without argument
+    assert parser.parse_command("attack") == ("attack", None)  # "attack" without argument
     assert parser.parse_command("inventory now") is None  # "inventory" with argument
     assert parser.parse_command("look around") is None  # "look" with argument
     assert parser.parse_command("quit now") is None  # "quit" with argument
@@ -75,8 +75,8 @@ def test_parse_take_commands(parser, command_input, expected_output):
 
 
 def test_parse_take_no_argument(parser):
-    assert parser.parse_command("take") is None
-    assert parser.parse_command("get") is None
+    assert parser.parse_command("take") == ("take", None)
+    assert parser.parse_command("get") == ("take", None)
 
 
 # Test "drop" commands
@@ -93,7 +93,7 @@ def test_parse_drop_commands(parser, command_input, expected_output):
 
 
 def test_parse_drop_no_argument(parser):
-    assert parser.parse_command("drop") is None
+    assert parser.parse_command("drop") == ("drop", None)
 
 
 # Test "use" commands
@@ -113,7 +113,7 @@ def test_parse_use_commands(parser, command_input, expected_output):
 
 
 def test_parse_use_no_argument(parser):
-    assert parser.parse_command("use") is None
+    assert parser.parse_command("use") == ("use", None)
 
 
 # Test "attack" commands
@@ -137,8 +137,8 @@ def test_parse_attack_commands(parser, command_input, expected_output):
 
 
 def test_parse_attack_no_argument(parser):
-    assert parser.parse_command("attack") is None
-    assert parser.parse_command("fight") is None
+    assert parser.parse_command("attack") == ("attack", None)
+    assert parser.parse_command("fight") == ("attack", None)
 
 
 # Test "inventory" commands

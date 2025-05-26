@@ -103,8 +103,8 @@ class TestRenderer(unittest.TestCase):
             call(1, curses.COLOR_BLACK, curses.COLOR_GREEN),  # Floor
             call(2, curses.COLOR_BLACK, curses.COLOR_WHITE),  # Wall
             call(3, curses.COLOR_BLACK, curses.COLOR_GREEN),  # Player
-            call(4, curses.COLOR_BLACK, curses.COLOR_GREEN),  # Monster
-            call(5, curses.COLOR_BLACK, curses.COLOR_GREEN),  # Item
+            call(4, curses.COLOR_RED, curses.COLOR_GREEN),    # Monster - Updated
+            call(5, curses.COLOR_YELLOW, curses.COLOR_GREEN), # Item - Updated
             call(6, curses.COLOR_WHITE, curses.COLOR_BLACK),  # Default text
         ]
         self.mock_init_pair.assert_has_calls(expected_init_pair_calls, any_order=False)
