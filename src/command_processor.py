@@ -1,8 +1,6 @@
 # Type hinting imports
 from typing import TYPE_CHECKING, Optional
 
-from src.inventory_manager import InventoryManager  # Import InventoryManager
-
 if TYPE_CHECKING:
     from src.monster import Monster  # For type hinting in _get_adjacent_monsters
     from src.player import Player
@@ -10,17 +8,37 @@ if TYPE_CHECKING:
 
 
 class CommandProcessor:
+    """
+    Handles the processing of parsed commands from the player,
+    interacting with the game world (Player, WorldMap, etc.)
+    and updating the message log.
+    """
+
     def __init__(self):
-        self.inventory_manager = InventoryManager()  # Initialize InventoryManager
+        """Initializes the CommandProcessor."""
+        # Currently no specific initialization needed beyond instantiation.
+        pass
 
     def _get_adjacent_monsters(
         self, x: int, y: int, world_map: "WorldMap"
     ) -> list[tuple["Monster", int, int]]:
-        # Logic will be moved here from GameEngine
+        """
+        Finds all monsters in tiles adjacent (N, S, E, W) to the given coordinates.
+
+        Args:
+            x: The x-coordinate to check around.
+            y: The y-coordinate to check around.
+            world_map: The WorldMap instance to check for monsters.
+
+        Returns:
+            A list of tuples, where each tuple contains (Monster, monster_x, monster_y).
+        """
         adjacent_monsters = []
-        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+        # Define cardinal directions for adjacency check
+        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:  # North, South, West, East
             adj_x, adj_y = x + dx, y + dy
             tile = world_map.get_tile(adj_x, adj_y)
+            # If tile exists and has a monster, add it to the list
             if tile and tile.monster:
                 adjacent_monsters.append((tile.monster, adj_x, adj_y))
         return adjacent_monsters
@@ -31,8 +49,21 @@ class CommandProcessor:
         player: "Player",
         world_map: "WorldMap",
         message_log: list[str],
-        win_pos: tuple[int, int],
+        winning_position: tuple[int, int],
     ) -> bool:
+        """
+        Processes a 'move' command.
+
+        Args:
+            argument: The direction of movement (e.g., "north", "south").
+            player: The Player instance.
+            world_map: The WorldMap instance.
+            message_log: A list to append messages for the player.
+            winning_position: The (x,y) tuple for the winning location.
+
+        Returns:
+            bool: True if the game is over as a result of this command, False otherwise.
+        """
         current_game_over_state = False
         dx, dy = 0, 0
         if argument == "north":
@@ -56,8 +87,8 @@ class CommandProcessor:
             else:
                 player.move(dx, dy)
                 message_log.append(f"You move {argument}.")
-                if (player.x, player.y) == win_pos:
-                    win_tile = world_map.get_tile(win_pos[0], win_pos[1])
+                if (player.x, player.y) == winning_position:
+                    win_tile = world_map.get_tile(winning_position[0], winning_position[1])
                     if (
                         win_tile
                         and win_tile.item
@@ -76,8 +107,22 @@ class CommandProcessor:
         player: "Player",
         world_map: "WorldMap",
         message_log: list[str],
-        win_pos: tuple[int, int],
+        winning_position: tuple[int, int],
     ) -> dict:
+        """
+        Processes a parsed command tuple (verb, argument).
+
+        Args:
+            parsed_command_tuple: A tuple containing the command verb and its argument.
+                                 Example: ("move", "north"), ("take", "potion").
+            player: The Player instance.
+            world_map: The WorldMap instance.
+            message_log: A list to append messages for the player.
+            winning_position: The (x,y) tuple for the winning location.
+
+        Returns:
+            dict: A dictionary containing game state updates, specifically {"game_over": bool}.
+        """
         current_game_over_state = (
             False  # Local variable to track game_over status for this command
         )
@@ -87,13 +132,15 @@ class CommandProcessor:
             return {"game_over": current_game_over_state}
 
         verb, argument = parsed_command_tuple
+
+        # Dispatch to the appropriate _process_* method based on the verb
         if verb == "move":
             current_game_over_state = self._process_move(
-                argument, player, world_map, message_log, win_pos
+                argument, player, world_map, message_log, winning_position
             )
         elif verb == "take":
             current_game_over_state = self._process_take(
-                argument, player, world_map, message_log, win_pos
+                argument, player, world_map, message_log, winning_position
             )
         elif verb == "drop":
             current_game_over_state = self._process_drop(
@@ -117,14 +164,27 @@ class CommandProcessor:
 
         return {"game_over": current_game_over_state}
 
-    def _process_take(  # noqa: E501 C901 TODO: Refactor for complexity
+    def _process_take(  # noqa: C901 TODO: Refactor for complexity (C901: too complex)
         self,
         argument: Optional[str],
         player: "Player",
         world_map: "WorldMap",
         message_log: list[str],
-        win_pos: tuple[int, int],
+        winning_position: tuple[int, int],
     ) -> bool:
+        """
+        Processes a 'take' command.
+
+        Args:
+            argument: The name of the item to take. If None, implies taking any item.
+            player: The Player instance.
+            world_map: The WorldMap instance.
+            message_log: A list to append messages for the player.
+            winning_position: The (x,y) tuple for the winning location.
+
+        Returns:
+            bool: True if the game is over as a result of this command, False otherwise.
+        """
         # argument here is the item name player is trying to take
         tile = world_map.get_tile(player.x, player.y)
         if not (tile and tile.item):
@@ -142,7 +202,7 @@ class CommandProcessor:
         is_quest_item_at_win = (
             player.x,
             player.y,
-        ) == win_pos and item_to_take.properties.get("type") == "quest"
+        ) == winning_position and item_to_take.properties.get("type") == "quest"
         if is_quest_item_at_win:
             # Test implies "You picked up the Amulet of Yendor! You win!"
             # Actual item removal/player.take_item are mocked in test.
@@ -170,15 +230,37 @@ class CommandProcessor:
         world_map: "WorldMap",
         message_log: list[str],
     ) -> bool:
+        """
+        Processes a 'drop' command.
+
+        Args:
+            argument: The name of the item to drop.
+            player: The Player instance.
+            world_map: The WorldMap instance.
+            message_log: A list to append messages for the player.
+
+        Returns:
+            bool: True if the game is over as a result of this command, False otherwise.
+        """
         if argument is None:
-            message_log.append("Drop what?")  # Or handle by parser
+            message_log.append("Drop what?") # Parser should ideally prevent this with required arg
             return False
 
+        # Store whether the item to be dropped is currently equipped
+        item_is_equipped_weapon = False
+        if player.equipped_weapon and argument: # argument is item_name
+            if player.equipped_weapon.name.lower() == argument.lower():
+                item_is_equipped_weapon = True
+        
         # Player class handles if item exists in inventory
         dropped_item = player.drop_item(argument)
+
         if not dropped_item:
             message_log.append(f"You don't have a {argument} to drop.")
             return False
+
+        if item_is_equipped_weapon: # This check needs dropped_item to be not None
+            message_log.append(f"You unequip the {dropped_item.name}.")
 
         tile = world_map.get_tile(player.x, player.y)
         if tile and tile.item is None:  # Space available on current tile
@@ -186,6 +268,9 @@ class CommandProcessor:
             message_log.append(f"You drop the {dropped_item.name}.")
         else:  # No space, item goes back to player's inventory
             player.take_item(dropped_item)  # Player takes it back
+            # If it was unequipped, it's re-equipped implicitly by taking it back if it's a weapon
+            # However, the original intent was to drop it, so we don't re-equip here.
+            # The message about unequipping stands if that occurred.
             message_log.append(
                 f"You can't drop {dropped_item.name} here, space occupied."
             )
@@ -194,42 +279,66 @@ class CommandProcessor:
     def _process_use(
         self, argument: Optional[str], player: "Player", message_log: list[str]
     ) -> bool:
+        """
+        Processes a 'use' command.
+
+        Args:
+            argument: The name of the item to use.
+            player: The Player instance.
+            message_log: A list to append messages for the player.
+
+        Returns:
+            bool: True if the game is over as a result of this command, False otherwise.
+        """
         if argument is None:
-            message_log.append("Use what?")
+            message_log.append("Use what?") # Parser should ideally prevent this
             return False
 
-        # Player.use_item handles message & health changes.
-        # Test for cursed item (test_process_command_use_item_cursed_kills_player)
-        # uses side_effect on mocked player.use_item for health change.
-        # Real Player.use_item *should* modify health.
-        use_message = player.use_item(argument)
+        use_message = player.use_item(argument) # Player.use_item handles internal logic and messages
         message_log.append(use_message)
 
-        # Check game over from cursed item
-        is_cursed_death = "drains your life!" in use_message and player.health <= 0
-        if is_cursed_death:
-            message_log.append("You have succumbed to a cursed item! Game Over.")
-            return True
+        # Check if using the item resulted in player's death (e.g., a cursed item)
+        # Player.use_item message for cursed items might be like:
+        # "The Cursed Ring drains your life! You take X damage."
+        # or "The Cursed Amulet drains your life to nothing!"
+        # We rely on player.health to determine if it was fatal.
+        if "cursed!" in use_message.lower() and player.health <= 0:
+            # The specific message "You have succumbed to a cursed item! Game Over."
+            # might be redundant if player.use_item already provides a clear "death" message.
+            # However, ensuring a "Game Over" message is present if player health is <=0
+            # after using a cursed item is good.
+            # For now, we assume player.use_item's message is sufficient for the cause,
+            # and we just ensure the game over state is triggered.
+            # If player.use_item's message isn't clear about death, uncommenting the line below
+            # or a similar one might be useful.
+            # message_log.append("You have succumbed to a cursed item! Game Over.")
+            return True # Game over
         return False
 
-    def _process_attack(  # noqa: C901 TODO: Refactor for complexity
-        self,
-        argument: Optional[str],
-        player: "Player",
-        world_map: "WorldMap",
-        message_log: list[str],
-    ) -> bool:
-        adj_monsters = self._get_adjacent_monsters(player.x, player.y, world_map)
+    def _select_attack_target(
+        self, argument: Optional[str], adj_monsters: list[tuple["Monster", int, int]], message_log: list[str]
+    ) -> Optional[tuple["Monster", int, int]]:
+        """
+        Selects a target monster from adjacent monsters based on argument or proximity.
 
+        Args:
+            argument: The name of the monster to target. If None, targets if only one is adjacent.
+            adj_monsters: A list of adjacent monsters (Monster, x, y).
+            message_log: A list to append messages for the player.
+
+        Returns:
+            A tuple (Monster, x, y) if a target is selected, otherwise None.
+        """
         if not adj_monsters:
             message_log.append("There is no monster nearby to attack.")
-            return False
+            return None
 
         target_monster = None
-        target_m_x, target_m_y = 0, 0  # Monster coords
+        target_m_x, target_m_y = 0, 0 # Initialize with placeholder values
 
-        if argument:  # Monster name specified
-            found_monster = next(
+        if argument:  # Monster name specified by player
+            # Find the monster by name (case-insensitive)
+            found_monster_tuple = next(
                 (
                     m_tuple
                     for m_tuple in adj_monsters
@@ -237,25 +346,55 @@ class CommandProcessor:
                 ),
                 None,
             )
-            if not found_monster:
-                message_log.append(f"No monster named {argument} nearby.")
-                return False
-            target_monster, target_m_x, target_m_y = found_monster
-        elif len(adj_monsters) == 1:  # No name, one monster nearby
+            if not found_monster_tuple:
+                message_log.append(f"No monster named '{argument}' nearby.")
+                return None
+            target_monster, target_m_x, target_m_y = found_monster_tuple
+        elif len(adj_monsters) == 1:  # No name specified, only one monster nearby
             target_monster, target_m_x, target_m_y = adj_monsters[0]
-        else:  # No name, multiple monsters nearby
+        else:  # No name specified, multiple monsters nearby
             monster_names = sorted([m_tuple[0].name for m_tuple in adj_monsters])
             message_log.append(
                 f"Multiple monsters nearby: {', '.join(monster_names)}. Which one?"
             )
-            return False
+            return None
+        
+        # This check should ideally be redundant if the logic above is correct.
+        if not target_monster:
+            message_log.append("Error: Could not select a target monster.") # Should not happen
+            return None
 
-        if not target_monster:  # Should be unreachable if logic above is correct
-            message_log.append("Error: No target monster selected for attack.")
-            return False
+        return target_monster, target_m_x, target_m_y
 
-        # Player attacks monster
-        attack_res = player.attack_monster(target_monster)  # Mocked in tests
+    def _process_attack(  # noqa: C901 TODO: Refactor for complexity (C901: too complex)
+        self,
+        argument: Optional[str],
+        player: "Player",
+        world_map: "WorldMap",
+        message_log: list[str],
+    ) -> bool:
+        """
+        Processes an 'attack' command.
+
+        Args:
+            argument: The name of the monster to attack. If None, auto-targets if one is nearby.
+            player: The Player instance.
+            world_map: The WorldMap instance.
+            message_log: A list to append messages for the player.
+
+        Returns:
+            bool: True if the game is over as a result of this command, False otherwise.
+        """
+        adj_monsters = self._get_adjacent_monsters(player.x, player.y, world_map)
+        
+        target_info = self._select_attack_target(argument, adj_monsters, message_log)
+        if target_info is None:
+            return False # Game not over, target selection failed or no target, message already logged
+
+        target_monster, target_m_x, target_m_y = target_info
+
+        # Player attacks the selected monster
+        attack_res = player.attack_monster(target_monster)
         message_log.append(
             f"You attack the {target_monster.name} "
             f"for {attack_res['damage_dealt']} damage."
@@ -264,11 +403,10 @@ class CommandProcessor:
         if attack_res["monster_defeated"]:
             message_log.append(f"You defeated the {target_monster.name}!")
             world_map.remove_monster(target_m_x, target_m_y)
-            # Monster defeated, game not over unless player also defeated
-            return False
+            return False # Monster defeated, game not over
 
         # Monster attacks back if not defeated
-        monster_attack_res = target_monster.attack(player)  # Mocked in tests
+        monster_attack_res = target_monster.attack(player)
         message_log.append(
             f"The {target_monster.name} attacks you for "
             f"{monster_attack_res['damage_dealt_to_player']} damage."
@@ -278,19 +416,47 @@ class CommandProcessor:
             message_log.append("You have been defeated. Game Over.")
             return True  # Player defeated, game over
 
-        return False  # Default: game not over
+        return False  # Default: game not over unless player was defeated
 
     def _process_inventory(self, player: "Player", message_log: list[str]) -> bool:
+        """
+        Processes an 'inventory' command. Displays the player's inventory.
+
+        Args:
+            player: The Player instance.
+            message_log: A list to append messages for the player.
+
+        Returns:
+            bool: Always False, as this command does not end the game.
+        """
         if not player.inventory:
             message_log.append("Your inventory is empty.")
         else:
             item_names = [item.name for item in player.inventory]
-            message_log.append(f"Inventory: {', '.join(item_names)}")
+            # Consider adding equipped status for weapons, e.g., "Iron Sword (equipped)"
+            inventory_display = []
+            for item in player.inventory:
+                display_name = item.name
+                if player.equipped_weapon == item:
+                    display_name += " (equipped)"
+                inventory_display.append(display_name)
+            message_log.append(f"Inventory: {', '.join(inventory_display)}")
         return False
 
     def _process_look(
         self, player: "Player", world_map: "WorldMap", message_log: list[str]
     ) -> bool:
+        """
+        Processes a 'look' command. Describes the player's current location and surroundings.
+
+        Args:
+            player: The Player instance.
+            world_map: The WorldMap instance.
+            message_log: A list to append messages for the player.
+
+        Returns:
+            bool: Always False, as this command does not end the game.
+        """
         message_log.append(f"You are at ({player.x}, {player.y}).")
 
         current_tile = world_map.get_tile(player.x, player.y)
@@ -321,5 +487,14 @@ class CommandProcessor:
         return False
 
     def _process_quit(self, message_log: list[str]) -> bool:
+        """
+        Processes a 'quit' command.
+
+        Args:
+            message_log: A list to append messages for the player.
+
+        Returns:
+            bool: True, as this command ends the game.
+        """
         message_log.append("Quitting game.")
         return True  # Game over

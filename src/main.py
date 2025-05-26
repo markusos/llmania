@@ -1,33 +1,59 @@
+"""
+Main entry point for the text-based adventure game.
+
+This script handles:
+- Setting up the Python path to correctly import game modules.
+- Initializing and running the game engine.
+- Providing a debug mode for testing game mechanics without the curses interface.
+- Basic error handling for the game loop.
+"""
 import os
 import sys
 import traceback
 
 # --- Path setup ---
 # Ensure the project root is in sys.path for module resolution.
-# This allows `from src.game_engine import GameEngine` to work correctly
-# when running main.py directly.
-src_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(src_dir)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+# This allows `from src.game_engine import GameEngine` etc. to work correctly
+# when running main.py directly from the project's root or any other location.
+# It assumes main.py is in the 'src' directory or a similar structure.
+try:
+    src_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(src_dir)
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+except NameError:
+    # __file__ might not be defined if running in certain environments (e.g. some REPLs)
+    # Fallback or log an error if necessary. For typical script execution, this is fine.
+    print("Warning: Could not automatically set up sys.path. Ensure project root is in PYTHONPATH.")
 
-from src.game_engine import GameEngine  # noqa: E402
+
+from src.game_engine import GameEngine  # noqa: E402 (ignore import not at top of file)
 
 # --- End Path setup ---
 
-# curses import is only needed if the non-debug path directly uses curses.wrapper
-# Since GameEngine handles its own curses initialization/cleanup, direct curses
-# import here might only be for curses.error or specific constants if used.
-# For now, let's assume GameEngine encapsulates all curses interactions for
-# the non-debug path.
-# import curses
+# Note: The 'curses' import is generally handled within the Renderer or GameEngine.
+# If direct curses interaction is needed in main.py (e.g., for fallback error handling),
+# it can be imported here, but typically it's encapsulated.
 
 
 def main_debug():
-    # Initialize game engine
+    """
+    Runs the game in a debug mode without the curses interface.
+    This allows for printing game state and messages directly to the console,
+    which is useful for testing game logic and content generation.
+    """
+    print("--- Starting Game in Debug Mode ---")
+    # Initialize game engine in debug mode.
+    # Smaller map for easier console output.
     game = GameEngine(map_width=20, map_height=10, debug_mode=True)
 
-    # Initial render
+    # --- Initial State Output ---
+    print("\n--- Initial Player and Map State ---")
+    print(f"Player initial position: ({game.player.x}, {game.player.y})")
+    print(f"Player initial health: {game.player.health}")
+    print(f"Winning position: {game.winning_position}")
+
+    # Initial render to list (debug_render_to_list=True is handled by GameEngine in debug mode)
     map_representation = game.renderer.render_all(
         player_x=game.player.x,
         player_y=game.player.y,
@@ -36,135 +62,124 @@ def main_debug():
         input_mode=game.input_handler.get_input_mode(),
         current_command_buffer=game.input_handler.get_command_buffer(),
         message_log=game.message_log,
-        debug_render_to_list=True,
+        debug_render_to_list=True, # Explicitly true for clarity in main_debug
     )
     if map_representation:
-        print("--- Initial Map State ---")
+        print("\n--- Initial Map Display (as list of strings) ---")
         for row in map_representation:
             print(row)
     else:
-        print("Failed to render map for debugging.")
+        print("Error: Failed to render map for debugging.")
 
-    # --- Test basic interactions ---
-    print("\n--- Player initial 'look' ---")
-    game.message_log.clear()  # Clear log for fresh messages
+    # --- Simulate and Test Basic Interactions ---
+    # Note: In debug mode, GameEngine.run() might not loop.
+    # We directly call CommandProcessor methods to simulate turns.
+
+    print("\n--- Simulating 'look' command ---")
+    game.message_log.clear()  # Clear previous messages
     game.command_processor.process_command(
         parsed_command_tuple=("look", None),
         player=game.player,
         world_map=game.world_map,
         message_log=game.message_log,
-        win_pos=game.win_pos,
+        winning_position=game.winning_position,
     )
-    map_with_look_messages = game.renderer.render_all(
-        player_x=game.player.x,
-        player_y=game.player.y,
-        player_health=game.player.health,
-        world_map=game.world_map,
-        input_mode=game.input_handler.get_input_mode(),
+    # Render and display output after 'look'
+    output_after_look = game.renderer.render_all(
+        player_x=game.player.x, player_y=game.player.y, player_health=game.player.health,
+        world_map=game.world_map, input_mode=game.input_handler.get_input_mode(),
         current_command_buffer=game.input_handler.get_command_buffer(),
-        message_log=game.message_log,
-        debug_render_to_list=True,
+        message_log=game.message_log, debug_render_to_list=True
     )
-    if map_with_look_messages:
-        # Print only new messages from the message_log part of the output
-        # The render_all output includes the map, UI, and then messages.
-        # We need to identify where messages start. A simple heuristic:
-        # messages usually appear after the command prompt line if in command mode,
-        # or after HP/MODE lines.
-        print("--- Output after 'look' (filtered for messages) ---")
-        ui_and_map_lines = game.world_map.height + 3
-        # Approx map height + HP, MODE, (optional CMD prompt)
-        for i, row in enumerate(map_with_look_messages):
-            # Heuristic to find messages
-            is_message_line = any(
-                msg_part in row for msg_part in game.message_log if msg_part
-            )
-            if i >= ui_and_map_lines or is_message_line:
-                print(row)
+    if output_after_look:
+        print("--- Output after 'look' ---")
+        for row in output_after_look: # Display full output for context
+            print(row)
+    else:
+        print("Error: Failed to render after 'look'.")
 
-    print("\n--- Moving player east ---")
-    game.message_log.clear()  # Clear log for fresh messages
+
+    print("\n--- Simulating 'move east' command ---")
+    game.message_log.clear()
     game.command_processor.process_command(
         parsed_command_tuple=("move", "east"),
         player=game.player,
         world_map=game.world_map,
         message_log=game.message_log,
-        win_pos=game.win_pos,
+        winning_position=game.winning_position,
     )
-    map_after_move = game.renderer.render_all(
-        player_x=game.player.x,
-        player_y=game.player.y,
-        player_health=game.player.health,
-        world_map=game.world_map,
-        input_mode=game.input_handler.get_input_mode(),
+    output_after_move = game.renderer.render_all(
+        player_x=game.player.x, player_y=game.player.y, player_health=game.player.health,
+        world_map=game.world_map, input_mode=game.input_handler.get_input_mode(),
         current_command_buffer=game.input_handler.get_command_buffer(),
-        message_log=game.message_log,
-        debug_render_to_list=True,
+        message_log=game.message_log, debug_render_to_list=True
     )
-    if map_after_move:
-        print("--- Map After Move (full output) ---")
-        for row in map_after_move:
+    if output_after_move:
+        print("--- Output after 'move east' ---")
+        for row in output_after_move:
             print(row)
-        print("--- Messages after 'move' ---")
-        for msg in game.message_log:  # Directly print from game.message_log
-            print(msg)
     else:
-        print("Failed to render map after move.")
+        print("Error: Failed to render after 'move east'.")
 
-    print("\n--- Attempting to 'take' an item ---")
-    game.message_log.clear()  # Clear log for fresh messages
-    # Example: Assume there's no item at the starting location after moving east.
+
+    print("\n--- Simulating 'take' command (expecting 'nothing to take') ---")
+    game.message_log.clear()
+    # Assuming player moved to an empty spot.
     game.command_processor.process_command(
-        parsed_command_tuple=("take", None),
+        parsed_command_tuple=("take", None), # Or specify a non-existent item
         player=game.player,
         world_map=game.world_map,
         message_log=game.message_log,
-        win_pos=game.win_pos,
+        winning_position=game.winning_position,
     )
-    map_after_take_attempt = game.renderer.render_all(
-        player_x=game.player.x,
-        player_y=game.player.y,
-        player_health=game.player.health,
-        world_map=game.world_map,
-        input_mode=game.input_handler.get_input_mode(),
+    output_after_take = game.renderer.render_all(
+        player_x=game.player.x, player_y=game.player.y, player_health=game.player.health,
+        world_map=game.world_map, input_mode=game.input_handler.get_input_mode(),
         current_command_buffer=game.input_handler.get_command_buffer(),
-        message_log=game.message_log,
-        debug_render_to_list=True,
+        message_log=game.message_log, debug_render_to_list=True
     )
-    if map_after_take_attempt:
-        print("--- Messages after 'take' attempt ---")
-        # Print messages directly from game.message_log as it's populated
-        # by CommandProcessor
-        for msg in game.message_log:
-            print(msg)
+    if output_after_take:
+        print("--- Output after 'take' attempt ---")
+        for row in output_after_take:
+            print(row)
     else:
-        print("Failed to render map after take attempt.")
+        print("Error: Failed to render after 'take' attempt.")
+    
+    print("\n--- Debug Mode Finished ---")
 
 
 if __name__ == "__main__":
+    # Check for a "--debug" command-line argument to run main_debug().
     if "--debug" in sys.argv:
         main_debug()
     else:
+        # Initialize and run the game with the curses interface.
+        # Larger map for the actual game.
         game = GameEngine(map_width=30, map_height=15, debug_mode=False)
         try:
             game.run()
         except Exception as e:
-            # General catch-all if game.run() or its cleanup fails.
-            # GameEngine.run() has its own finally block for curses cleanup.
-            # This also catches errors from GameEngine.__init__ if curses init fails.
+            # This is a top-level catch-all for unexpected errors during game.run().
+            # GameEngine.run() has its own finally block for curses cleanup,
+            # but this catches errors that might occur before or outside that,
+            # or if the cleanup itself fails.
             print("-" * 70)
             print("The game encountered an unhandled error:")
-            print(f"Error: {type(e).__name__}: {e}")
+            print(f"Error Type: {type(e).__name__}")
+            print(f"Error Message: {e}")
             print("Traceback:")
             print(traceback.format_exc())
             print("-" * 70)
-            # Attempt final curses cleanup, though GameEngine should handle it.
+            print("Attempting to restore terminal state...")
+            # Attempt to restore terminal state if curses was involved.
+            # This is a fallback; GameEngine should handle its own cleanup.
             try:
-                import curses
-
-                if curses.has_colors():
+                import curses # Import here to avoid dependency if not used.
+                if curses.has_colors(): # Check if curses was initialized
                     curses.echo()
                     curses.nocbreak()
                     curses.endwin()
-            except Exception:
-                pass  # Avoid further errors during this fallback cleanup.
+                print("Terminal state restoration attempt complete.")
+            except Exception as cleanup_error:
+                print(f"Error during fallback terminal cleanup: {cleanup_error}")
+                print("Terminal might be in an inconsistent state.")
