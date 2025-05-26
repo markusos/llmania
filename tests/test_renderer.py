@@ -2,6 +2,8 @@ import curses  # For curses constants and init_pair
 import unittest  # unittest first
 from unittest.mock import MagicMock, call, patch  # Removed PropertyMock
 
+from src.message_log import MessageLog  # Import MessageLog
+
 # Assuming src is in PYTHONPATH or tests are run in a way that src can be imported
 from src.renderer import Renderer
 
@@ -156,7 +158,12 @@ class TestRenderer(unittest.TestCase):
         player_health = 100
         input_mode = "movement"
         current_command_buffer = ""
-        message_log = ["Msg1", "Msg2"]
+
+        # Use MagicMock for MessageLog
+        mock_message_log = MagicMock(spec=MessageLog)
+        test_messages = ["Msg1", "Msg2"]
+        mock_message_log.get_messages.return_value = test_messages
+        mock_message_log.max_messages = 5  # Assuming this attribute exists
 
         output_buffer = renderer.render_all(
             player_x,
@@ -165,12 +172,12 @@ class TestRenderer(unittest.TestCase):
             world_map,
             input_mode,
             current_command_buffer,
-            message_log,
+            mock_message_log,  # Pass the mock
             debug_render_to_list=True,
         )
 
         self.assertEqual(
-            len(output_buffer), self.map_height + 1 + 1 + len(message_log)
+            len(output_buffer), self.map_height + 1 + 1 + len(test_messages)
         )  # map + HP + mode + messages
         self.assertEqual(output_buffer[0], "..........")
         self.assertEqual(
@@ -183,6 +190,7 @@ class TestRenderer(unittest.TestCase):
         )
         self.assertEqual(output_buffer[self.map_height + 2], "Msg1")
         self.assertEqual(output_buffer[self.map_height + 3], "Msg2")
+        mock_message_log.get_messages.assert_called_once()
 
     def test_render_all_debug_render_to_list_command_mode(self):
         renderer = Renderer(
@@ -202,7 +210,9 @@ class TestRenderer(unittest.TestCase):
 
         input_mode = "command"
         current_command_buffer = "test cmd"
-        message_log = []
+        mock_message_log = MagicMock(spec=MessageLog)
+        mock_message_log.get_messages.return_value = []
+        mock_message_log.max_messages = 5
 
         output_buffer = renderer.render_all(
             0,
@@ -211,12 +221,17 @@ class TestRenderer(unittest.TestCase):
             world_map,
             input_mode,
             current_command_buffer,
-            message_log,
+            mock_message_log,  # Pass the mock
             debug_render_to_list=True,
         )
         # map + HP + mode + command_buffer + messages
         self.assertEqual(
-            len(output_buffer), self.map_height + 1 + 1 + 1 + len(message_log)
+            len(output_buffer),
+            self.map_height
+            + 1
+            + 1
+            + 1
+            + len(mock_message_log.get_messages.return_value),
         )
         self.assertEqual(
             output_buffer[self.map_height + 1], f"MODE: {input_mode.upper()}"
@@ -224,6 +239,7 @@ class TestRenderer(unittest.TestCase):
         self.assertEqual(
             output_buffer[self.map_height + 2], f"> {current_command_buffer}"
         )
+        mock_message_log.get_messages.assert_called_once()
 
     # Removed @patch decorators from here
     def test_render_all_curses_mode(self):  # Signature without mock args
@@ -254,7 +270,11 @@ class TestRenderer(unittest.TestCase):
                 player_health = 90
                 input_mode = "movement"
                 current_command_buffer = ""
-                message_log = ["Hello"]
+
+                mock_message_log = MagicMock(spec=MessageLog)
+                test_messages = ["Hello"]
+                mock_message_log.get_messages.return_value = test_messages
+                mock_message_log.max_messages = 5
 
                 renderer.render_all(
                     player_x,
@@ -263,7 +283,7 @@ class TestRenderer(unittest.TestCase):
                     world_map,
                     input_mode,
                     current_command_buffer,
-                    message_log,
+                    mock_message_log,  # Pass the mock
                     debug_render_to_list=False,
                 )
 
@@ -298,6 +318,7 @@ class TestRenderer(unittest.TestCase):
                 self.mock_stdscr.addstr.assert_any_call(
                     7, 0, "Hello", curses.color_pair(renderer.DEFAULT_TEXT_COLOR_PAIR)
                 )
+                mock_message_log.get_messages.assert_called_once()
         finally:
             # Restore original curses attributes
             if original_lines is not None:
@@ -320,8 +341,13 @@ class TestRenderer(unittest.TestCase):
 
         # Call render_all with debug_render_to_list=False (which is default)
         # It should not attempt any curses operations and not crash
+
+        mock_message_log = MagicMock(spec=MessageLog)
+        mock_message_log.get_messages.return_value = []
+        mock_message_log.max_messages = 5
+
         try:
-            renderer.render_all(0, 0, 100, world_map, "movement", "", [])
+            renderer.render_all(0, 0, 100, world_map, "movement", "", mock_message_log)
         except Exception as e:
             self.fail(f"render_all crashed with stdscr=None: {e}")
 

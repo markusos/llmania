@@ -75,7 +75,7 @@ class CommandProcessor:
         elif argument == "west":
             dx = -1
         else:
-            message_log.append(f"Unknown direction: {argument}")
+            message_log.add_message(f"Unknown direction: {argument}")
             return current_game_over_state  # No change in game state
 
         new_x, new_y = player.x + dx, player.y + dy
@@ -83,10 +83,10 @@ class CommandProcessor:
             target_tile = world_map.get_tile(new_x, new_y)
             if target_tile and target_tile.monster:
                 msg = f"You bump into a {target_tile.monster.name}!"
-                message_log.append(msg)
+                message_log.add_message(msg)
             else:
                 player.move(dx, dy)
-                message_log.append(f"You move {argument}.")
+                message_log.add_message(f"You move {argument}.")
                 if (player.x, player.y) == winning_position:
                     win_tile = world_map.get_tile(
                         winning_position[0], winning_position[1]
@@ -96,11 +96,11 @@ class CommandProcessor:
                         and win_tile.item
                         and win_tile.item.properties.get("type") == "quest"
                     ):
-                        message_log.append(
+                        message_log.add_message(
                             "You reached the Amulet of Yendor's location!"
                         )  # Note: This doesn't end game, taking item does
         else:
-            message_log.append("You can't move there.")
+            message_log.add_message("You can't move there.")
         return current_game_over_state
 
     def process_command(
@@ -130,7 +130,7 @@ class CommandProcessor:
         )
 
         if parsed_command_tuple is None:
-            message_log.append("Unknown command.")
+            message_log.add_message("Unknown command.")
             return {"game_over": current_game_over_state}
 
         verb, argument = parsed_command_tuple
@@ -191,38 +191,54 @@ class CommandProcessor:
         tile = world_map.get_tile(player.x, player.y)
         if not (tile and tile.item):
             item_name_msg = argument if argument else "item"
-            message_log.append(f"There is no {item_name_msg} here to take.")
+            message_log.add_message(f"There is no {item_name_msg} here to take.")
             return False
 
         item_to_take = tile.item
         # Check if item name matches (case-insensitive) or if any item can be taken
         if argument and item_to_take.name.lower() != argument.lower():
-            message_log.append(f"There is no {argument} here to take.")
+            message_log.add_message(f"There is no {argument} here to take.")
             return False
 
-        # Specific handling for quest item at win position
-        is_quest_item_at_win = (
-            player.x,
-            player.y,
-        ) == winning_position and item_to_take.properties.get("type") == "quest"
-        if is_quest_item_at_win:
-            # Test implies "You picked up the Amulet of Yendor! You win!"
-            # Actual item removal/player.take_item are mocked in test.
-            if item_to_take.name == "Amulet":  # Specific name for win msg
-                message_log.append("You picked up the Amulet of Yendor! You win!")
-            else:  # Fallback for other quest items
-                message_log.append(f"You picked up the {item_to_take.name}! You win!")
-            return True  # Game over - win
+        # Check if the item itself is the quest item that triggers a win
+        if item_to_take.properties.get("type") == "quest":
+            # Player picks up the quest item (e.g., Amulet)
+            # The world_map.remove_item and player.take_item will be called later
+            # if this block doesn't return True immediately.
+            # For a win, we want to announce victory and end the game.
 
-        # Generic item take
+            # Ensure the item is actually removed from the map and added to player inventory
+            # before declaring victory, to maintain consistent state.
+            removed_item = world_map.remove_item(player.x, player.y)
+            if removed_item:  # Should be the quest item
+                player.take_item(removed_item)
+                # Now append win message and return True for game_over
+                if removed_item.name == "Amulet of Yendor":  # Specific name for win msg
+                    message_log.add_message(
+                        "You picked up the Amulet of Yendor! You win!"
+                    )
+                else:  # Fallback for other quest items
+                    message_log.add_message(
+                        f"You picked up the {removed_item.name}! You win!"
+                    )
+                return True  # Game over - win
+            else:
+                # This case should ideally not be reached if item_to_take was valid
+                message_log.add_message(
+                    f"Error: Tried to take quest item {item_to_take.name}, but it couldn't be removed from map."
+                )
+                return False  # Continue game, error occurred
+
+        # Generic item take (not a quest item, or quest item logic failed to remove)
         removed_item = world_map.remove_item(player.x, player.y)
         if removed_item:  # Ensure item was actually removed by map
             player.take_item(removed_item)
-            message_log.append(f"You take the {removed_item.name}.")
+            message_log.add_message(f"You take the {removed_item.name}.")
             return False  # Game not over
 
         # Should not happen if tile.item was initially present and matched
-        message_log.append(f"Could not remove {item_to_take.name} from map.")
+        # (and was not a successfully processed quest item)
+        message_log.add_message(f"Could not remove {item_to_take.name} from map.")
         return False
 
     def _process_drop(
@@ -245,7 +261,7 @@ class CommandProcessor:
             bool: True if the game is over as a result of this command, False otherwise.
         """
         if argument is None:
-            message_log.append(
+            message_log.add_message(
                 "Drop what?"
             )  # Parser should ideally prevent this with required arg
             return False
@@ -260,22 +276,22 @@ class CommandProcessor:
         dropped_item = player.drop_item(argument)
 
         if not dropped_item:
-            message_log.append(f"You don't have a {argument} to drop.")
+            message_log.add_message(f"You don't have a {argument} to drop.")
             return False
 
         if item_is_equipped_weapon:  # This check needs dropped_item to be not None
-            message_log.append(f"You unequip the {dropped_item.name}.")
+            message_log.add_message(f"You unequip the {dropped_item.name}.")
 
         tile = world_map.get_tile(player.x, player.y)
         if tile and tile.item is None:  # Space available on current tile
             world_map.place_item(dropped_item, player.x, player.y)
-            message_log.append(f"You drop the {dropped_item.name}.")
+            message_log.add_message(f"You drop the {dropped_item.name}.")
         else:  # No space, item goes back to player's inventory
             player.take_item(dropped_item)  # Player takes it back
             # If it was unequipped, it's re-equipped implicitly by taking it back if it's a weapon
             # However, the original intent was to drop it, so we don't re-equip here.
             # The message about unequipping stands if that occurred.
-            message_log.append(
+            message_log.add_message(
                 f"You can't drop {dropped_item.name} here, space occupied."
             )
         return False
@@ -295,13 +311,13 @@ class CommandProcessor:
             bool: True if the game is over as a result of this command, False otherwise.
         """
         if argument is None:
-            message_log.append("Use what?")  # Parser should ideally prevent this
+            message_log.add_message("Use what?")  # Parser should ideally prevent this
             return False
 
         use_message = player.use_item(
             argument
         )  # Player.use_item handles internal logic and messages
-        message_log.append(use_message)
+        message_log.add_message(use_message)
 
         # Check if using the item resulted in player's death (e.g., a cursed item)
         # Player.use_item message for cursed items might be like:
@@ -317,7 +333,7 @@ class CommandProcessor:
             # and we just ensure the game over state is triggered.
             # If player.use_item's message isn't clear about death, uncommenting the line below
             # or a similar one might be useful.
-            # message_log.append("You have succumbed to a cursed item! Game Over.")
+            # message_log.add_message("You have succumbed to a cursed item! Game Over.")
             return True  # Game over
         return False
 
@@ -339,7 +355,7 @@ class CommandProcessor:
             A tuple (Monster, x, y) if a target is selected, otherwise None.
         """
         if not adj_monsters:
-            message_log.append("There is no monster nearby to attack.")
+            message_log.add_message("There is no monster nearby to attack.")
             return None
 
         target_monster = None
@@ -356,21 +372,21 @@ class CommandProcessor:
                 None,
             )
             if not found_monster_tuple:
-                message_log.append(f"No monster named '{argument}' nearby.")
+                message_log.add_message(f"No monster named '{argument}' nearby.")
                 return None
             target_monster, target_m_x, target_m_y = found_monster_tuple
         elif len(adj_monsters) == 1:  # No name specified, only one monster nearby
             target_monster, target_m_x, target_m_y = adj_monsters[0]
         else:  # No name specified, multiple monsters nearby
             monster_names = sorted([m_tuple[0].name for m_tuple in adj_monsters])
-            message_log.append(
+            message_log.add_message(
                 f"Multiple monsters nearby: {', '.join(monster_names)}. Which one?"
             )
             return None
 
         # This check should ideally be redundant if the logic above is correct.
         if not target_monster:
-            message_log.append(
+            message_log.add_message(
                 "Error: Could not select a target monster."
             )  # Should not happen
             return None
@@ -406,25 +422,25 @@ class CommandProcessor:
 
         # Player attacks the selected monster
         attack_res = player.attack_monster(target_monster)
-        message_log.append(
+        message_log.add_message(
             f"You attack the {target_monster.name} "
             f"for {attack_res['damage_dealt']} damage."
         )
 
         if attack_res["monster_defeated"]:
-            message_log.append(f"You defeated the {target_monster.name}!")
+            message_log.add_message(f"You defeated the {target_monster.name}!")
             world_map.remove_monster(target_m_x, target_m_y)
             return False  # Monster defeated, game not over
 
         # Monster attacks back if not defeated
         monster_attack_res = target_monster.attack(player)
-        message_log.append(
+        message_log.add_message(
             f"The {target_monster.name} attacks you for "
             f"{monster_attack_res['damage_dealt_to_player']} damage."
         )
 
         if monster_attack_res["player_is_defeated"]:
-            message_log.append("You have been defeated. Game Over.")
+            message_log.add_message("You have been defeated. Game Over.")
             return True  # Player defeated, game over
 
         return False  # Default: game not over unless player was defeated
@@ -441,7 +457,7 @@ class CommandProcessor:
             bool: Always False, as this command does not end the game.
         """
         if not player.inventory:
-            message_log.append("Your inventory is empty.")
+            message_log.add_message("Your inventory is empty.")
         else:
             item_names = [item.name for item in player.inventory]
             # Consider adding equipped status for weapons, e.g., "Iron Sword (equipped)"
@@ -451,7 +467,7 @@ class CommandProcessor:
                 if player.equipped_weapon == item:
                     display_name += " (equipped)"
                 inventory_display.append(display_name)
-            message_log.append(f"Inventory: {', '.join(inventory_display)}")
+            message_log.add_message(f"Inventory: {', '.join(inventory_display)}")
         return False
 
     def _process_look(
@@ -468,17 +484,17 @@ class CommandProcessor:
         Returns:
             bool: Always False, as this command does not end the game.
         """
-        message_log.append(f"You are at ({player.x}, {player.y}).")
+        message_log.add_message(f"You are at ({player.x}, {player.y}).")
 
         current_tile = world_map.get_tile(player.x, player.y)
         item_seen_on_tile = False
         monster_on_tile = False
         if current_tile:
             if current_tile.item:
-                message_log.append(f"You see a {current_tile.item.name} here.")
+                message_log.add_message(f"You see a {current_tile.item.name} here.")
                 item_seen_on_tile = True
             if current_tile.monster:  # Monster ON player's tile
-                message_log.append(f"There is a {current_tile.monster.name} here!")
+                message_log.add_message(f"There is a {current_tile.monster.name} here!")
                 # This implies player can't move here; 'look' should report it.
                 monster_on_tile = True
 
@@ -486,7 +502,7 @@ class CommandProcessor:
         adj_monster_seen = False
         if adj_monsters:
             for monster, mx, my in adj_monsters:
-                message_log.append(f"You see a {monster.name} at ({mx}, {my}).")
+                message_log.add_message(f"You see a {monster.name} at ({mx}, {my}).")
                 adj_monster_seen = True
 
         # "The area is clear" if nothing on tile and no adjacent monsters.
@@ -494,7 +510,7 @@ class CommandProcessor:
             not item_seen_on_tile and not adj_monster_seen and not monster_on_tile
         )
         if is_area_clear:
-            message_log.append("The area is clear.")
+            message_log.add_message("The area is clear.")
         return False
 
     def _process_quit(self, message_log: list[str]) -> bool:
@@ -507,5 +523,5 @@ class CommandProcessor:
         Returns:
             bool: True, as this command ends the game.
         """
-        message_log.append("Quitting game.")
+        message_log.add_message("Quitting game.")
         return True  # Game over
