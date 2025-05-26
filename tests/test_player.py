@@ -62,6 +62,7 @@ class TestPlayer(unittest.TestCase):
 
     def test_player_use_item_heal(self):
         player = Player(x=0, y=0, health=50)
+        player.max_health = 100  # Explicitly set max_health for this test
         potion = Item(
             "Health Potion", "Restores 10 HP.", {"type": "heal", "amount": 10}
         )
