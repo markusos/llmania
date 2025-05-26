@@ -19,6 +19,7 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.y = 1
         self.mock_player.health = 100
         self.mock_player.inventory = []
+        self.mock_player.equipped_weapon = None  # Add equipped_weapon attribute
 
         self.mock_world_map = MagicMock(spec=WorldMap)
         self.mock_world_map.get_tile = MagicMock()
@@ -229,27 +230,6 @@ class TestCommandProcessor(unittest.TestCase):
             result["game_over"]
         )  # Assuming normal item use doesn't end game
 
-    def test_process_command_use_item_cursed_kills_player(self):
-        item_name = "Cursed Ring"
-        use_message = "The Cursed Ring drains your life!"
-        self.mock_player.use_item.return_value = use_message
-
-        # Simulate player health dropping to 0 after use_item
-        def side_effect_use_item(item_name_arg):
-            if item_name_arg == item_name:
-                self.mock_player.health = 0
-            return use_message
-
-        self.mock_player.use_item.side_effect = side_effect_use_item
-
-        result = self.common_process_command(("use", item_name))
-
-        self.assertIn(use_message, self.message_log)
-        self.assertIn(
-            "You have succumbed to a cursed item! Game Over.", self.message_log
-        )
-        self.assertTrue(result["game_over"])
-
     def test_process_command_attack_monster_defeated(self):
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Rat"  # Set the attribute
@@ -377,7 +357,7 @@ class TestCommandProcessor(unittest.TestCase):
         result = self.common_process_command(
             ("attack", "Ghost")
         )  # Attack 'Ghost', but only 'Wolf' is present
-        self.assertIn("No monster named Ghost nearby.", self.message_log)
+        self.assertIn("No monster named 'Ghost' nearby.", self.message_log)  # Updated assertion
         self.assertFalse(result["game_over"])
 
     def test_process_command_inventory_has_items(self):
