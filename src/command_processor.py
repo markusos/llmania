@@ -123,7 +123,8 @@ class CommandProcessor:
             winning_position: The (x,y) tuple for the winning location.
 
         Returns:
-            dict: A dictionary containing game state updates, specifically {"game_over": bool}.
+            dict: A dictionary containing game state updates,
+                  specifically {"game_over": bool}.
         """
         current_game_over_state = (
             False  # Local variable to track game_over status for this command
@@ -207,8 +208,9 @@ class CommandProcessor:
             # if this block doesn't return True immediately.
             # For a win, we want to announce victory and end the game.
 
-            # Ensure the item is actually removed from the map and added to player inventory
-            # before declaring victory, to maintain consistent state.
+            # Ensure the item is actually removed from the map
+            # and added to player inventory before declaring victory,
+            # to maintain consistent state.
             removed_item = world_map.remove_item(player.x, player.y)
             if removed_item:  # Should be the quest item
                 player.take_item(removed_item)
@@ -225,7 +227,7 @@ class CommandProcessor:
             else:
                 # This case should ideally not be reached if item_to_take was valid
                 message_log.add_message(
-                    f"Error: Tried to take quest item {item_to_take.name}, but it couldn't be removed from map."
+                    f"Error: Failed to remove quest item {item_to_take.name} from map."
                 )
                 return False  # Continue game, error occurred
 
@@ -288,9 +290,9 @@ class CommandProcessor:
             message_log.add_message(f"You drop the {dropped_item.name}.")
         else:  # No space, item goes back to player's inventory
             player.take_item(dropped_item)  # Player takes it back
-            # If it was unequipped, it's re-equipped implicitly by taking it back if it's a weapon
-            # However, the original intent was to drop it, so we don't re-equip here.
-            # The message about unequipping stands if that occurred.
+            # If unequipped, it's re-equipped by taking it back if it's a weapon.
+            # However, original intent was to drop, so don't re-equip here.
+            # Unequip message stands if it occurred.
             message_log.add_message(
                 f"You can't drop {dropped_item.name} here, space occupied."
             )
@@ -325,14 +327,14 @@ class CommandProcessor:
         # or "The Cursed Amulet drains your life to nothing!"
         # We rely on player.health to determine if it was fatal.
         if "cursed!" in use_message.lower() and player.health <= 0:
-            # The specific message "You have succumbed to a cursed item! Game Over."
-            # might be redundant if player.use_item already provides a clear "death" message.
-            # However, ensuring a "Game Over" message is present if player health is <=0
+            # The specific "You have succumbed to a cursed item! Game Over."
+            # might be redundant if player.use_item provides a clear "death" message.
+            # However, ensuring a "Game Over" message is present if player health <=0
             # after using a cursed item is good.
-            # For now, we assume player.use_item's message is sufficient for the cause,
-            # and we just ensure the game over state is triggered.
-            # If player.use_item's message isn't clear about death, uncommenting the line below
-            # or a similar one might be useful.
+            # For now, we assume player.use_item's message is sufficient.
+            # We just ensure the game over state is triggered.
+            # If player.use_item's message isn't clear about death,
+            # uncommenting the line below or a similar one might be useful.
             # message_log.add_message("You have succumbed to a cursed item! Game Over.")
             return True  # Game over
         return False
@@ -347,7 +349,8 @@ class CommandProcessor:
         Selects a target monster from adjacent monsters based on argument or proximity.
 
         Args:
-            argument: The name of the monster to target. If None, targets if only one is adjacent.
+            argument: The name of the monster to target.
+                      If None, targets if only one is adjacent.
             adj_monsters: A list of adjacent monsters (Monster, x, y).
             message_log: A list to append messages for the player.
 
@@ -404,7 +407,8 @@ class CommandProcessor:
         Processes an 'attack' command.
 
         Args:
-            argument: The name of the monster to attack. If None, auto-targets if one is nearby.
+            argument: The name of the monster to attack.
+                      If None, auto-targets if one is nearby.
             player: The Player instance.
             world_map: The WorldMap instance.
             message_log: A list to append messages for the player.
@@ -416,7 +420,8 @@ class CommandProcessor:
 
         target_info = self._select_attack_target(argument, adj_monsters, message_log)
         if target_info is None:
-            return False  # Game not over, target selection failed or no target, message already logged
+            # Target selection failed or no target, message already logged.
+            return False  # Game not over
 
         target_monster, target_m_x, target_m_y = target_info
 
@@ -459,7 +464,6 @@ class CommandProcessor:
         if not player.inventory:
             message_log.add_message("Your inventory is empty.")
         else:
-            item_names = [item.name for item in player.inventory]
             # Consider adding equipped status for weapons, e.g., "Iron Sword (equipped)"
             inventory_display = []
             for item in player.inventory:
@@ -474,7 +478,8 @@ class CommandProcessor:
         self, player: "Player", world_map: "WorldMap", message_log: list[str]
     ) -> bool:
         """
-        Processes a 'look' command. Describes the player's current location and surroundings.
+        Processes a 'look' command.
+        Describes the player's current location and surroundings.
 
         Args:
             player: The Player instance.

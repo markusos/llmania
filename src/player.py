@@ -14,8 +14,8 @@ class Player:
         health (int): The player's current health points.
         max_health (int): The player's maximum health points.
         inventory (List[Item]): A list of items currently held by the player.
-        base_attack_power (int): The player's innate attack power, before weapon bonuses.
-        equipped_weapon (Optional[Item]): The weapon currently equipped by the player, if any.
+        base_attack_power (int): Innate attack power, before weapon bonuses.
+        equipped_weapon (Optional[Item]): Currently equipped weapon, if any.
     """
 
     def __init__(self, x: int, y: int, health: int):
@@ -205,12 +205,12 @@ class Player:
                 self.inventory.remove(item_to_use)
                 return f"Used {item_to_use.name}, healed by {healed_actually} HP."
             else:
-                # This case implies item had 0 heal amount or player was full (already checked).
-                # Item is not consumed if no effective healing.
+                # Item had 0 heal amount or player was full (already checked).
+                # Item not consumed if no effective healing.
                 return f"You use {item_to_use.name}, but it has no effect."
 
         elif item_type == "junk" or item_type is None:
             return f"Cannot use {item_to_use.name}."
 
-        # Default message for other usable items not explicitly handled above (e.g. quest items if they are 'usable')
+        # Default message for other usable items (e.g. quest items if 'usable').
         return f"You use the {item_to_use.name}."

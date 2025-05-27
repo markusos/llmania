@@ -26,9 +26,7 @@ try:
 except NameError:
     # __file__ might not be defined if running in certain environments (e.g. some REPLs)
     # Fallback or log an error if necessary. For typical script execution, this is fine.
-    print(
-        "Warning: Could not automatically set up sys.path. Ensure project root is in PYTHONPATH."
-    )
+    print("Warning: Could not set up sys.path. Ensure project root is in PYTHONPATH.")
 
 
 from src.game_engine import GameEngine  # noqa: E402 (ignore import not at top of file)
@@ -57,7 +55,7 @@ def main_debug():
     print(f"Player initial health: {game.player.health}")
     print(f"Winning position: {game.winning_position}")
 
-    # Initial render to list (debug_render_to_list=True is handled by GameEngine in debug mode)
+    # Initial render to list (debug_render_to_list=True is handled by GameEngine)
     map_representation = game.renderer.render_all(
         player_x=game.player.x,
         player_y=game.player.y,

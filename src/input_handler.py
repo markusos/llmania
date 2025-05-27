@@ -27,12 +27,12 @@ class InputHandler:
         """
         Captures a key press and processes it based on the current input mode.
 
-        In "movement" mode, it translates keys (arrow keys, WASD) into movement commands.
-        The tilde key (`) switches to "command" mode.
+        In "movement" mode, it translates keys (arrow keys, WASD)
+        into movement commands. The tilde key (`) switches to "command" mode.
 
         In "command" mode, it accumulates characters into a buffer. Enter key
-        parses the buffer. Escape or tilde (on empty buffer) switches to "movement" mode.
-        Backspace deletes characters.
+        parses the buffer. Escape or tilde (on empty buffer) switches to
+        "movement" mode. Backspace deletes characters.
 
         Returns:
             A tuple (verb, argument) if a command is fully entered or a movement key

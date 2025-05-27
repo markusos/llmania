@@ -56,7 +56,7 @@ class GameEngine:
             )  # Consider making seed configurable for testing
         )
 
-        # Instantiate Renderer first, as it handles curses initialization (if not in debug_mode).
+        # Instantiate Renderer first (handles curses init if not debug_mode).
         player_symbol = "@"  # Define the player's visual representation on the map.
         self.renderer = Renderer(
             debug_mode=self.debug_mode,
@@ -65,7 +65,7 @@ class GameEngine:
             player_symbol=player_symbol,
         )
 
-        # Instantiate InputHandler, passing the curses screen (stdscr) from the renderer.
+        # Instantiate InputHandler, passing stdscr from the renderer.
         self.input_handler = InputHandler(self.renderer.stdscr, self.parser)
 
         self.command_processor = CommandProcessor()
@@ -83,13 +83,15 @@ class GameEngine:
             )
 
     # Note: Methods like handle_input_and_get_command, render_map,
-    # process_command_tuple, and _get_adjacent_monsters were removed as their
-    # responsibilities have been moved to InputHandler, Renderer, and CommandProcessor respectively.
+    # process_command_tuple, and _get_adjacent_monsters were removed.
+    # Their responsibilities have been moved to InputHandler, Renderer,
+    # and CommandProcessor respectively.
 
     def run(self):
         """
         Starts and manages the main game loop.
-        Handles input, processes commands, and renders the game state until the game is over.
+        Handles input, processes commands, and renders the game state
+        until the game is over.
         """
         if self.debug_mode:
             # Special handling for debug mode to prevent curses initialization
@@ -98,8 +100,8 @@ class GameEngine:
                 "Error: GameEngine.run() called in debug_mode. "
                 "Use main_debug() in main.py for testing."
             )
-            self.game_over = True  # Set game_over to true to satisfy test conditions expecting no loop.
-            # Perform a single render to a list for debug inspection, as expected by some tests.
+            self.game_over = True  # Set game_over for test conditions.
+            # Perform a single render to list for debug inspection, as per some tests.
             self.renderer.render_all(
                 player_x=self.player.x,
                 player_y=self.player.y,
@@ -132,20 +134,19 @@ class GameEngine:
                     if self.ai_sleep_duration > 0:
                         time.sleep(self.ai_sleep_duration)
                     # Pass the current game state to get_next_action.
-                    # AILogic already has player, world_map, message_log from its init.
-                    # If it needs more dynamic info in the future, it can be passed here.
+                    # AILogic has player, world_map, message_log from its init.
+                    # More dynamic info can be passed here if needed in the future.
                     parsed_command_output = self.ai_logic.get_next_action()
 
-                    # Optional: Add a message to the log indicating AI is thinking or acting.
-                    # self.message_log.append("AI is pondering its next move...")
-                    # This might make the log noisy, consider if it's really needed.
+                    # Optional: Log AI thinking/acting. (e.g., "AI is pondering...")
+                    # This might make the log noisy, consider if it's needed.
                 else:
                     parsed_command_output = (
                         self.input_handler.handle_input_and_get_command()
                     )
 
                 if parsed_command_output:
-                    # self.message_log.clear() # Removed: MessageLog handles history limit
+                    # self.message_log.clear() # Removed: MessageLog handles history
 
                     # If the game is already marked as over (e.g., by a previous command
                     # that allows further input before full loop termination),
@@ -155,7 +156,7 @@ class GameEngine:
                             "The game is over."
                         )  # Use add_message
                     else:
-                        # Process the command and get results (e.g., if game is now over).
+                        # Process command and get results (e.g., if game is now over).
                         results = self.command_processor.process_command(
                             parsed_command_output,
                             self.player,
@@ -165,7 +166,7 @@ class GameEngine:
                         )
                         self.game_over = results.get("game_over", False)
 
-                # Render the updated game state after processing the command (or if no command).
+                # Render updated game state after command (or if no command).
                 self.renderer.render_all(
                     player_x=self.player.x,
                     player_y=self.player.y,
@@ -184,9 +185,9 @@ class GameEngine:
                 player_y=self.player.y,
                 player_health=self.player.health,
                 world_map=self.world_map,
-                input_mode=self.input_handler.get_input_mode(),  # Show final mode
-                current_command_buffer=self.input_handler.get_command_buffer(),  # Show final buffer
-                message_log=self.message_log,  # Show final messages
+                input_mode=self.input_handler.get_input_mode(),
+                current_command_buffer=self.input_handler.get_command_buffer(),
+                message_log=self.message_log,
                 debug_render_to_list=self.debug_mode,  # Should be False here
             )
 

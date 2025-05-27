@@ -46,7 +46,7 @@ class Monster:
         Returns:
             A dictionary containing:
                 "damage_taken" (int): The amount of damage dealt.
-                "defeated" (bool): True if the monster's health is 0 or less, False otherwise.
+                "defeated" (bool): True if health is <= 0, False otherwise.
         """
         self.health -= damage
         if self.health < 0:
@@ -62,8 +62,8 @@ class Monster:
 
         Returns:
             A dictionary containing:
-                "damage_dealt_to_player" (int): The amount of damage dealt to the player.
-                "player_is_defeated" (bool): True if the player was defeated by this attack.
+                "damage_dealt_to_player" (int): Damage dealt to the player.
+                "player_is_defeated" (bool): True if player was defeated.
         """
         damage_to_deal = self.attack_power
         # Player's take_damage method is called, which handles health reduction.
