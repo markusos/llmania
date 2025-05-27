@@ -18,7 +18,7 @@ class WorldMap:
         """
         Initializes a new WorldMap of the given dimensions.
         By default, all tiles are initialized as "floor" tiles.
-        This might be overridden by WorldGenerator which typically fills it with walls first.
+        This might be overridden by WorldGenerator (fills with walls first).
 
         Args:
             width: The width of the map.
@@ -57,7 +57,7 @@ class WorldMap:
             tile_type: The new type for the tile (e.g., "wall", "floor").
 
         Returns:
-            True if the tile type was successfully set, False if coordinates are out of bounds.
+            True if tile type was set, False if coords are out of bounds.
         """
         tile = self.get_tile(x, y)
         if tile:
@@ -79,7 +79,7 @@ class WorldMap:
             True if the move is valid, False otherwise.
         """
         tile = self.get_tile(x, y)
-        # Valid if tile exists and is not a wall (implicitly, entities on tile don't block movement here)
+        # Valid if tile exists and not wall (entities don't block movement here).
         if tile and tile.type != "wall":
             return True
         return False
@@ -87,7 +87,7 @@ class WorldMap:
     def place_item(self, item: Item, x: int, y: int) -> bool:
         """
         Places an Item on the tile at the specified coordinates.
-        An item can only be placed if the tile exists and does not already contain an item.
+        Item can only be placed if tile exists and does not already contain an item.
 
         Args:
             item: The Item object to place.
@@ -95,7 +95,7 @@ class WorldMap:
             y: The y-coordinate for placement.
 
         Returns:
-            True if the item was successfully placed, False otherwise (e.g., out of bounds, tile occupied).
+            True if item placed, False otherwise (e.g., out of bounds, occupied).
         """
         tile = self.get_tile(x, y)
         if tile and tile.item is None:  # Check if tile exists and is empty of items
@@ -112,7 +112,7 @@ class WorldMap:
             y: The y-coordinate of the tile.
 
         Returns:
-            The Item object that was removed, or None if no item was on the tile or coords out of bounds.
+            Removed Item object, or None if no item on tile or out of bounds.
         """
         tile = self.get_tile(x, y)
         if tile and tile.item is not None:
@@ -124,7 +124,7 @@ class WorldMap:
     def place_monster(self, monster: Monster, x: int, y: int) -> bool:
         """
         Places a Monster on the tile at the specified coordinates.
-        A monster can only be placed if the tile exists and does not already contain a monster.
+        Monster can only be placed if tile exists and does not already contain one.
         Also updates the monster's internal x, y coordinates.
 
         Args:
@@ -154,7 +154,7 @@ class WorldMap:
             y: The y-coordinate of the tile.
 
         Returns:
-            The Monster object that was removed, or None if no monster was on the tile or coords out of bounds.
+            Removed Monster object, or None if no monster on tile or out of bounds.
         """
         tile = self.get_tile(x, y)
         if tile and tile.monster is not None:

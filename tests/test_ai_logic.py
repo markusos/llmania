@@ -78,7 +78,7 @@ class TestAILogic(unittest.TestCase):
         quest_item.properties = {"type": "quest"}
 
         self.current_tile_mock.item = quest_item
-        # self.mock_world_map.get_tile.return_value = self.current_tile_mock # Already default for player pos
+        # get_tile already defaults to current_tile_mock for player pos
 
         action = self.ai.get_next_action()
         self.assertEqual(action, ("take", "Amulet of Yendor"))
@@ -177,7 +177,7 @@ class TestAILogic(unittest.TestCase):
         self.mock_world_map.get_tile.side_effect = side_effect_get_tile
 
         action = self.ai.get_next_action()
-        # The AI picks the first one it finds (N, S, W, E order in _get_adjacent_monsters)
+        # AI picks first one found (N, S, W, E order in _get_adjacent_monsters).
         self.assertEqual(action, ("attack", "Orc"))
         self.message_log.add_message.assert_any_call("AI: Attacking Orc.")
 
@@ -192,7 +192,7 @@ class TestAILogic(unittest.TestCase):
         # Player is at (1,1)
         # Tile North (1,0) is valid and unvisited.
         # Tile East (2,1) is valid but visited.
-        # Other tiles (South, West) could be valid/invalid, but North should be preferred.
+        # Other tiles (S, W) could be valid/invalid, but North preferred.
 
         empty_tile_north = MagicMock(spec=Tile)
         empty_tile_north.item = None
@@ -229,7 +229,7 @@ class TestAILogic(unittest.TestCase):
         action = self.ai.get_next_action()
 
         self.assertEqual(action, ("move", "north"))
-        # Ensure random.choice was called with a list containing only the unvisited option
+        # random.choice called with list containing only the unvisited option.
         mock_random_choice.assert_called_once_with([("move", "north")])
         self.message_log.add_message.assert_any_call(
             "AI: Exploring unvisited. Moving north."
@@ -269,8 +269,8 @@ class TestAILogic(unittest.TestCase):
         self.mock_world_map.get_tile.side_effect = side_effect_get_tile
         self.mock_world_map.is_valid_move.return_value = True  # All directions valid
 
-        # AI should pick a random valid move from all possible moves
-        # We don't care about avoiding back-and-forth for this specific test, just that it moves.
+        # AI should pick a random valid move from all possible moves.
+        # Don't care about avoiding back-and-forth for this test, just that it moves.
         mock_random_choice.return_value = ("move", "east")
 
         action = self.ai.get_next_action()
@@ -298,8 +298,8 @@ class TestAILogic(unittest.TestCase):
         # Player at (1,1), surrounded by walls (no valid moves)
         self.mock_world_map.is_valid_move.return_value = False  # All moves are invalid
 
-        # get_tile will return None for adjacent tiles if is_valid_move is false first in AILogic,
-        # but good practice to ensure they are not special.
+        # get_tile returns None for adjacent if is_valid_move is false in AILogic.
+        # Good practice to ensure they are not special.
         def side_effect_get_tile(x, y):
             if x == self.mock_player.x and y == self.mock_player.y:
                 return self.current_tile_mock

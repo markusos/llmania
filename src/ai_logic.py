@@ -70,7 +70,7 @@ class AILogic:
 
         # 2. Use Potion if Low Health
         # Assuming max_health might be available, otherwise using a fixed threshold.
-        # If player has max_health attribute: low_health_threshold = self.player.max_health * 0.5
+        # e.g. low_health_threshold = self.player.max_health * 0.5
         low_health_threshold = 10  # Fixed threshold for now
         if self.player.health < low_health_threshold:
             if "Health Potion" in self.player.inventory:  # Direct check by name

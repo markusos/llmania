@@ -19,11 +19,15 @@ class Item:
             description: A textual description of the item.
             properties: A dictionary defining the item's characteristics and effects.
                         Common keys include:
-                        - "type": (str) e.g., "weapon", "heal", "quest", "junk", "cursed"
+                        - "type": (str) e.g., "weapon", "heal", "quest", "junk",
+                                    "cursed"
                         - "attack_bonus": (int) For weapons, the bonus to attack power.
-                        - "verb": (str) For weapons, the verb used in attack messages (e.g., "stabs").
-                        - "amount": (int) For healing items, the amount of health restored.
-                        - "damage": (int) For cursed items, the amount of damage inflicted.
+                        - "verb": (str) For weapons, the verb used in attack messages
+                                    (e.g., "stabs").
+                        - "amount": (int) For healing items, the amount of health
+                                    restored.
+                        - "damage": (int) For cursed items, the amount of damage
+                                    inflicted.
         """
         self.name = name
         self.description = description

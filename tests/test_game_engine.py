@@ -155,9 +155,9 @@ class TestGameEngine(unittest.TestCase):
         # Reset game state before running. This is important if tests modify
         # state and affect their own potential re-runs, or if test order matters.
         self.game_engine.game_over = False
-        # self.game_engine.message_log.clear() # MessageLog object has no clear; re-init if needed
-        # For this test, re-initializing GameEngine or its MessageLog might be better
-        # if a clean message log is strictly required for assertions after run.
+        # self.game_engine.message_log.clear() # No clear; re-init if needed.
+        # For this test, re-initializing GameEngine or its MessageLog might be
+        # better if a clean message log is strictly required for assertions.
         # For now, assuming test is robust or uses a fresh instance for run().
 
         self.game_engine.run()

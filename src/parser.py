@@ -38,7 +38,7 @@ class Parser:
                 return ("move", argument)
             else:
                 # "move" with an invalid or missing direction
-                return None  # Or potentially ("move", None) if we want to message "Move where?"
+                return None  # Or ("move", None) to message "Move where?"
         elif command_verb in ["n", "north"]:
             if not argument:  # Shorthand directions should not have further arguments
                 return ("move", "north")
@@ -77,7 +77,7 @@ class Parser:
         # --- Combat Commands ---
         # "attack <monster>" or "fight <monster>" or "f <monster>"
         elif command_verb in ["attack", "fight", "f"]:
-            # Argument (monster name) is optional; CommandProcessor can auto-target if one monster.
+            # Arg (monster name) optional; CommandProcessor can auto-target.
             return ("attack", argument)  # Pass argument whether it's None or a name
 
         # --- Information Commands ---

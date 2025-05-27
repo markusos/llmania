@@ -34,7 +34,7 @@ class Renderer:
         )
 
         if self.debug_mode:
-            # In debug_mode, stdscr remains None. Color pairs are not used for list rendering.
+            # In debug_mode, stdscr is None. Color pairs not used for list rendering.
             # Define placeholder values for color pairs for attribute existence.
             self.FLOOR_COLOR_PAIR = 0
             self.WALL_COLOR_PAIR = 0
@@ -80,14 +80,16 @@ class Renderer:
         player_x: int,
         player_y: int,
         player_health: int,
-        world_map,  # Type hint: world_map: "WorldMap" (requires from __future__ import annotations or string literal)
+        world_map,  # Type hint: world_map: "WorldMap"
+        # (requires from __future__ import annotations or string literal)
         input_mode: str,
         current_command_buffer: str,
         message_log: MessageLog,  # Updated type hint
         debug_render_to_list: bool = False,
     ) -> list[str] | None:
         """
-        Renders the entire game screen, including the map, player, entities, UI, and messages.
+        Renders the entire game screen, including map, player, entities, UI,
+        and messages.
 
         If `debug_render_to_list` is True, output is a list of strings representing
         the screen content. Otherwise, renders to the curses terminal.
@@ -100,15 +102,15 @@ class Renderer:
             input_mode: The current input mode ("movement" or "command").
             current_command_buffer: The text currently in the command input buffer.
             message_log: A list of messages to display to the player.
-            debug_render_to_list: If True, renders to a list of strings instead of curses.
+            debug_render_to_list: If True, renders to a list of strings
+                                  instead of curses.
 
         Returns:
             A list of strings if `debug_render_to_list` is True, otherwise None.
         """
         if not debug_render_to_list and not self.stdscr and not self.debug_mode:
-            # This condition implies curses rendering is expected but stdscr is not available,
-            # and we are not in the general debug_mode (where stdscr is expected to be None).
-            # This is an inconsistent state, so we should not proceed with curses rendering.
+            # Curses rendering expected but stdscr not available, and not in general
+            # debug_mode (where stdscr is expected to be None). Inconsistent state.
             # Example: GameEngine(debug_mode=False) but curses init failed.
             print("Error: Renderer.stdscr not initialized for curses rendering.")
             return None
@@ -169,12 +171,12 @@ class Renderer:
         # This includes lines for HP, Mode, Command Input, and some messages.
         UI_LINES_BUFFER = 4
 
-        # Get current terminal dimensions. Handle potential curses error if terminal not ready.
+        # Get terminal dimensions. Handle curses error if terminal not ready.
         try:
             curses_lines = curses.LINES
             curses_cols = curses.COLS
         except curses.error:
-            # Fallback dimensions if curses.LINES/COLS are not available (e.g., during a resize event).
+            # Fallback dimensions if curses.LINES/COLS not available (e.g., resize).
             curses_lines = 24  # A common terminal default height.
             curses_cols = 80  # A common terminal default width.
 
@@ -213,9 +215,9 @@ class Renderer:
                             color_attribute = curses.color_pair(self.WALL_COLOR_PAIR)
                         elif display_type == "floor":
                             color_attribute = curses.color_pair(self.FLOOR_COLOR_PAIR)
-                        # else: default color_attribute (e.g., for unknown tile types if any)
+                        # else: default color (e.g., for unknown tile types)
                     else:
-                        # Tile is outside map bounds or None (should ideally not happen within map_width/height)
+                        # Tile outside map bounds or None (should not happen in map).
                         char_to_draw = TILE_SYMBOLS.get("unknown", "?")
                         # Use default color_attribute
 
@@ -225,8 +227,8 @@ class Renderer:
                         y_map_idx, current_screen_x, char_to_draw, color_attribute
                     )
                 except curses.error:
-                    # Stop drawing this row if an error occurs (e.g., drawing outside window bounds
-                    # due to a very small terminal window that changed size).
+                    # Stop drawing row if error occurs (e.g., drawing outside bounds
+                    # due to small terminal window size change).
                     break
                 current_screen_x += 1
 
@@ -259,7 +261,7 @@ class Renderer:
             except curses.error:
                 pass
 
-        # Message log starts one line below Mode, or below command buffer if in command mode.
+        # Message log starts below Mode, or below command buffer in command mode.
         message_start_y = mode_line_y + 1
         if input_mode == "command":
             if message_start_y < curses_lines:  # Ensure space for command prompt
@@ -290,7 +292,7 @@ class Renderer:
             )  # Use len(messages_to_render)
 
             # Get the slice of messages to display (most recent ones).
-            # If len(messages_to_render) is less than num_messages_to_display, this correctly takes all.
+            # If len < num_messages_to_display, this correctly takes all.
             start_message_idx = max(
                 0, len(messages_to_render) - num_messages_to_display
             )
@@ -317,9 +319,9 @@ class Renderer:
                 else:
                     break
 
-            # Clear any remaining lines in the message area if fewer than max_messages were shown
-            # Assuming message_log.max_messages was 5 as per GameEngine setup.
-            # This clears lines that might have old messages if current log is shorter.
+            # Clear remaining lines in message area if fewer than max_messages shown.
+            # Assumes message_log.max_messages was 5 (GameEngine setup).
+            # Clears lines that might have old messages if current log is shorter.
             max_log_display_lines = (
                 message_log.max_messages
             )  # Use actual max_messages from the log object
