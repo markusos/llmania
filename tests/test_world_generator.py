@@ -382,16 +382,14 @@ def test_outer_layer_is_always_wall(generator):
         for x_coord in range(width):
             msg_top = f"Top edge at ({x_coord},0) not wall for {width}x{height}"
             msg_bottom = (
-                f"Bottom edge at ({x_coord},{height - 1}) not wall for "
-                f"{width}x{height}"
+                f"Bottom edge at ({x_coord},{height - 1}) not wall for {width}x{height}"
             )
             assert world_map.get_tile(x_coord, 0).type == "wall", msg_top
             assert world_map.get_tile(x_coord, height - 1).type == "wall", msg_bottom
         for y_coord in range(height):
             msg_left = f"Left edge at (0,{y_coord}) not wall for {width}x{height}"
             msg_right = (
-                f"Right edge at ({width - 1},{y_coord}) not wall for "
-                f"{width}x{height}"
+                f"Right edge at ({width - 1},{y_coord}) not wall for {width}x{height}"
             )
             assert world_map.get_tile(0, y_coord).type == "wall", msg_left
             assert world_map.get_tile(width - 1, y_coord).type == "wall", msg_right
@@ -425,8 +423,11 @@ def test_all_floor_tiles_are_accessible(generator):
             # Only check within inner map boundaries for floor tiles to explore
             if 1 <= next_x < width - 1 and 1 <= next_y < height - 1:
                 tile = world_map.get_tile(next_x, next_y)
-                if tile and tile.type == "floor" and \
-                   (next_x, next_y) not in visited_floor_tiles:
+                if (
+                    tile
+                    and tile.type == "floor"
+                    and (next_x, next_y) not in visited_floor_tiles
+                ):
                     visited_floor_tiles.add((next_x, next_y))
                     queue.append((next_x, next_y))
 
@@ -494,7 +495,9 @@ def test_win_item_placed_furthest(generator):
     # [(1,1), (1,2), (1,3)] would be (1,3).
     width, height = 3, 5  # Inner area: 1x3 tiles
     world_map, player_start_pos, actual_win_pos = generator.generate_map(
-        width, height, seed=42  # seed makes player_start_pos predictable
+        width,
+        height,
+        seed=42,  # seed makes player_start_pos predictable
     )
 
     # For this test, we rely on the seed to make player_start_pos predictable.
@@ -541,8 +544,10 @@ def test_win_item_placed_furthest(generator):
                 current_pos[1] + dr,
             )
 
-            if (next_tile_x, next_tile_y) in inner_floor_tiles and \
-               (next_tile_x, next_tile_y) not in visited_distances:
+            if (next_tile_x, next_tile_y) in inner_floor_tiles and (
+                next_tile_x,
+                next_tile_y,
+            ) not in visited_distances:
                 visited_distances[(next_tile_x, next_tile_y)] = distance + 1
                 queue.append(((next_tile_x, next_tile_y), distance + 1))
 

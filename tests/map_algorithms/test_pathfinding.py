@@ -1,4 +1,3 @@
-
 import pytest
 
 from src.map_algorithms.pathfinding import PathFinder

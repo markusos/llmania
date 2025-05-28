@@ -26,17 +26,13 @@ class WorldGenerator:
                            If None, DEFAULT_FLOOR_PORTION is used.
         """
         self.floor_portion = (
-            floor_portion
-            if floor_portion is not None
-            else self.DEFAULT_FLOOR_PORTION
+            floor_portion if floor_portion is not None else self.DEFAULT_FLOOR_PORTION
         )
         self.connectivity_manager = MapConnectivityManager()
         self.density_adjuster = FloorDensityAdjuster(self.connectivity_manager)
         self.path_finder = PathFinder()
 
-    def _initialize_map(
-        self, width: int, height: int, seed: Optional[int]
-    ) -> WorldMap:
+    def _initialize_map(self, width: int, height: int, seed: Optional[int]) -> WorldMap:
         """
         Initializes a new WorldMap. Outermost layer is "wall", inner tiles
         are "potential_floor". Initializes RNG if seed is provided.
@@ -181,8 +177,7 @@ class WorldGenerator:
                 if 0 <= next_x < map_width and 0 <= next_y < map_height:
                     # Walker moves. Change tile only if it's an inner
                     # "potential_floor" tile.
-                    if 0 < next_x < map_width - 1 and \
-                       0 < next_y < map_height - 1:
+                    if 0 < next_x < map_width - 1 and 0 < next_y < map_height - 1:
                         tile = world_map.get_tile(next_x, next_y)
                         if tile and tile.type == "potential_floor":
                             world_map.set_tile_type(next_x, next_y, "floor")
@@ -269,8 +264,8 @@ class WorldGenerator:
                 elif player_start_pos in floor_tiles:  # Only player_start_pos is floor
                     actual_win_pos = player_start_pos
                 else:  # Should be extremely rare: no floor tiles,
-                       # player_start_pos invalid.
-                       # Default to player_start_pos and make it floor.
+                    # player_start_pos invalid.
+                    # Default to player_start_pos and make it floor.
                     actual_win_pos = player_start_pos
                     world_map.set_tile_type(
                         player_start_pos[0], player_start_pos[1], "floor"
@@ -392,22 +387,19 @@ class WorldGenerator:
                         _select_start_and_win_positions.
         """
         if (width < 3 or height < 4) and (width < 4 or height < 3):
-            raise ValueError("Map dimensions must be at least 3x4 or 4x3 "
-                             "for this generator.")
+            raise ValueError(
+                "Map dimensions must be at least 3x4 or 4x3 for this generator."
+            )
 
         world_map = self._initialize_map(width, height, seed)
-        player_start_pos, original_win_pos = (
-            self._select_start_and_win_positions(
-                width, height, world_map
-            )
+        player_start_pos, original_win_pos = self._select_start_and_win_positions(
+            width, height, world_map
         )
 
         self.path_finder.carve_bresenham_line(
             world_map, player_start_pos, original_win_pos, width, height
         )
-        self._perform_random_walks(
-            world_map, player_start_pos, width, height
-        )
+        self._perform_random_walks(world_map, player_start_pos, width, height)
 
         # Convert remaining "potential_floor" tiles to "wall"
         for y_coord in range(1, height - 1):

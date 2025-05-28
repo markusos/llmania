@@ -1,4 +1,3 @@
-
 import pytest
 
 from src.map_algorithms.connectivity import MapConnectivityManager
@@ -42,9 +41,7 @@ def test_ensure_connectivity_all_potential_becomes_floor(
     for y_coord in range(1, 4):  # 1, 2, 3
         for x_coord in range(1, 4):  # 1, 2, 3
             tile = base_world_map.get_tile(x_coord, y_coord)
-            assert tile.type == "floor", (
-                f"Tile ({x_coord},{y_coord}) should be floor"
-            )
+            assert tile.type == "floor", f"Tile ({x_coord},{y_coord}) should be floor"
 
 
 def test_ensure_connectivity_unreachable_potential_becomes_wall(
@@ -88,9 +85,7 @@ def test_ensure_connectivity_start_pos_already_floor(
 
 
 # Tests for check_connectivity
-def test_check_connectivity_connected_points(
-    connectivity_manager, base_world_map
-):
+def test_check_connectivity_connected_points(connectivity_manager, base_world_map):
     m = base_world_map
     m.set_tile_type(1, 1, "floor")
     m.set_tile_type(1, 2, "floor")
@@ -102,9 +97,7 @@ def test_check_connectivity_connected_points(
     assert connectivity_manager.check_connectivity(m, (1, 1), (1, 3), 5, 5) is True
 
 
-def test_check_connectivity_disconnected_points(
-    connectivity_manager, base_world_map
-):
+def test_check_connectivity_disconnected_points(connectivity_manager, base_world_map):
     m = base_world_map
     m.set_tile_type(1, 1, "floor")
     m.set_tile_type(1, 2, "floor")
@@ -117,9 +110,7 @@ def test_check_connectivity_disconnected_points(
     assert connectivity_manager.check_connectivity(m, (1, 1), (3, 3), 5, 5) is False
 
 
-def test_check_connectivity_same_point(
-    connectivity_manager, base_world_map
-):
+def test_check_connectivity_same_point(connectivity_manager, base_world_map):
     m = base_world_map
     m.set_tile_type(1, 1, "floor")
     assert connectivity_manager.check_connectivity(m, (1, 1), (1, 1), 5, 5) is True
@@ -145,9 +136,7 @@ def test_check_connectivity_start_or_end_not_floor(
     )  # (1,3) not floor
 
 
-def test_check_connectivity_out_of_inner_bounds(
-    connectivity_manager, base_world_map
-):
+def test_check_connectivity_out_of_inner_bounds(connectivity_manager, base_world_map):
     m = base_world_map
     m.set_tile_type(1, 1, "floor")
     # (0,1) is an outer wall, (1,0) is an outer wall
@@ -161,12 +150,8 @@ def test_ensure_connectivity_no_floor_tiles_initially_except_start(
     # All inner tiles are potential_floor. player_start_pos is (2,2).
     # _select_start_and_win_positions (called by WorldGenerator)
     # would set player_start_pos to "floor".
-    base_world_map.set_tile_type(
-        2, 2, "floor"
-    )  # Explicitly set for the test
-    connectivity_manager.ensure_connectivity(
-        base_world_map, (2, 2), 5, 5
-    )
+    base_world_map.set_tile_type(2, 2, "floor")  # Explicitly set for the test
+    connectivity_manager.ensure_connectivity(base_world_map, (2, 2), 5, 5)
     for y_coord in range(1, 4):
         for x_coord in range(1, 4):
             tile = base_world_map.get_tile(x_coord, y_coord)
