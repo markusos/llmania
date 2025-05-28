@@ -126,7 +126,10 @@ def test_generate_map_reproducibility_with_seed(generator):
     map2, ps2, wp2 = generator.generate_map(width, height, seed)
 
     assert ps1 == ps2, "Player start positions differ with the same seed."
-    assert wp1 == wp2, "Win positions differ with the same seed."
+    # original_win_pos is not directly returned by generate_map anymore
+    # in the same way for amulet placement, but the final actual_win_pos
+    # should be reproducible.
+    assert wp1 == wp2, "Actual win positions (amulet) differ with the same seed."
 
     for y in range(height):
         for x in range(width):
@@ -291,26 +294,11 @@ def find_path_bfs(
     "seed_val", [None] + list(range(5))
 )  # Test with random map and a few seeded maps
 def test_guaranteed_path_exists(generator, seed_val):
-    # Using a reasonable size for testing path generation.
-    # Smaller maps might have player_start == win_pos if not handled,
-    # but current generator logic tries to avoid that.
-    # Edge avoidance in player/win pos selection means width/height should be
-    # >=3 for that part.
-    # The path carving itself should work for smaller maps.
-    width, height = 10, 10
-    if (
-        width < 3 or height < 3
-    ):  # Skip test if dimensions are too small for edge avoidance logic
-        pytest.skip(
-            "Map dimensions too small for current generator's edge avoidance "
-            "logic in start/win pos."
-        )
-
+    width, height = 10, 10  # Valid size
     world_map, player_start, win_pos = generator.generate_map(
         width, height, seed=seed_val
     )
 
-    # Ensure start and win positions are floor tiles (should be set by generator)
     assert world_map.get_tile(player_start[0], player_start[1]).type == "floor", (
         f"Player start {player_start} is not floor. Seed: {seed_val}"
     )
@@ -318,8 +306,7 @@ def test_guaranteed_path_exists(generator, seed_val):
         f"Win position {win_pos} is not floor. Seed: {seed_val}"
     )
 
-    # If player_start and win_pos are the same, path trivially exists.
-    if player_start == win_pos:
+    if player_start == win_pos:  # Should be rare on a 10x10 map
         path_found = True
     else:
         path_found = find_path_bfs(world_map, player_start, win_pos)
@@ -330,55 +317,237 @@ def test_guaranteed_path_exists(generator, seed_val):
     )
 
 
-# Test that player start and win positions are not on the edge (for maps >= 3x3)
+# Test that player start and win positions are not on the edge
 def test_start_win_positions_not_on_edge(generator):
-    # Test with several seeds to ensure consistency
     for seed_val in range(5):
-        # Use map dimensions where edges can be avoided
-        width, height = 5, 5
-        _, player_start, win_pos = generator.generate_map(width, height, seed=seed_val)
-
-        assert 0 < player_start[0] < width - 1, (
-            f"Player start X ({player_start[0]}) is on edge. Seed: {seed_val}"
-        )
-        assert 0 < player_start[1] < height - 1, (
-            f"Player start Y ({player_start[1]}) is on edge. Seed: {seed_val}"
-        )
-        assert 0 < win_pos[0] < width - 1, (
-            f"Win pos X ({win_pos[0]}) is on edge. Seed: {seed_val}"
-        )
-        assert 0 < win_pos[1] < height - 1, (
-            f"Win pos Y ({win_pos[1]}) is on edge. Seed: {seed_val}"
-        )
-
-
-def test_start_win_positions_small_maps(generator):
-    # Test behavior for maps < 3x3 where edge avoidance is not possible for
-    # randint(1, dim-2)
-    # Player start and win positions should still be within bounds [0, dim-1]
-
-    # Case 1: 2x2 map
-    width, height = 2, 2
-    for seed_val in range(3):
-        _, player_start, win_pos = generator.generate_map(width, height, seed=seed_val)
-        assert 0 <= player_start[0] < width and 0 <= player_start[1] < height
-        assert 0 <= win_pos[0] < width and 0 <= win_pos[1] < height
-
-    # Case 2: 1x5 map
-    width, height = 1, 5
-    for seed_val in range(3):
-        _, player_start, win_pos = generator.generate_map(width, height, seed=seed_val)
-        assert 0 <= player_start[0] < width and 0 <= player_start[1] < height
-        assert 0 <= win_pos[0] < width and 0 <= win_pos[1] < height
-
-    # Case 3: 1x1 map
-    width, height = 1, 1
-    for seed_val in range(3):
-        _, player_start, win_pos = generator.generate_map(width, height, seed=seed_val)
-        assert player_start == (0, 0)
-        assert win_pos == (0, 0)  # Must be same on 1x1 map
-        # Path test for 1x1
-        world_map_1x1, ps_1x1, wp_1x1 = generator.generate_map(
+        width, height = 5, 5  # Valid size, allows inner area
+        world_map, player_start, win_pos = generator.generate_map(
             width, height, seed=seed_val
         )
-        assert find_path_bfs(world_map_1x1, ps_1x1, wp_1x1) is True
+
+        # player_start and win_pos are from inner area (1 to width-2, etc.)
+        assert 0 < player_start[0] < width - 1, (
+            f"Player start X ({player_start[0]}) on edge. Seed: {seed_val}"
+        )
+        assert 0 < player_start[1] < height - 1, (
+            f"Player start Y ({player_start[1]}) on edge. Seed: {seed_val}"
+        )
+        # Amulet position determined by furthest point, should also be inner.
+        assert 0 < win_pos[0] < width - 1, (
+            f"Win pos X ({win_pos[0]}) on edge. Seed: {seed_val}"
+        )
+        assert 0 < win_pos[1] < height - 1, (
+            f"Win pos Y ({win_pos[1]}) on edge. Seed: {seed_val}"
+        )
+
+
+def test_generate_map_valid_minimum_size(generator):
+    valid_sizes = [(3, 4), (4, 3), (5, 5)]  # (w,h)
+    for width, height in valid_sizes:
+        try:
+            world_map, player_start, win_pos = generator.generate_map(
+                width, height, seed=1
+            )
+            assert world_map.width == width
+            assert world_map.height == height
+            assert 0 < player_start[0] < width - 1
+            assert 0 < player_start[1] < height - 1
+            assert 0 < win_pos[0] < width - 1
+            assert 0 < win_pos[1] < height - 1
+            player_tile = world_map.get_tile(player_start[0], player_start[1])
+            win_tile = world_map.get_tile(win_pos[0], win_pos[1])
+            assert player_tile.type == "floor"
+            assert win_tile.type == "floor"
+            assert win_tile.item is not None
+            assert win_tile.item.name == "Amulet of Yendor"
+        except ValueError:
+            pytest.fail(
+                f"generate_map raised ValueError for valid size {width}x{height}"
+            )
+
+
+def test_generate_map_invalid_small_size(generator):
+    invalid_sizes = [(2, 2), (1, 5), (5, 1), (3, 3), (2, 4), (4, 2)]
+    for width, height in invalid_sizes:
+        with pytest.raises(
+            ValueError, match="Map dimensions must be at least 3x4 or 4x3"
+        ):
+            generator.generate_map(width, height, seed=1)
+
+
+def test_outer_layer_is_always_wall(generator):
+    sizes_to_test = [(4, 5), (5, 4), (10, 10)]
+    for width, height in sizes_to_test:
+        world_map, _, _ = generator.generate_map(width, height, seed=1)
+        for x_coord in range(width):
+            msg_top = f"Top edge at ({x_coord},0) not wall for {width}x{height}"
+            msg_bottom = (
+                f"Bottom edge at ({x_coord},{height - 1}) not wall for "
+                f"{width}x{height}"
+            )
+            assert world_map.get_tile(x_coord, 0).type == "wall", msg_top
+            assert world_map.get_tile(x_coord, height - 1).type == "wall", msg_bottom
+        for y_coord in range(height):
+            msg_left = f"Left edge at (0,{y_coord}) not wall for {width}x{height}"
+            msg_right = (
+                f"Right edge at ({width - 1},{y_coord}) not wall for "
+                f"{width}x{height}"
+            )
+            assert world_map.get_tile(0, y_coord).type == "wall", msg_left
+            assert world_map.get_tile(width - 1, y_coord).type == "wall", msg_right
+
+
+def test_all_floor_tiles_are_accessible(generator):
+    width, height = 10, 10  # A reasonably sized map
+    world_map, player_start_pos, _ = generator.generate_map(width, height, seed=123)
+
+    inner_floor_tiles = []
+    for y in range(1, height - 1):
+        for x in range(1, width - 1):
+            tile = world_map.get_tile(x, y)
+            if tile and tile.type == "floor":
+                inner_floor_tiles.append((x, y))
+
+    if not inner_floor_tiles:
+        # This could happen if floor_portion is extremely low or map is tiny.
+        # For 10x10, this shouldn't be the case with default floor_portion.
+        pytest.skip("No inner floor tiles found to test accessibility.")
+        return
+
+    # Use the same BFS as in test_guaranteed_path_exists, but check all floor tiles
+    queue = deque([player_start_pos])
+    visited_floor_tiles = {player_start_pos}
+
+    while queue:
+        (current_x, current_y) = queue.popleft()
+        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+            next_x, next_y = current_x + dx, current_y + dy
+            # Only check within inner map boundaries for floor tiles to explore
+            if 1 <= next_x < width - 1 and 1 <= next_y < height - 1:
+                tile = world_map.get_tile(next_x, next_y)
+                if tile and tile.type == "floor" and \
+                   (next_x, next_y) not in visited_floor_tiles:
+                    visited_floor_tiles.add((next_x, next_y))
+                    queue.append((next_x, next_y))
+
+    for floor_tile_pos in inner_floor_tiles:
+        assert floor_tile_pos in visited_floor_tiles, (
+            f"Inner floor tile at {floor_tile_pos} is not accessible from "
+            f"player_start_pos {player_start_pos}"
+        )
+
+
+def test_floor_portion_respected(generator):
+    sizes = [(10, 10), (20, 15)]
+    portions_to_test = [0.2, 0.5, 0.8]
+    tolerance = 0.15  # Allow some deviation due to grid and connectivity
+
+    for width, height in sizes:
+        for portion in portions_to_test:
+            # Create a new generator with the specific floor_portion
+            specific_generator = WorldGenerator(floor_portion=portion)
+            world_map, _, _ = specific_generator.generate_map(width, height, seed=1)
+
+            inner_floor_tiles_count = 0
+            for y in range(1, height - 1):
+                for x in range(1, width - 1):
+                    tile = world_map.get_tile(x, y)
+                    if tile and tile.type == "floor":
+                        inner_floor_tiles_count += 1
+
+            total_inner_tiles = (width - 2) * (height - 2)
+            if total_inner_tiles == 0:
+                assert inner_floor_tiles_count == 0, (
+                    "No inner tiles but floor tiles found."
+                )
+                continue
+
+            actual_portion = inner_floor_tiles_count / total_inner_tiles
+
+            # For very low portions, ensure at least player_start and
+            # original_win_pos can be floor (original_win_pos is protected
+            # by adjust_density, not necessarily the final amulet position).
+            min_expected_tiles = 0
+            if total_inner_tiles >= 1:
+                min_expected_tiles = 1  # player_start_pos
+            if total_inner_tiles >= 2:
+                min_expected_tiles = 2  # player_start_pos and original_win_pos
+
+            if portion < 0.01 and total_inner_tiles > 0:
+                # Test for very low portion
+                assert inner_floor_tiles_count >= min_expected_tiles, (
+                    f"Expected at least {min_expected_tiles} floor tiles for "
+                    f"portion {portion} on {width}x{height}, "
+                    f"got {inner_floor_tiles_count}"
+                )
+            else:
+                assert portion - tolerance <= actual_portion <= portion + tolerance, (
+                    f"Floor portion for {width}x{height} with target {portion} "
+                    f"was {actual_portion:.2f} (tolerance {tolerance})"
+                )
+
+
+def test_win_item_placed_furthest(generator):
+    # Using a predictable small map where "furthest" is clear.
+    # E.g., 3x5 map. Inner area is 1x3.
+    # If player starts at (1,1) (absolute), the furthest in a 1x3 inner area
+    # [(1,1), (1,2), (1,3)] would be (1,3).
+    width, height = 3, 5  # Inner area: 1x3 tiles
+    world_map, player_start_pos, actual_win_pos = generator.generate_map(
+        width, height, seed=42  # seed makes player_start_pos predictable
+    )
+
+    # For this test, we rely on the seed to make player_start_pos predictable.
+    # Alternatively, one might modify the generator or use a helper to force
+    # player_start_pos for more direct testing of furthest point logic.
+
+    # Collect all inner floor tiles
+    inner_floor_tiles = []
+    for r in range(1, height - 1):
+        for c in range(1, width - 1):
+            if world_map.get_tile(c, r).type == "floor":
+                inner_floor_tiles.append((c, r))
+
+    if not inner_floor_tiles:
+        pytest.skip("No inner floor tiles to determine furthest point.")
+        return
+    if player_start_pos not in inner_floor_tiles:
+        pytest.skip(
+            f"Player start {player_start_pos} not among inner floor "
+            f"tiles {inner_floor_tiles}. Map generation issue or test setup."
+        )
+        return
+
+    # Calculate distances from player_start_pos to all other inner floor tiles
+    # using BFS, similar to how PathFinder.find_furthest_point works.
+    queue = deque([(player_start_pos, 0)])
+    visited_distances = {player_start_pos: 0}
+    current_max_dist = 0
+    calculated_furthest_tiles = {player_start_pos}
+
+    while queue:
+        current_pos, distance = queue.popleft()
+
+        if distance > current_max_dist:
+            current_max_dist = distance
+            calculated_furthest_tiles = {current_pos}
+        elif distance == current_max_dist:
+            calculated_furthest_tiles.add(current_pos)
+
+        for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]:  # N, S, E, W
+            # Note: BFS explores (y,x) but tile positions are (x,y)
+            next_tile_x, next_tile_y = (
+                current_pos[0] + dc,
+                current_pos[1] + dr,
+            )
+
+            if (next_tile_x, next_tile_y) in inner_floor_tiles and \
+               (next_tile_x, next_tile_y) not in visited_distances:
+                visited_distances[(next_tile_x, next_tile_y)] = distance + 1
+                queue.append(((next_tile_x, next_tile_y), distance + 1))
+
+    assert actual_win_pos in calculated_furthest_tiles, (
+        f"Amulet at {actual_win_pos} is not one of the furthest tiles "
+        f"{calculated_furthest_tiles} from {player_start_pos} "
+        f"(max_dist: {current_max_dist})."
+    )
