@@ -1,6 +1,9 @@
 from collections import deque
-from src.world_map import WorldMap # For type hinting
+
+from src.world_map import WorldMap  # For type hinting
+
 # No random needed here unless we add path randomization features later
+
 
 class PathFinder:
     """
@@ -19,16 +22,18 @@ class PathFinder:
         within the inner map area.
         This method was formerly _find_furthest_reachable_tile in WorldGenerator.
         """
-        if not (1 <= start_pos[0] < map_width - 1 and 1 <= start_pos[1] < map_height - 1):
-            return start_pos # Start position must be within the inner map
-        
+        if not (
+            1 <= start_pos[0] < map_width - 1 and 1 <= start_pos[1] < map_height - 1
+        ):
+            return start_pos  # Start position must be within the inner map
+
         start_tile = world_map.get_tile(start_pos[0], start_pos[1])
         if not start_tile or start_tile.type != "floor":
-            return start_pos # Cannot start BFS from a non-floor or invalid tile
+            return start_pos  # Cannot start BFS from a non-floor or invalid tile
 
         queue = deque([(start_pos, 0)])  # (position, distance)
         visited = {start_pos}
-        
+
         furthest_tile = start_pos
         max_distance = 0
 
@@ -39,18 +44,18 @@ class PathFinder:
                 max_distance = dist
                 furthest_tile = (curr_x, curr_y)
 
-            for dx, dy in [(0, -1), (0, 1), (1, 0), (-1, 0)]: # N, S, E, W
+            for dx, dy in [(0, -1), (0, 1), (1, 0), (-1, 0)]:  # N, S, E, W
                 next_x, next_y = curr_x + dx, curr_y + dy
 
                 if not (1 <= next_x < map_width - 1 and 1 <= next_y < map_height - 1):
-                    continue # Must be within inner map area
+                    continue  # Must be within inner map area
 
                 if (next_x, next_y) not in visited:
                     tile = world_map.get_tile(next_x, next_y)
                     if tile and tile.type == "floor":
                         visited.add((next_x, next_y))
                         queue.append(((next_x, next_y), dist + 1))
-        
+
         return furthest_tile
 
     def carve_bresenham_line(
