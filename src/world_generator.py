@@ -151,8 +151,8 @@ class WorldGenerator:
             map_width: The width of the map.
             map_height: The height of the map.
         """
-        num_walks = 5
-        walk_length = (map_width * map_height) // 10  # Max length of each walk
+        num_walks = 2
+        walk_length = (map_width * map_height) // 20  # Max length of each walk
 
         current_floor_tiles = self._collect_floor_tiles(
             world_map, map_width, map_height
@@ -183,6 +183,52 @@ class WorldGenerator:
                             world_map.set_tile_type(next_x, next_y, "floor")
                     current_x, current_y = next_x, next_y
                 # If out of bounds, walker stays; tries new direction next step.
+
+    def _generate_path_network(
+        self,
+        world_map: WorldMap,
+        player_start_pos: tuple[int, int],
+        original_win_pos: tuple[int, int],
+        map_width: int,
+        map_height: int,
+    ) -> None:
+        """
+        Generates a network of additional paths from existing floor areas to
+        random "potential_floor" tiles, expanding connectivity.
+        """
+        num_additional_paths = random.randint(3, 5)
+
+        potential_target_tiles = []
+        for y in range(1, map_height - 1):
+            for x in range(1, map_width - 1):
+                tile = world_map.get_tile(x, y)
+                if tile and tile.type == "potential_floor":
+                    potential_target_tiles.append((x, y))
+
+        # Remove player_start_pos and original_win_pos from potential targets
+        if player_start_pos in potential_target_tiles:
+            potential_target_tiles.remove(player_start_pos)
+        if original_win_pos in potential_target_tiles:
+            potential_target_tiles.remove(original_win_pos)
+
+        for _ in range(num_additional_paths):
+            if not potential_target_tiles:
+                break  # No more potential targets
+
+            target_pos_index = random.randrange(len(potential_target_tiles))
+            target_pos = potential_target_tiles.pop(target_pos_index)
+
+            current_floor_tiles = self._collect_floor_tiles(
+                world_map, map_width, map_height
+            )
+            if not current_floor_tiles:
+                origin_pos = player_start_pos  # Fallback
+            else:
+                origin_pos = random.choice(current_floor_tiles)
+
+            self.path_finder.carve_bresenham_line(
+                world_map, origin_pos, target_pos, map_width, map_height
+            )
 
     def _collect_floor_tiles(  # This method remains in WorldGenerator
         self, world_map: WorldMap, map_width: int, map_height: int
@@ -400,14 +446,18 @@ class WorldGenerator:
             world_map, player_start_pos, original_win_pos, width, height
         )
         self._perform_random_walks(world_map, player_start_pos, width, height)
+        self._generate_path_network(
+            world_map, player_start_pos, original_win_pos, width, height
+        )
 
-        # Convert remaining "potential_floor" tiles to "wall"
-        for y_coord in range(1, height - 1):
-            for x_coord in range(1, width - 1):
+        # Convert ALL remaining "potential_floor" to "wall" before density adjustment
+        # This ensures adjust_density works on a map of only 'floor' and 'wall'.
+        for y_coord in range(1, height - 1): # Iterate inner map area
+            for x_coord in range(1, width - 1): # Iterate inner map area
                 tile = world_map.get_tile(x_coord, y_coord)
                 if tile and tile.type == "potential_floor":
                     world_map.set_tile_type(x_coord, y_coord, "wall")
-
+        
         # Adjust floor density
         self.density_adjuster.adjust_density(
             world_map,
