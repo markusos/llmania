@@ -1,5 +1,6 @@
 import random
 from typing import Optional
+from collections import deque
 
 from src.item import Item
 from src.map_algorithms.connectivity import MapConnectivityManager
@@ -219,11 +220,17 @@ class WorldGenerator:
     ):
         """
         Performs a directed random walk from start_pos towards end_pos.
+        Now includes backtracking to avoid creating isolated areas.
         """
         current_x, current_y = start_pos
         world_map.set_tile_type(current_x, current_y, "floor")  # Carve start_pos
+        
+        # Keep track of the path to enable backtracking
+        path_history = [(current_x, current_y)]
+        stuck_count = 0
+        max_stuck_attempts = 5
 
-        for _ in range(max_steps):
+        for step in range(max_steps):
             if (current_x, current_y) == end_pos:
                 break
 
@@ -231,22 +238,16 @@ class WorldGenerator:
             dy = end_pos[1] - current_y
 
             possible_directions = []
-            # North
-            if current_y > 1:
-                possible_directions.append((0, -1, "N"))
-            # South
-            if current_y < map_height - 2:
-                possible_directions.append((0, 1, "S"))
-            # West
-            if current_x > 1:
-                possible_directions.append((-1, 0, "W"))
-            # East
-            if current_x < map_width - 2:
-                possible_directions.append((1, 0, "E"))
+            # Check all four directions
+            for direction_dx, direction_dy, direction_name in [(0, -1, "N"), (0, 1, "S"), (-1, 0, "W"), (1, 0, "E")]:
+                new_x, new_y = current_x + direction_dx, current_y + direction_dy
+                if 1 <= new_x < map_width - 1 and 1 <= new_y < map_height - 1:
+                    possible_directions.append((direction_dx, direction_dy, direction_name))
 
-            if not possible_directions:  # Should not happen in a >3x3 inner map
+            if not possible_directions:
                 break
 
+            # Calculate preferred directions based on target
             preferred_directions = []
             if dy < 0:  # North
                 preferred_directions.append((0, -1, "N"))
@@ -257,32 +258,45 @@ class WorldGenerator:
             if dx > 0:  # East
                 preferred_directions.append((1, 0, "E"))
 
-            # Filter preferred_directions to only those that are possible
-            possible_moves_set = {(d[0], d[1], d[2]) for d in possible_directions}
+            # Filter to only valid moves
+            possible_moves_set = {(d[0], d[1]) for d in possible_directions}
             preferred_directions = [
-                pd
-                for pd in preferred_directions
-                if (pd[0], pd[1], pd[2]) in possible_moves_set
+                pd for pd in preferred_directions
+                if (pd[0], pd[1]) in possible_moves_set
             ]
 
-            chosen_dx, chosen_dy = 0, 0
-            # 75% chance to pick a preferred direction
+            # Choose direction with 75% preference for target direction
             if preferred_directions and random.random() < 0.75:
                 chosen_dx, chosen_dy, _ = random.choice(preferred_directions)
-            else:  # Pick any allowed direction
+            else:
                 chosen_dx, chosen_dy, _ = random.choice(possible_directions)
 
             next_x, next_y = current_x + chosen_dx, current_y + chosen_dy
 
-            # Check if next_pos is within inner map bounds (1 to width-2, 1 to height-2)
-            if 1 <= next_x < map_width - 1 and 1 <= next_y < map_height - 1:
-                tile = world_map.get_tile(next_x, next_y)
-                if tile and (tile.type == "wall" or tile.type == "potential_floor"):
-                    world_map.set_tile_type(next_x, next_y, "floor")
-                current_x, current_y = next_x, next_y
-            # If next_pos is not valid (hits border or invalid move),
-            # walker stays, try new direction next step.
-            # No explicit else needed, current_pos just doesn't update.
+            # Always move and carve the tile
+            tile = world_map.get_tile(next_x, next_y)
+            if tile and (tile.type == "wall" or tile.type == "potential_floor"):
+                world_map.set_tile_type(next_x, next_y, "floor")
+            
+            current_x, current_y = next_x, next_y
+            path_history.append((current_x, current_y))
+            
+            # Reset stuck counter when we make progress
+            if len(path_history) > 1 and (current_x, current_y) != path_history[-2]:
+                stuck_count = 0
+            else:
+                stuck_count += 1
+                
+            # If we're stuck, backtrack
+            if stuck_count >= max_stuck_attempts and len(path_history) > 1:
+                # Backtrack to a previous position
+                backtrack_steps = min(3, len(path_history) - 1)
+                for _ in range(backtrack_steps):
+                    if len(path_history) > 1:
+                        path_history.pop()
+                if path_history:
+                    current_x, current_y = path_history[-1]
+                stuck_count = 0
 
     def _perform_random_walks(
         self,
@@ -642,6 +656,29 @@ class WorldGenerator:
         self.connectivity_manager.ensure_connectivity(
             world_map, player_start_pos, width, height
         )
+
+        # Additional verification: check if all floor tiles are actually reachable
+        floor_tiles = self._collect_floor_tiles(world_map, width, height)
+        if len(floor_tiles) > 1:
+            # Verify connectivity using BFS from player start
+            reachable_tiles = set()
+            queue = deque([player_start_pos])
+            reachable_tiles.add(player_start_pos)
+            
+            while queue:
+                curr_x, curr_y = queue.popleft()
+                for dx, dy in [(0, -1), (0, 1), (1, 0), (-1, 0)]:
+                    next_x, next_y = curr_x + dx, curr_y + dy
+                    if (next_x, next_y) not in reachable_tiles:
+                        tile = world_map.get_tile(next_x, next_y)
+                        if tile and tile.type == "floor":
+                            reachable_tiles.add((next_x, next_y))
+                            queue.append((next_x, next_y))
+            
+            # Convert unreachable floor tiles to walls
+            for x, y in floor_tiles:
+                if (x, y) not in reachable_tiles:
+                    world_map.set_tile_type(x, y, "wall")
 
         # Collect final floor tiles for item/monster placement
         # _collect_floor_tiles remains in WorldGenerator for this purpose.
