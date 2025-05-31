@@ -302,8 +302,7 @@ class WorldGenerator:
             map_width: The width of the map.
             map_height: The height of the map.
         """
-        num_walks = 2
-        walk_length = (map_width * map_height) // 20  # Max length of each walk
+        num_quadrant_paths = 4
 
         for quadrant_index in range(num_quadrant_paths):
             quadrant_bounds = self._get_quadrant_bounds(
