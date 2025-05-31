@@ -295,7 +295,7 @@ def test_perform_directed_random_walk(generator: WorldGenerator):
     assert initial_floor_tiles == 1  # Only end_pos is floor
 
     generator._perform_directed_random_walk(
-        world_map, start_pos, end_pos, map_width, map_height, max_steps=200
+        world_map, start_pos, end_pos, map_width, map_height
     )
 
     # Assert start_pos is now floor
@@ -957,9 +957,7 @@ def test_path_like_structures_metric():
                         if is_ns_path or is_ew_path:
                             path_tile_count += 1
 
-        print(
-            f"Seed: {seed_val}, Dimensions: {width}x{height}, Path-like Tiles: {path_tile_count}"
-        )
+        print(f"Seed: {seed_val}, Dim: {width}x{height}, Path-like: {path_tile_count}")
         assert path_tile_count >= 0, "Path tile count should be non-negative."
         # A more specific assertion like `path_tile_count > (width + height) // 4`
         # could be added if a baseline is established. For now, >= 0 is a basic check.
@@ -967,7 +965,7 @@ def test_path_like_structures_metric():
         # Let's use the one from the prompt:
         if width > 2 and height > 2:  # Ensure inner area exists
             assert path_tile_count >= (width - 2 + height - 2) // 2, (
-                f"Path count {path_tile_count} too low for {width}x{height} map (Seed: {seed_val})"
+                f"Paths {path_tile_count} low for {width}x{height} m (S: {seed_val})"
             )
 
     print("\nPath-like structures metric test complete. Review output above.")
