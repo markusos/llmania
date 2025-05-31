@@ -77,42 +77,46 @@ class FloorDensityAdjuster:
                     for r_x in range(1, map_width - 1):
                         tile = world_map.get_tile(r_x, r_y)
                         if tile and tile.type == "wall":
+                            adjacent_floor_count = 0
                             is_adjacent_to_floor = False
-                            # Check N, S, E, W neighbors for an existing floor tile
+                            # Check N, S, E, W neighbors
                             for dr, dc in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
                                 adj_x, adj_y = r_x + dr, r_y + dc
-                                # Adjacency check can be to any tile on map,
-                                # not just inner ones.
+                                # Boundary checks for adj_x, adj_y are important if
+                                # adjacency can extend outside inner map, but here
+                                # we are converting inner walls, so adj_tile_check
+                                # handles out-of-bounds by returning None.
                                 adj_tile_check = world_map.get_tile(adj_x, adj_y)
                                 if adj_tile_check and adj_tile_check.type == "floor":
                                     is_adjacent_to_floor = True
-                                    break
+                                    adjacent_floor_count += 1
+                            
                             if is_adjacent_to_floor:
-                                candidate_walls_to_floor.append((r_x, r_y))
+                                candidate_walls_to_floor.append(
+                                    (adjacent_floor_count, r_x, r_y)
+                                )
 
                 if not candidate_walls_to_floor:
-                    break  # No more walls can be converted by adjacency
+                    break  # No more walls can be converted
 
-                random.shuffle(candidate_walls_to_floor)
+                # Sort by adjacent_floor_count (ascending), then shuffle within counts
+                # For simplicity now, just sort. Add shuffle later if needed.
+                candidate_walls_to_floor.sort(key=lambda x: x[0])
+                # random.shuffle(candidate_walls_to_floor) # Potentially re-add if pure sort is too deterministic
 
                 made_change_in_pass = False
-                for c_x, c_y in candidate_walls_to_floor:
+                for _, c_x, c_y in candidate_walls_to_floor: # Unpack tuple
                     if num_current_floor >= target_floor_tiles:
                         break
                     world_map.set_tile_type(c_x, c_y, "floor")
-                    num_current_floor += 1  # Increment actual current floor count
+                    num_current_floor += 1
                     made_change_in_pass = True
 
                 if not made_change_in_pass:
-                    break  # No progress in this pass, stop to prevent infinite loop
+                    break
 
         # Case 2: Too Many Floors
         elif num_current_floor > target_floor_tiles:
-            # Note: current_inner_floor_tiles and num_current_floor are up-to-date
-            # from the collection before the "Too Few Floors" / "Too Many Floors" split.
-            # No need to re-collect unless floors were added in the "Too Few" branch,
-            # but these branches are exclusive.
-
             protected_tiles = {player_start_pos, original_win_pos}
             candidate_floors_to_wall = [
                 (f_x, f_y)
@@ -121,20 +125,59 @@ class FloorDensityAdjuster:
             ]
             random.shuffle(candidate_floors_to_wall)
 
+            path_tiles_to_defer = []
             converted_count = 0
+
+            # First pass: non-deferred tiles
             for c_x, c_y in candidate_floors_to_wall:
                 if num_current_floor - converted_count <= target_floor_tiles:
                     break
 
-                world_map.set_tile_type(c_x, c_y, "wall")
+                # Path Protection Check
+                floor_neighbor_count = 0
+                neighbors = [] # Store (dx, dy) for actual floor neighbors
+                for dr, dc in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # N, S, W, E
+                    adj_x, adj_y = c_x + dr, c_y + dc
+                    # Ensure neighbor is within map bounds for get_tile
+                    if 0 <= adj_x < map_width and 0 <= adj_y < map_height:
+                        adj_tile = world_map.get_tile(adj_x, adj_y)
+                        if adj_tile and adj_tile.type == "floor":
+                            floor_neighbor_count += 1
+                            neighbors.append((dr,dc))
+                
+                is_path_tile = False
+                if floor_neighbor_count == 2:
+                    # Check if neighbors are opposite
+                    n1_dr, n1_dc = neighbors[0]
+                    n2_dr, n2_dc = neighbors[1]
+                    if (n1_dr == -n2_dr and n1_dc == n2_dc) or \
+                       (n1_dc == -n2_dc and n1_dr == n2_dr) :
+                        is_path_tile = True
+                
+                if is_path_tile:
+                    path_tiles_to_defer.append((c_x, c_y))
+                    continue # Defer this tile
 
+                # Not a path tile, attempt conversion
+                world_map.set_tile_type(c_x, c_y, "wall")
                 if self.connectivity_manager.check_connectivity(
-                    world_map,
-                    player_start_pos,
-                    original_win_pos,
-                    map_width,
-                    map_height,
+                    world_map, player_start_pos, original_win_pos, map_width, map_height
                 ):
                     converted_count += 1
                 else:
-                    world_map.set_tile_type(c_x, c_y, "floor")  # Revert
+                    world_map.set_tile_type(c_x, c_y, "floor") # Revert
+
+            # Second pass: deferred path tiles (if still needed)
+            if num_current_floor - converted_count > target_floor_tiles:
+                random.shuffle(path_tiles_to_defer)
+                for p_x, p_y in path_tiles_to_defer:
+                    if num_current_floor - converted_count <= target_floor_tiles:
+                        break
+                    
+                    world_map.set_tile_type(p_x, p_y, "wall")
+                    if self.connectivity_manager.check_connectivity(
+                        world_map, player_start_pos, original_win_pos, map_width, map_height
+                    ):
+                        converted_count += 1
+                    else:
+                        world_map.set_tile_type(p_x, p_y, "floor") # Revert
