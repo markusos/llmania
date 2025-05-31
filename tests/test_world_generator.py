@@ -877,18 +877,18 @@ def test_visual_inspection_of_generated_maps():
                 row_str = ""
                 for x in range(width):
                     tile = world_map.get_tile(x, y)
-                    if tile is None: # Should not happen in a valid map
+                    if tile is None:  # Should not happen in a valid map
                         row_str += "?"
                     elif tile.type == "wall":
                         row_str += "#"
                     elif tile.type == "floor":
                         row_str += "."
-                    elif tile.type == "potential_floor": # Should be resolved
-                        row_str += "~" 
+                    elif tile.type == "potential_floor":  # Should be resolved
+                        row_str += "~"
                     else:
-                        row_str += "X" # Unknown tile type
+                        row_str += "X"  # Unknown tile type
                 print(row_str)
-    
+
     print("\nVisual inspection test complete. Review output above.")
 
 
@@ -899,8 +899,8 @@ def test_path_like_structures_metric():
     opposite directions (N-S or E-W).
     """
     print("\n--- Path-Like Structures Metric ---")
-    generator = WorldGenerator(floor_portion=0.4) # Consistent floor portion
-    
+    generator = WorldGenerator(floor_portion=0.4)  # Consistent floor portion
+
     test_configs = [
         {"width": 25, "height": 25, "seed": 10},
         {"width": 25, "height": 25, "seed": 20},
@@ -910,16 +910,16 @@ def test_path_like_structures_metric():
     for config in test_configs:
         width, height, seed_val = config["width"], config["height"], config["seed"]
         world_map, _, _ = generator.generate_map(width, height, seed=seed_val)
-        
+
         path_tile_count = 0
-        
+
         # Iterate through inner floor tiles (1 to width-2, 1 to height-2)
         for y in range(1, height - 1):
             for x in range(1, width - 1):
                 current_tile = world_map.get_tile(x, y)
                 if current_tile and current_tile.type == "floor":
                     floor_neighbor_count = 0
-                    
+
                     # Check N, S, E, W neighbors
                     north_is_floor = False
                     south_is_floor = False
@@ -930,41 +930,44 @@ def test_path_like_structures_metric():
                     north_tile = world_map.get_tile(x, y - 1)
                     if north_tile and north_tile.type == "floor":
                         north_is_floor = True
-                        floor_neighbor_count +=1
-                    
+                        floor_neighbor_count += 1
+
                     # South
                     south_tile = world_map.get_tile(x, y + 1)
                     if south_tile and south_tile.type == "floor":
                         south_is_floor = True
-                        floor_neighbor_count +=1
+                        floor_neighbor_count += 1
 
                     # East
                     east_tile = world_map.get_tile(x + 1, y)
                     if east_tile and east_tile.type == "floor":
                         east_is_floor = True
-                        floor_neighbor_count +=1
-                        
+                        floor_neighbor_count += 1
+
                     # West
                     west_tile = world_map.get_tile(x - 1, y)
                     if west_tile and west_tile.type == "floor":
                         west_is_floor = True
-                        floor_neighbor_count +=1
+                        floor_neighbor_count += 1
 
                     if floor_neighbor_count == 2:
                         is_ns_path = north_is_floor and south_is_floor
                         is_ew_path = east_is_floor and west_is_floor
-                        
+
                         if is_ns_path or is_ew_path:
                             path_tile_count += 1
-                            
-        print(f"Seed: {seed_val}, Dimensions: {width}x{height}, Path-like Tiles: {path_tile_count}")
+
+        print(
+            f"Seed: {seed_val}, Dimensions: {width}x{height}, Path-like Tiles: {path_tile_count}"
+        )
         assert path_tile_count >= 0, "Path tile count should be non-negative."
         # A more specific assertion like `path_tile_count > (width + height) // 4`
         # could be added if a baseline is established. For now, >= 0 is a basic check.
         # For a 25x25 map, (23+23)//2 = 23. This is a plausible heuristic.
         # Let's use the one from the prompt:
-        if width > 2 and height > 2: # Ensure inner area exists
-             assert path_tile_count >= (width - 2 + height - 2) // 2, \
-                 f"Path count {path_tile_count} too low for {width}x{height} map (Seed: {seed_val})"
+        if width > 2 and height > 2:  # Ensure inner area exists
+            assert path_tile_count >= (width - 2 + height - 2) // 2, (
+                f"Path count {path_tile_count} too low for {width}x{height} map (Seed: {seed_val})"
+            )
 
     print("\nPath-like structures metric test complete. Review output above.")

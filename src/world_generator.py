@@ -622,12 +622,12 @@ class WorldGenerator:
 
         # Convert ALL remaining "potential_floor" to "wall" before density adjustment
         # This ensures adjust_density works on a map of only 'floor' and 'wall'.
-        for y_coord in range(1, height - 1): # Iterate inner map area
-            for x_coord in range(1, width - 1): # Iterate inner map area
+        for y_coord in range(1, height - 1):  # Iterate inner map area
+            for x_coord in range(1, width - 1):  # Iterate inner map area
                 tile = world_map.get_tile(x_coord, y_coord)
                 if tile and tile.type == "potential_floor":
                     world_map.set_tile_type(x_coord, y_coord, "wall")
-        
+
         # Adjust floor density
         self.density_adjuster.adjust_density(
             world_map,

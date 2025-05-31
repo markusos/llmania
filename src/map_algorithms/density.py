@@ -90,7 +90,7 @@ class FloorDensityAdjuster:
                                 if adj_tile_check and adj_tile_check.type == "floor":
                                     is_adjacent_to_floor = True
                                     adjacent_floor_count += 1
-                            
+
                             if is_adjacent_to_floor:
                                 candidate_walls_to_floor.append(
                                     (adjacent_floor_count, r_x, r_y)
@@ -105,7 +105,7 @@ class FloorDensityAdjuster:
                 # random.shuffle(candidate_walls_to_floor) # Potentially re-add if pure sort is too deterministic
 
                 made_change_in_pass = False
-                for _, c_x, c_y in candidate_walls_to_floor: # Unpack tuple
+                for _, c_x, c_y in candidate_walls_to_floor:  # Unpack tuple
                     if num_current_floor >= target_floor_tiles:
                         break
                     world_map.set_tile_type(c_x, c_y, "floor")
@@ -135,28 +135,29 @@ class FloorDensityAdjuster:
 
                 # Path Protection Check
                 floor_neighbor_count = 0
-                neighbors = [] # Store (dx, dy) for actual floor neighbors
-                for dr, dc in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # N, S, W, E
+                neighbors = []  # Store (dx, dy) for actual floor neighbors
+                for dr, dc in [(0, -1), (0, 1), (-1, 0), (1, 0)]:  # N, S, W, E
                     adj_x, adj_y = c_x + dr, c_y + dc
                     # Ensure neighbor is within map bounds for get_tile
                     if 0 <= adj_x < map_width and 0 <= adj_y < map_height:
                         adj_tile = world_map.get_tile(adj_x, adj_y)
                         if adj_tile and adj_tile.type == "floor":
                             floor_neighbor_count += 1
-                            neighbors.append((dr,dc))
-                
+                            neighbors.append((dr, dc))
+
                 is_path_tile = False
                 if floor_neighbor_count == 2:
                     # Check if neighbors are opposite
                     n1_dr, n1_dc = neighbors[0]
                     n2_dr, n2_dc = neighbors[1]
-                    if (n1_dr == -n2_dr and n1_dc == n2_dc) or \
-                       (n1_dc == -n2_dc and n1_dr == n2_dr) :
+                    if (n1_dr == -n2_dr and n1_dc == n2_dc) or (
+                        n1_dc == -n2_dc and n1_dr == n2_dr
+                    ):
                         is_path_tile = True
-                
+
                 if is_path_tile:
                     path_tiles_to_defer.append((c_x, c_y))
-                    continue # Defer this tile
+                    continue  # Defer this tile
 
                 # Not a path tile, attempt conversion
                 world_map.set_tile_type(c_x, c_y, "wall")
@@ -165,7 +166,7 @@ class FloorDensityAdjuster:
                 ):
                     converted_count += 1
                 else:
-                    world_map.set_tile_type(c_x, c_y, "floor") # Revert
+                    world_map.set_tile_type(c_x, c_y, "floor")  # Revert
 
             # Second pass: deferred path tiles (if still needed)
             if num_current_floor - converted_count > target_floor_tiles:
@@ -173,11 +174,15 @@ class FloorDensityAdjuster:
                 for p_x, p_y in path_tiles_to_defer:
                     if num_current_floor - converted_count <= target_floor_tiles:
                         break
-                    
+
                     world_map.set_tile_type(p_x, p_y, "wall")
                     if self.connectivity_manager.check_connectivity(
-                        world_map, player_start_pos, original_win_pos, map_width, map_height
+                        world_map,
+                        player_start_pos,
+                        original_win_pos,
+                        map_width,
+                        map_height,
                     ):
                         converted_count += 1
                     else:
-                        world_map.set_tile_type(p_x, p_y, "floor") # Revert
+                        world_map.set_tile_type(p_x, p_y, "floor")  # Revert
