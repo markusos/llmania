@@ -48,70 +48,371 @@ def test_generate_map_content(generator):
         f"Player start tile at {player_start_pos} is not a floor tile."
     )
 
-    # Ensure the win_pos tile contains the "Goal Item"
-    wx, wy = win_pos
-    win_tile = world_map.get_tile(wx, wy)
-    assert win_tile is not None, "Win position is out of bounds"
-    assert win_tile.item is not None, f"Win tile at {win_pos} has no item."
-    assert win_tile.item.name == "Amulet of Yendor", (
-        "Win tile does not contain the Amulet of Yendor."
+
+# Tests for new quadrant-based random walk logic
+def test_get_quadrant_bounds(generator: WorldGenerator):
+    # Test with a 20x20 map
+    map_width, map_height = 20, 20
+    # Expected inner bounds: min_x=1, min_y=1, max_x=18, max_y=18
+    # Midpoints: mid_x = 10, mid_y = 10
+
+    # Quadrant 0: NE (mid_x to inner_max_x, inner_min_y to mid_y-1)
+    # (10, 1, 18, 9)
+    assert generator._get_quadrant_bounds(0, map_width, map_height) == (10, 1, 18, 9)
+
+    # Quadrant 1: SE (mid_x to inner_max_x, mid_y to inner_max_y)
+    # (10, 10, 18, 18)
+    assert generator._get_quadrant_bounds(1, map_width, map_height) == (10, 10, 18, 18)
+
+    # Quadrant 2: SW (inner_min_x to mid_x-1, mid_y to inner_max_y)
+    # (1, 10, 9, 18)
+    assert generator._get_quadrant_bounds(2, map_width, map_height) == (1, 10, 9, 18)
+
+    # Quadrant 3: NW (inner_min_x to mid_x-1, inner_min_y to mid_y-1)
+    # (1, 1, 9, 9)
+    assert generator._get_quadrant_bounds(3, map_width, map_height) == (1, 1, 9, 9)
+
+    # Test with a small 5x5 map
+    map_width_small, map_height_small = 5, 5
+    # Expected inner bounds: min_x=1, min_y=1, max_x=3, max_y=3
+    # Midpoints: mid_x = 2, mid_y = 2
+
+    # Quadrant 0: NE (mid_x to inner_max_x, inner_min_y to mid_y-1)
+    # (2, 1, 3, 1)
+    assert generator._get_quadrant_bounds(0, map_width_small, map_height_small) == (
+        2,
+        1,
+        3,
+        1,
     )
-    assert win_tile.item.properties.get("type") == "quest", (
-        "Goal item is not of type 'quest'."
+
+    # Quadrant 1: SE (mid_x to inner_max_x, mid_y to inner_max_y)
+    # (2, 2, 3, 3)
+    assert generator._get_quadrant_bounds(1, map_width_small, map_height_small) == (
+        2,
+        2,
+        3,
+        3,
     )
 
-    # Ensure player start and win positions are different
-    assert player_start_pos != win_pos, "Player start and win positions are the same."
+    # Quadrant 2: SW (inner_min_x to mid_x-1, mid_y to inner_max_y)
+    # (1, 2, 1, 3)
+    assert generator._get_quadrant_bounds(2, map_width_small, map_height_small) == (
+        1,
+        2,
+        1,
+        3,
+    )
 
-    # Ensure there's at least one "floor" tile (already implied by
-    # player_start_pos and win_pos being floor)
-    floor_tile_found = False
-    for y in range(height):
-        for x in range(width):
-            tile = world_map.get_tile(x, y)
-            if tile and tile.type == "floor":
-                floor_tile_found = True
-                break
-        if floor_tile_found:
-            break
-    assert floor_tile_found, "No floor tiles found on the map."
+    # Quadrant 3: NW (inner_min_x to mid_x-1, inner_min_y to mid_y-1)
+    # (1, 1, 1, 1)
+    assert generator._get_quadrant_bounds(3, map_width_small, map_height_small) == (
+        1,
+        1,
+        1,
+        1,
+    )
 
-    # Check if some other items and monsters are placed (basic check)
-    # This is probabilistic, but with a large enough map and enough placements,
-    # some should exist.
-    # For very small maps, this part of the test might be flaky.
-    other_items_count = 0
-    monsters_count = 0
-    for y_coord in range(height):
-        for x_coord in range(width):
-            tile = world_map.get_tile(x_coord, y_coord)
-            if tile:
-                if (
-                    tile.item and tile.item.name != "Amulet of Yendor"
-                ):  # Exclude goal item
-                    other_items_count += 1
-                if tile.monster:
-                    monsters_count += 1
+    # Test with a 4x4 map (edge case for midpoints)
+    map_width_edge, map_height_edge = 4, 4
+    # Inner bounds: min_x=1, min_y=1, max_x=2, max_y=2
+    # Midpoints: mid_x = 2, mid_y = 2
+    # Q0 NE: (2,1,2,1)
+    # Q1 SE: (2,2,2,2)
+    # Q2 SW: (1,2,1,2)
+    # Q3 NW: (1,1,1,1)
+    assert generator._get_quadrant_bounds(0, map_width_edge, map_height_edge) == (
+        2,
+        1,
+        2,
+        1,
+    )
+    assert generator._get_quadrant_bounds(1, map_width_edge, map_height_edge) == (
+        2,
+        2,
+        2,
+        2,
+    )
+    assert generator._get_quadrant_bounds(2, map_width_edge, map_height_edge) == (
+        1,
+        2,
+        1,
+        2,
+    )
+    assert generator._get_quadrant_bounds(3, map_width_edge, map_height_edge) == (
+        1,
+        1,
+        1,
+        1,
+    )
 
-    # This is a very loose check, adjust numbers if needed for your generation
-    # logic
-    # print(f"Found {other_items_count} other items and {monsters_count} monsters.")
-    # For debugging
-    # On a 20x20 map, it's highly likely at least one of each is placed.
-    # If not, the placement logic in generator might need review or test
-    # conditions adjusted.
+    # Test with a 3x3 map (most degenerate case, inner area is 1x1)
+    map_width_min, map_height_min = 3, 3
+    # Inner bounds: min_x=1, min_y=1, max_x=1, max_y=1
+    # Midpoints: mid_x = 1, mid_y = 1
+    # Q0 NE: (1,1,1,0) -> clamped (1,1,1,1) because min_y > max_y (0) initially,
+    # then max_y becomes min_y.
+    # My code has specific clamping: if min_y > max_y, max_y = min_y.
+    # So (1,1,1,1) is expected.
+    # Q0: mid_x=1, inner_min_y=1, inner_max_x=1, mid_y-1=0 -> (1,1,1,0) -> (1,1,1,1)
+    # Q1: mid_x=1, mid_y=1, inner_max_x=1, inner_max_y=1 -> (1,1,1,1)
+    # Q2: inner_min_x=1, mid_y=1, mid_x-1=0, inner_max_y=1 -> (1,1,0,1) -> (1,1,1,1)
+    # Q3: inner_min_x=1, inner_min_y=1, mid_x-1=0, mid_y-1=0 -> (1,1,0,0) -> (1,1,1,1)
+    # Let's re-verify the logic in code:
+    # min_x = max(inner_min_x, min_x)
+    # min_y = max(inner_min_y, min_y)
+    # max_x = min(inner_max_x, max_x)
+    # max_y = min(inner_max_y, max_y)
+    # if min_x > max_x: max_x = min_x
+    # if min_y > max_y: max_y = min_y
 
-    # With the new generator placing specific items/monsters, we can be more
-    # specific if desired.
-    # For now, just checking if some are placed is okay.
-    # The number of placements is (width*height)//15. Item chance 0.15,
-    # monster 0.10.
-    # For 20x20 map (400 tiles), placements = 400/15 = ~26 attempts.
-    # Expected other items = 26 * 0.15 * (1 - prob_player_or_win_tile) ~ 3-4 items
-    # Expected monsters = 26 * 0.10 * (1 - prob_player_or_win_tile) ~ 2-3 monsters
-    # Asserting >=0 is fine, but could be stricter for larger maps if needed.
-    assert other_items_count >= 0
-    assert monsters_count >= 0
+    # Q0 (NE): initial (1,1,1,0). After clamp: (1,1,1,0). Then max_y=min_y -> (1,1,1,1)
+    assert generator._get_quadrant_bounds(0, map_width_min, map_height_min) == (
+        1,
+        1,
+        1,
+        1,
+    )
+    # Q1 (SE): initial (1,1,1,1). After clamp: (1,1,1,1).
+    assert generator._get_quadrant_bounds(1, map_width_min, map_height_min) == (
+        1,
+        1,
+        1,
+        1,
+    )
+    # Q2 (SW): initial (1,1,0,1). After clamp: (1,1,0,1). Then max_x=min_x -> (1,1,1,1)
+    assert generator._get_quadrant_bounds(2, map_width_min, map_height_min) == (
+        1,
+        1,
+        1,
+        1,
+    )
+    # Q3 (NW): init (1,1,0,0). Clamp (1,1,0,0). Then max_x=min_x... -> (1,1,1,1)
+    assert generator._get_quadrant_bounds(3, map_width_min, map_height_min) == (
+        1,
+        1,
+        1,
+        1,
+    )
+
+    with pytest.raises(ValueError):
+        generator._get_quadrant_bounds(4, map_width, map_height)  # Invalid index
+
+
+def test_get_random_tile_in_bounds(generator: WorldGenerator):
+    map_width, map_height = 10, 10
+    world_map = WorldMap(map_width, map_height)
+    # Initialize inner area (1-8, 1-8)
+    for r in range(map_height):  # Initialize all to potential_floor first
+        for c in range(map_width):
+            if c == 0 or c == map_width - 1 or r == 0 or r == map_height - 1:
+                world_map.set_tile_type(c, r, "wall")  # Border walls
+            else:
+                world_map.set_tile_type(c, r, "potential_floor")
+
+    # Specific tiles for testing
+    world_map.set_tile_type(2, 2, "wall")  # Inner wall
+    world_map.set_tile_type(2, 3, "floor")  # Inner floor
+    world_map.set_tile_type(5, 5, "wall")  # Another inner wall
+    world_map.set_tile_type(5, 6, "floor")  # Another inner floor
+
+    # Test 1: Find a "wall" tile
+    bounds1 = (1, 1, 3, 3)  # Includes (2,2) which is "wall"
+    pos = generator._get_random_tile_in_bounds(world_map, bounds1, "wall")
+    assert pos is not None
+    assert pos == (2, 2)  # Only one wall in this small bound
+    assert world_map.get_tile(pos[0], pos[1]).type == "wall"
+
+    # Test 2: Find a "floor" tile
+    bounds2 = (1, 1, 3, 4)  # Includes (2,3) which is "floor"
+    pos = generator._get_random_tile_in_bounds(world_map, bounds2, "floor")
+    assert pos is not None
+    assert pos == (2, 3)  # Only one floor in this small bound
+    assert world_map.get_tile(pos[0], pos[1]).type == "floor"
+
+    # Test 3: Tile type does not exist in bounds
+    bounds3 = (1, 1, 1, 1)  # No "monster" tile type generally
+    pos = generator._get_random_tile_in_bounds(world_map, bounds3, "monster")
+    assert pos is None
+
+    # Test 4: Tile type "wall" does not exist in specific floor area
+    world_map.set_tile_type(7, 7, "floor")
+    bounds4 = (7, 7, 7, 7)  # Only contains a floor tile
+    pos = generator._get_random_tile_in_bounds(world_map, bounds4, "wall")
+    assert pos is None
+
+    # Test 5: Invalid/degenerate bounds (min_x > max_x)
+    bounds_invalid1 = (5, 1, 4, 3)
+    pos = generator._get_random_tile_in_bounds(world_map, bounds_invalid1, "wall")
+    assert pos is None
+
+    # Test 6: Invalid/degenerate bounds (min_y > max_y)
+    bounds_invalid2 = (1, 5, 3, 4)
+    pos = generator._get_random_tile_in_bounds(world_map, bounds_invalid2, "wall")
+    assert pos is None
+
+    # Test 7: Bounds are outside the inner map area but still valid rect
+    # _get_random_tile_in_bounds itself doesn't care about inner map, only map.get_tile
+    # For this test, we'll use bounds that are technically valid for map indexing
+    # but might be outside where we'd expect findable tiles from _get_quadrant_bounds.
+    # Let's assume we're looking for border walls.
+    world_map.set_tile_type(0, 0, "wall")  # ensure border wall
+    pos = generator._get_random_tile_in_bounds(world_map, (0, 0, 0, 0), "wall")
+    assert pos == (0, 0)
+
+    # Test 8: Max attempts exhausted
+    # Create a bound where the tile exists but is hard to hit randomly if not seeded.
+    # Max_attempts is 100. For a 10x10 area (100 tiles), finding one specific
+    # tile is 1/100. This is hard to test reliably without setting random.seed
+    # or many attempts. Instead, check if it returns None if the ONLY tile of
+    # a type is outside specific bounds.
+    world_map.set_tile_type(8, 8, "special")
+    bounds_miss = (1, 1, 7, 7)  # This bound does not include (8,8)
+    pos = generator._get_random_tile_in_bounds(world_map, bounds_miss, "special")
+    assert pos is None
+
+
+def test_perform_directed_random_walk(generator: WorldGenerator):
+    map_width, map_height = 10, 10
+    world_map = WorldMap(map_width, map_height)
+    # Initialize all to wall, including inner area, except border
+    for r in range(map_height):
+        for c in range(map_width):
+            if c == 0 or c == map_width - 1 or r == 0 or r == map_height - 1:
+                world_map.set_tile_type(c, r, "wall")  # Border
+            else:
+                world_map.set_tile_type(c, r, "wall")  # Inner also wall initially
+
+    start_pos = (2, 2)  # This is currently a wall
+    end_pos = (7, 7)
+    world_map.set_tile_type(end_pos[0], end_pos[1], "floor")  # Set end_pos to be floor
+
+    initial_floor_tiles = 0
+    for r_idx in range(1, map_height - 1):
+        for c_idx in range(1, map_width - 1):
+            if world_map.get_tile(c_idx, r_idx).type == "floor":
+                initial_floor_tiles += 1
+    assert initial_floor_tiles == 1  # Only end_pos is floor
+
+    generator._perform_directed_random_walk(
+        world_map, start_pos, end_pos, map_width, map_height, max_steps=200
+    )
+
+    # Assert start_pos is now floor
+    assert world_map.get_tile(start_pos[0], start_pos[1]).type == "floor"
+    # Assert end_pos is still floor
+    assert world_map.get_tile(end_pos[0], end_pos[1]).type == "floor"
+
+    # Count floor tiles after walk; should be more than initial
+    final_floor_tiles = 0
+    path_tiles_coords = []  # Store coords of floor tiles for path check
+    for r_idx in range(1, map_height - 1):
+        for c_idx in range(1, map_width - 1):
+            if world_map.get_tile(c_idx, r_idx).type == "floor":
+                final_floor_tiles += 1
+                path_tiles_coords.append((c_idx, r_idx))
+
+    assert final_floor_tiles > initial_floor_tiles
+
+    # Check that border walls were not changed
+    for c_idx in range(map_width):
+        assert world_map.get_tile(c_idx, 0).type == "wall"
+        assert world_map.get_tile(c_idx, map_height - 1).type == "wall"
+    for r_idx in range(map_height):
+        assert world_map.get_tile(0, r_idx).type == "wall"
+        assert world_map.get_tile(map_width - 1, r_idx).type == "wall"
+
+    # Optional: Check if path exists between start and end using BFS.
+    # This is a stronger check for connectivity if the walk was successful.
+    path_exists = find_path_bfs(world_map, start_pos, end_pos)
+    assert path_exists, (
+        f"No path found via BFS from {start_pos} to {end_pos} after walk. "
+        f"Path tiles: {path_tiles_coords}"
+    )
+
+
+def test_perform_random_walks_creates_floor_in_quadrants(generator: WorldGenerator):
+    map_width, map_height = 20, 20
+    world_map = WorldMap(map_width, map_height)
+    # Initialize map: border wall, inner potential_floor
+    for r in range(map_height):
+        for c in range(map_width):
+            if c == 0 or c == map_width - 1 or r == 0 or r == map_height - 1:
+                world_map.set_tile_type(c, r, "wall")
+            else:
+                # For this test, start with walls in inner area,
+                # so walks have something to carve.
+                world_map.set_tile_type(c, r, "wall")
+
+    player_start_pos = (5, 5)  # Arbitrary, used as fallback target by walks
+    world_map.set_tile_type(player_start_pos[0], player_start_pos[1], "floor")
+
+    initial_floor_count = 1  # Only player_start_pos
+
+    # Before calling, let's count floor tiles in each quadrant
+    initial_quad_floors = []
+    for i in range(4):
+        bounds = generator._get_quadrant_bounds(i, map_width, map_height)
+        count = 0
+        if bounds[0] <= bounds[2] and bounds[1] <= bounds[3]:  # valid bounds
+            for r_idx in range(bounds[1], bounds[3] + 1):
+                for c_idx in range(bounds[0], bounds[2] + 1):
+                    if world_map.get_tile(c_idx, r_idx).type == "floor":
+                        count += 1
+        initial_quad_floors.append(count)
+
+    generator._perform_random_walks(world_map, player_start_pos, map_width, map_height)
+
+    quadrant_floor_counts_after = []
+    active_quadrants = 0
+
+    for i in range(4):
+        bounds = generator._get_quadrant_bounds(i, map_width, map_height)
+        current_quad_floor_count = 0
+        # Check if bounds are valid before iterating
+        if bounds[0] <= bounds[2] and bounds[1] <= bounds[3]:
+            for r_idx in range(bounds[1], bounds[3] + 1):
+                for c_idx in range(bounds[0], bounds[2] + 1):
+                    tile = world_map.get_tile(c_idx, r_idx)
+                    if tile and tile.type == "floor":
+                        current_quad_floor_count += 1
+            quadrant_floor_counts_after.append(current_quad_floor_count)
+            # Check if floor count increased in this quadrant
+            if current_quad_floor_count > initial_quad_floors[i]:
+                active_quadrants += 1
+        else:
+            # No valid area in this quadrant
+            quadrant_floor_counts_after.append(0)
+
+    # Assert that total floor tiles increased significantly.
+    # (player_start was 1, plus walks should add substantially more).
+    # This is a bit loose as walks can overlap or be short.
+    # Key is that it's more than just the initial player_start_pos.
+    # Recalculate total_final_floor_tiles accurately to avoid double counting.
+    final_floor_map_tiles = 0
+    for r_idx in range(1, map_height - 1):
+        for c_idx in range(1, map_width - 1):
+            if world_map.get_tile(c_idx, r_idx).type == "floor":
+                final_floor_map_tiles += 1
+
+    assert final_floor_map_tiles > initial_floor_count, (
+        f"Expected > {initial_floor_count} floor tiles, got {final_floor_map_tiles}"
+    )
+
+    # Assert that at least some quadrants show activity (increased floor tiles).
+    # This is probabilistic. On a 20x20 map, all 4 should usually be active.
+    # For smaller maps, some quadrants might be too small to start a walk.
+    # A 20x20 map should be large enough.
+    assert active_quadrants > 0, (
+        f"Expected walks in >0 quadrants. Active: {active_quadrants}. "
+        f"Counts after: {quadrant_floor_counts_after}, Before: {initial_quad_floors}"
+    )
+    # A stronger assertion for a 20x20 map:
+    if map_width >= 10 and map_height >= 10:  # Heuristic for expecting all quads active
+        assert active_quadrants >= 2, (
+            f"Expected walks in >=2 quadrants for {map_width}x{map_height} map. "
+            f"Active: {active_quadrants}. Counts after: {quadrant_floor_counts_after}"
+        )
 
 
 # Test `generate_map` reproducibility with seed
@@ -556,3 +857,114 @@ def test_win_item_placed_furthest(generator):
         f"{calculated_furthest_tiles} from {player_start_pos} "
         f"(max_dist: {current_max_dist})."
     )
+
+
+def test_visual_inspection_of_generated_maps():
+    """
+    Allows visual inspection of generated maps for qualitative assessment.
+    This test prints map representations to the console and has no assertions.
+    """
+    print("\n--- Visual Inspection of Generated Maps ---")
+    generator = WorldGenerator(floor_portion=0.4)
+    seeds = [1, 2, 3]
+    dimensions = [(20, 10), (15, 15)]
+
+    for seed_val in seeds:
+        for width, height in dimensions:
+            print(f"\nMap for seed={seed_val}, Dimensions: {width}x{height}")
+            world_map, _, _ = generator.generate_map(width, height, seed=seed_val)
+            for y in range(height):
+                row_str = ""
+                for x in range(width):
+                    tile = world_map.get_tile(x, y)
+                    if tile is None: # Should not happen in a valid map
+                        row_str += "?"
+                    elif tile.type == "wall":
+                        row_str += "#"
+                    elif tile.type == "floor":
+                        row_str += "."
+                    elif tile.type == "potential_floor": # Should be resolved
+                        row_str += "~" 
+                    else:
+                        row_str += "X" # Unknown tile type
+                print(row_str)
+    
+    print("\nVisual inspection test complete. Review output above.")
+
+
+def test_path_like_structures_metric():
+    """
+    Calculates and prints a metric for 'path-like' structures in generated maps.
+    A path-like tile is a floor tile with exactly two floor neighbors in
+    opposite directions (N-S or E-W).
+    """
+    print("\n--- Path-Like Structures Metric ---")
+    generator = WorldGenerator(floor_portion=0.4) # Consistent floor portion
+    
+    test_configs = [
+        {"width": 25, "height": 25, "seed": 10},
+        {"width": 25, "height": 25, "seed": 20},
+        {"width": 30, "height": 20, "seed": 30},
+    ]
+
+    for config in test_configs:
+        width, height, seed_val = config["width"], config["height"], config["seed"]
+        world_map, _, _ = generator.generate_map(width, height, seed=seed_val)
+        
+        path_tile_count = 0
+        
+        # Iterate through inner floor tiles (1 to width-2, 1 to height-2)
+        for y in range(1, height - 1):
+            for x in range(1, width - 1):
+                current_tile = world_map.get_tile(x, y)
+                if current_tile and current_tile.type == "floor":
+                    floor_neighbor_count = 0
+                    
+                    # Check N, S, E, W neighbors
+                    north_is_floor = False
+                    south_is_floor = False
+                    east_is_floor = False
+                    west_is_floor = False
+
+                    # North
+                    north_tile = world_map.get_tile(x, y - 1)
+                    if north_tile and north_tile.type == "floor":
+                        north_is_floor = True
+                        floor_neighbor_count +=1
+                    
+                    # South
+                    south_tile = world_map.get_tile(x, y + 1)
+                    if south_tile and south_tile.type == "floor":
+                        south_is_floor = True
+                        floor_neighbor_count +=1
+
+                    # East
+                    east_tile = world_map.get_tile(x + 1, y)
+                    if east_tile and east_tile.type == "floor":
+                        east_is_floor = True
+                        floor_neighbor_count +=1
+                        
+                    # West
+                    west_tile = world_map.get_tile(x - 1, y)
+                    if west_tile and west_tile.type == "floor":
+                        west_is_floor = True
+                        floor_neighbor_count +=1
+
+                    if floor_neighbor_count == 2:
+                        is_ns_path = north_is_floor and south_is_floor
+                        is_ew_path = east_is_floor and west_is_floor
+                        
+                        if is_ns_path or is_ew_path:
+                            path_tile_count += 1
+                            
+        print(f"Seed: {seed_val}, Dimensions: {width}x{height}, Path-like Tiles: {path_tile_count}")
+        assert path_tile_count >= 0, "Path tile count should be non-negative."
+        # A more specific assertion like `path_tile_count > (width + height) // 4`
+        # could be added if a baseline is established. For now, >= 0 is a basic check.
+        # For a 25x25 map, (23+23)//2 = 23. This is a plausible heuristic.
+        # Let's use the one from the prompt:
+        if width > 2 and height > 2: # Ensure inner area exists
+             assert path_tile_count >= (width - 2 + height - 2) // 2, \
+                 f"Path count {path_tile_count} too low for {width}x{height} map (Seed: {seed_val})"
+
+    print("\nPath-like structures metric test complete. Review output above.")
