@@ -32,6 +32,51 @@ class WorldGenerator:
         self.density_adjuster = FloorDensityAdjuster(self.connectivity_manager)
         self.path_finder = PathFinder()
 
+    def _get_quadrant_bounds(
+        self, quadrant_index: int, map_width: int, map_height: int
+    ) -> tuple[int, int, int, int]:
+        """
+        Calculates the (min_x, min_y, max_x, max_y) coordinates for a given quadrant.
+        Quadrants: 0 for NE, 1 for SE, 2 for SW, 3 for NW.
+        Ensures bounds are within the inner map area (1 to width-2, 1 to height-2).
+        """
+        mid_x = map_width // 2
+        mid_y = map_height // 2
+
+        # Inner map boundaries
+        inner_min_x, inner_min_y = 1, 1
+        inner_max_x, inner_max_y = map_width - 2, map_height - 2
+
+        if quadrant_index == 0:  # Northeast
+            min_x, min_y = mid_x, inner_min_y
+            max_x, max_y = inner_max_x, mid_y - 1
+        elif quadrant_index == 1:  # Southeast
+            min_x, min_y = mid_x, mid_y
+            max_x, max_y = inner_max_x, inner_max_y
+        elif quadrant_index == 2:  # Southwest
+            min_x, min_y = inner_min_x, mid_y
+            max_x, max_y = mid_x - 1, inner_max_y
+        elif quadrant_index == 3:  # Northwest
+            min_x, min_y = inner_min_x, inner_min_y
+            max_x, max_y = mid_x - 1, mid_y - 1
+        else:
+            raise ValueError(f"Invalid quadrant_index: {quadrant_index}")
+
+        # Clamp to inner map boundaries to prevent issues with small maps
+        # and ensure results are always valid for indexing inner map parts.
+        min_x = max(inner_min_x, min_x)
+        min_y = max(inner_min_y, min_y)
+        max_x = min(inner_max_x, max_x)
+        max_y = min(inner_max_y, max_y)
+
+        # Ensure min <= max for degenerate cases (e.g. very small maps)
+        if min_x > max_x:
+            max_x = min_x
+        if min_y > max_y:
+            max_y = min_y
+
+        return min_x, min_y, max_x, max_y
+
     def _initialize_map(self, width: int, height: int, seed: Optional[int]) -> WorldMap:
         """
         Initializes a new WorldMap. Outermost layer is "wall", inner tiles
@@ -134,55 +179,181 @@ class WorldGenerator:
     # MapConnectivityManager.ensure_connectivity
     # _carve_path was moved to PathFinder.carve_bresenham_line
 
+    def _get_random_tile_in_bounds(
+        self,
+        world_map: WorldMap,
+        bounds: tuple[int, int, int, int],
+        tile_type: str,
+        max_attempts: int = 100,
+    ) -> Optional[tuple[int, int]]:
+        """
+        Searches for a random tile of `tile_type` within the given `bounds`.
+        Makes `max_attempts` to find such a tile.
+        Returns `(x, y)` if found, else `None`.
+        """
+        min_x, min_y, max_x, max_y = bounds
+        if min_x > max_x or min_y > max_y:  # Check if bounds are valid
+            return None
+
+        for _ in range(max_attempts):
+            # Ensure random.randint arguments are valid (low <= high)
+            if max_x < min_x or max_y < min_y:  # Should not happen if bounds are valid
+                return None  # Or handle as an error/log
+
+            rand_x = random.randint(min_x, max_x)
+            rand_y = random.randint(min_y, max_y)
+
+            tile = world_map.get_tile(rand_x, rand_y)
+            if tile and tile.type == tile_type:
+                return rand_x, rand_y
+        return None
+
+    def _perform_directed_random_walk(
+        self,
+        world_map: WorldMap,
+        start_pos: tuple[int, int],
+        end_pos: tuple[int, int],
+        map_width: int,
+        map_height: int,
+        max_steps: int = 200,
+    ):
+        """
+        Performs a directed random walk from start_pos towards end_pos.
+        """
+        current_x, current_y = start_pos
+        world_map.set_tile_type(current_x, current_y, "floor")  # Carve start_pos
+
+        for _ in range(max_steps):
+            if (current_x, current_y) == end_pos:
+                break
+
+            dx = end_pos[0] - current_x
+            dy = end_pos[1] - current_y
+
+            possible_directions = []
+            # North
+            if current_y > 1:
+                possible_directions.append((0, -1, "N"))
+            # South
+            if current_y < map_height - 2:
+                possible_directions.append((0, 1, "S"))
+            # West
+            if current_x > 1:
+                possible_directions.append((-1, 0, "W"))
+            # East
+            if current_x < map_width - 2:
+                possible_directions.append((1, 0, "E"))
+
+            if not possible_directions:  # Should not happen in a >3x3 inner map
+                break
+
+            preferred_directions = []
+            if dy < 0:  # North
+                preferred_directions.append((0, -1, "N"))
+            if dy > 0:  # South
+                preferred_directions.append((0, 1, "S"))
+            if dx < 0:  # West
+                preferred_directions.append((-1, 0, "W"))
+            if dx > 0:  # East
+                preferred_directions.append((1, 0, "E"))
+
+            # Filter preferred_directions to only those that are possible
+            possible_moves_set = {(d[0], d[1], d[2]) for d in possible_directions}
+            preferred_directions = [
+                pd
+                for pd in preferred_directions
+                if (pd[0], pd[1], pd[2]) in possible_moves_set
+            ]
+
+            chosen_dx, chosen_dy = 0, 0
+            # 75% chance to pick a preferred direction
+            if preferred_directions and random.random() < 0.75:
+                chosen_dx, chosen_dy, _ = random.choice(preferred_directions)
+            else:  # Pick any allowed direction
+                chosen_dx, chosen_dy, _ = random.choice(possible_directions)
+
+            next_x, next_y = current_x + chosen_dx, current_y + chosen_dy
+
+            # Check if next_pos is within inner map bounds (1 to width-2, 1 to height-2)
+            if 1 <= next_x < map_width - 1 and 1 <= next_y < map_height - 1:
+                tile = world_map.get_tile(next_x, next_y)
+                if tile and (tile.type == "wall" or tile.type == "potential_floor"):
+                    world_map.set_tile_type(next_x, next_y, "floor")
+                current_x, current_y = next_x, next_y
+            # If next_pos is not valid (hits border or invalid move),
+            # walker stays, try new direction next step.
+            # No explicit else needed, current_pos just doesn't update.
+
     def _perform_random_walks(
         self,
         world_map: WorldMap,
-        player_start_pos: tuple[int, int],
+        player_start_pos: tuple[int, int],  # Keep for fallback
         map_width: int,
         map_height: int,
     ) -> None:
         """
-        Performs random walks to carve out additional "floor" space from
-        "potential_floor" tiles, making the map more cavern-like.
+        Performs quadrant-based directed random walks to carve out floor space.
+        Each walk starts from a random wall tile in a quadrant and moves towards
+        a random existing floor tile or the player start position.
 
         Args:
             world_map: The WorldMap instance to modify.
-            player_start_pos: Player's starting position (one walk origin).
+            player_start_pos: Player's starting position, used as a fallback target.
             map_width: The width of the map.
             map_height: The height of the map.
         """
         num_walks = 2
         walk_length = (map_width * map_height) // 20  # Max length of each walk
 
-        current_floor_tiles = self._collect_floor_tiles(
-            world_map, map_width, map_height
-        )
-        if not current_floor_tiles:  # Should not occur if path carving was done
-            current_floor_tiles = [player_start_pos]
+        for quadrant_index in range(num_quadrant_paths):
+            quadrant_bounds = self._get_quadrant_bounds(
+                quadrant_index, map_width, map_height
+            )
 
-        walk_start_points = [player_start_pos]
-        for _ in range(num_walks - 1):  # Add more random start points
-            if current_floor_tiles:
-                walk_start_points.append(random.choice(current_floor_tiles))
-            else:  # Fallback, though unlikely if player_start_pos is floor
-                walk_start_points.append(player_start_pos)
+            # Ensure bounds are valid before attempting to find start_node
+            q_min_x, q_min_y, q_max_x, q_max_y = quadrant_bounds
+            if q_min_x > q_max_x or q_min_y > q_max_y:
+                # This can happen if the map is too small for the quadrant logic
+                # (e.g., a 3x3 map would have degenerate quadrants).
+                # Skip this quadrant or handle as appropriate.
+                continue
 
-        for walk_start_x, walk_start_y in walk_start_points:
-            current_x, current_y = walk_start_x, walk_start_y
-            for _ in range(walk_length):
-                directions = [(0, -1), (0, 1), (-1, 0), (1, 0)]  # N, S, W, E
-                dx_walk, dy_walk = random.choice(directions)
-                next_x, next_y = current_x + dx_walk, current_y + dy_walk
+            start_node = self._get_random_tile_in_bounds(
+                world_map, quadrant_bounds, "wall"
+            )
 
-                if 0 <= next_x < map_width and 0 <= next_y < map_height:
-                    # Walker moves. Change tile only if it's an inner
-                    # "potential_floor" tile.
-                    if 0 < next_x < map_width - 1 and 0 < next_y < map_height - 1:
-                        tile = world_map.get_tile(next_x, next_y)
-                        if tile and tile.type == "potential_floor":
-                            world_map.set_tile_type(next_x, next_y, "floor")
-                    current_x, current_y = next_x, next_y
-                # If out of bounds, walker stays; tries new direction next step.
+            if start_node is None:
+                # Could not find a 'wall' tile in this quadrant.
+                # Might happen if quadrant is fully carved/small.
+                # Try to find a 'potential_floor' tile instead, or just continue.
+                start_node = self._get_random_tile_in_bounds(
+                    world_map, quadrant_bounds, "potential_floor"
+                )
+                if start_node is None:
+                    # Skip to the next quadrant if no suitable start tile
+                    continue
+
+            # start_node is carved to floor in _perform_directed_random_walk
+
+            all_floor_tiles = self._collect_floor_tiles(
+                world_map, map_width, map_height
+            )
+
+            if not all_floor_tiles:
+                end_node = player_start_pos  # Fallback if no floor tiles exist yet
+            # (should be rare after initial setup)
+            else:
+                end_node = random.choice(all_floor_tiles)
+
+            # Ensure end_node is not the same as start_node if possible
+            if end_node == start_node and len(all_floor_tiles) > 1:
+                potential_end_nodes = [fn for fn in all_floor_tiles if fn != start_node]
+                if potential_end_nodes:
+                    end_node = random.choice(potential_end_nodes)
+
+            self._perform_directed_random_walk(
+                world_map, start_node, end_node, map_width, map_height
+            )
 
     def _generate_path_network(
         self,
