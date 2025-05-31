@@ -3,8 +3,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 # Assuming src is in PYTHONPATH or tests are run in a way that src can be imported
-from src.input_handler import InputHandler
-from src.parser import Parser  # Parser is needed for instantiation, will be mocked
+from input_handler import InputHandler
+from parser import Parser  # Parser is needed for instantiation, will be mocked
 
 
 class TestInputHandler(unittest.TestCase):

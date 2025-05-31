@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import MagicMock
 
-from src.command_processor import CommandProcessor
-from src.item import Item
-from src.message_log import MessageLog
-from src.monster import Monster
-from src.player import Player
-from src.tile import Tile
-from src.world_map import WorldMap
+from command_processor import CommandProcessor
+from item import Item
+from message_log import MessageLog
+from monster import Monster
+from player import Player
+from tile import Tile
+from world_map import WorldMap
 
 
 class TestCommandProcessor(unittest.TestCase):

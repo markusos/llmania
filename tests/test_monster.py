@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from src.monster import Monster
+from monster import Monster
 
 # Player is only needed for type hinting in Monster, but we mock it for tests.
 # from src.player import Player

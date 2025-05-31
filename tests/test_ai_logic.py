@@ -5,13 +5,13 @@ from unittest.mock import (
 )  # Import call for checking multiple calls if needed
 
 # Assuming these are the correct paths to your classes
-from src.ai_logic import AILogic
-from src.item import Item  # Actual class for spec
-from src.message_log import MessageLog  # Import MessageLog
-from src.monster import Monster  # Actual class for spec
-from src.player import Player  # Actual class for spec
-from src.tile import Tile  # Actual class for spec
-from src.world_map import WorldMap  # Actual class for spec
+from ai_logic import AILogic
+from item import Item  # Actual class for spec
+from message_log import MessageLog  # Import MessageLog
+from monster import Monster  # Actual class for spec
+from player import Player  # Actual class for spec
+from tile import Tile  # Actual class for spec
+from world_map import WorldMap  # Actual class for spec
 
 
 class TestAILogic(unittest.TestCase):

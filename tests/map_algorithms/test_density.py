@@ -1,8 +1,8 @@
 import pytest
 
-from src.map_algorithms.connectivity import MapConnectivityManager
-from src.map_algorithms.density import FloorDensityAdjuster
-from src.world_map import WorldMap
+from map_algorithms.connectivity import MapConnectivityManager
+from map_algorithms.density import FloorDensityAdjuster
+from world_map import WorldMap
 
 
 @pytest.fixture

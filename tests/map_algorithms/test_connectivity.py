@@ -1,7 +1,7 @@
 import pytest
 
-from src.map_algorithms.connectivity import MapConnectivityManager
-from src.world_map import WorldMap
+from map_algorithms.connectivity import MapConnectivityManager
+from world_map import WorldMap
 
 
 @pytest.fixture

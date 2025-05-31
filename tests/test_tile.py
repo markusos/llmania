@@ -1,4 +1,4 @@
-from src.tile import ENTITY_SYMBOLS, TILE_SYMBOLS, Tile
+from tile import ENTITY_SYMBOLS, TILE_SYMBOLS, Tile
 
 
 def test_tile_initialization_default():

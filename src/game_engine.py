@@ -1,16 +1,16 @@
 import curses
 import time
 
-from src.ai_logic import AILogic
-from src.command_processor import CommandProcessor  # Import CommandProcessor
-from src.input_handler import InputHandler
-from src.message_log import MessageLog
+from ai_logic import AILogic
+from command_processor import CommandProcessor  # Import CommandProcessor
+from input_handler import InputHandler
+from message_log import MessageLog
 
 # Assuming these are first-party imports
-from src.parser import Parser
-from src.player import Player
-from src.renderer import Renderer  # Import Renderer
-from src.world_generator import WorldGenerator
+from parser import Parser
+from player import Player
+from renderer import Renderer  # Import Renderer
+from world_generator import WorldGenerator
 
 # Monster class is forward-declared as a string literal in type hints
 

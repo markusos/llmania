@@ -2,9 +2,9 @@
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from src.monster import Monster  # For type hinting in _get_adjacent_monsters
-    from src.player import Player
-    from src.world_map import WorldMap
+    from monster import Monster  # For type hinting in _get_adjacent_monsters
+    from player import Player
+    from world_map import WorldMap
 
 
 class CommandProcessor:

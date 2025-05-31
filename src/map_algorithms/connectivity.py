@@ -1,10 +1,10 @@
 import random  # Added for selecting random tiles
 from collections import deque
 
-from src.map_algorithms.pathfinding import (
+from map_algorithms.pathfinding import (
     PathFinder,  # For carve_bresenham_line
 )
-from src.world_map import WorldMap  # For type hinting
+from world_map import WorldMap  # For type hinting
 
 
 class MapConnectivityManager:

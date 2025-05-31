@@ -2,12 +2,12 @@ import random
 from collections import deque
 from typing import Optional
 
-from src.item import Item
-from src.map_algorithms.connectivity import MapConnectivityManager
-from src.map_algorithms.density import FloorDensityAdjuster
-from src.map_algorithms.pathfinding import PathFinder
-from src.monster import Monster
-from src.world_map import WorldMap
+from item import Item
+from map_algorithms.connectivity import MapConnectivityManager
+from map_algorithms.density import FloorDensityAdjuster
+from map_algorithms.pathfinding import PathFinder
+from monster import Monster
+from world_map import WorldMap
 
 
 class WorldGenerator:

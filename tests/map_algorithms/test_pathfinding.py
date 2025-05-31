@@ -1,7 +1,7 @@
 import pytest
 
-from src.map_algorithms.pathfinding import PathFinder
-from src.world_map import WorldMap
+from map_algorithms.pathfinding import PathFinder
+from world_map import WorldMap
 
 
 @pytest.fixture

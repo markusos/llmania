@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import MagicMock
 
-from src.item import Item
-from src.monster import Monster  # For type hinting and mocking spec
-from src.player import Player
+from item import Item
+from monster import Monster  # For type hinting and mocking spec
+from player import Player
 
 
 class TestPlayer(unittest.TestCase):

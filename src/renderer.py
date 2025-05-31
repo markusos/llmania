@@ -1,7 +1,7 @@
 import curses
 
-from src.message_log import MessageLog
-from src.tile import TILE_SYMBOLS
+from message_log import MessageLog
+from tile import TILE_SYMBOLS
 
 
 class Renderer:

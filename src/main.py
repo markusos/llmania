@@ -29,7 +29,7 @@ except NameError:
     print("Warning: Could not set up sys.path. Ensure project root is in PYTHONPATH.")
 
 
-from src.game_engine import GameEngine  # noqa: E402 (ignore import not at top of file)
+from game_engine import GameEngine  # noqa: E402 (ignore import not at top of file)
 
 # --- End Path setup ---
 
