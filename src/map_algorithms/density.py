@@ -1,7 +1,7 @@
 import random
 
-from src.map_algorithms.connectivity import MapConnectivityManager
-from src.world_map import WorldMap  # For type hinting
+from map_algorithms.connectivity import MapConnectivityManager
+from world_map import WorldMap  # For type hinting
 
 
 class FloorDensityAdjuster:

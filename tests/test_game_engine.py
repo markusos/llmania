@@ -3,19 +3,19 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 # Import classes to be mocked or used
-from src.game_engine import GameEngine
-from src.message_log import MessageLog  # Import MessageLog
-from src.world_map import WorldMap
+from game_engine import GameEngine
+from message_log import MessageLog  # Import MessageLog
+from world_map import WorldMap
 
 
 class TestGameEngine(unittest.TestCase):
-    @patch("src.game_engine.WorldGenerator")
-    @patch("src.game_engine.InputHandler")
-    @patch("src.game_engine.Renderer")
-    @patch("src.game_engine.CommandProcessor")
-    @patch("src.game_engine.Parser")
-    @patch("src.game_engine.Player")
-    @patch("src.game_engine.curses")  # Mock curses module itself for initscr etc.
+    @patch("game_engine.WorldGenerator")
+    @patch("game_engine.InputHandler")
+    @patch("game_engine.Renderer")
+    @patch("game_engine.CommandProcessor")
+    @patch("game_engine.Parser")
+    @patch("game_engine.Player")
+    @patch("game_engine.curses")  # Mock curses module itself for initscr etc.
     def setUp(
         self,
         mock_curses_module,
@@ -128,7 +128,7 @@ class TestGameEngine(unittest.TestCase):
         self.assertIsInstance(self.game_engine.message_log, MessageLog)  # Check type
         self.assertEqual(self.game_engine.debug_mode, False)
 
-    @patch("src.game_engine.curses.napms")  # Patch napms specifically for this test
+    @patch("game_engine.curses.napms")  # Patch napms specifically for this test
     def test_run_loop_single_command_then_quit(self, mock_napms):
         # mock_napms is now an argument passed by @patch
         # Simulate one command, then a quit command
@@ -236,17 +236,17 @@ class TestGameEngine(unittest.TestCase):
         self.mock_renderer_instance.cleanup_curses.assert_called_once()
 
     @patch(
-        "src.game_engine.curses"
+        "game_engine.curses"
     )  # Patch curses for this specific test's GameEngine instance
     def test_run_loop_debug_mode_no_curses_cleanup(self, mock_curses_for_debug_engine):
         # Create a new GameEngine instance with debug_mode=True
         # We need to re-patch dependencies for this specific instance
-        with patch("src.game_engine.WorldGenerator") as MockWG_debug, patch(
-            "src.game_engine.InputHandler"
-        ) as MockIH_debug, patch("src.game_engine.Renderer") as MockR_debug, patch(
-            "src.game_engine.CommandProcessor"
-        ) as MockCP_debug, patch("src.game_engine.Parser"), patch(
-            "src.game_engine.Player"
+        with patch("game_engine.WorldGenerator") as MockWG_debug, patch(
+            "game_engine.InputHandler"
+        ) as MockIH_debug, patch("game_engine.Renderer") as MockR_debug, patch(
+            "game_engine.CommandProcessor"
+        ) as MockCP_debug, patch("game_engine.Parser"), patch(
+            "game_engine.Player"
         ) as MockPl_debug:  # MockP_debug unused
             mock_wg_inst_debug = MockWG_debug.return_value
             mock_wm_inst_debug = MagicMock(spec=WorldMap)

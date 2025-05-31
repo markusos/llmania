@@ -1,6 +1,6 @@
 import curses
 
-from src.parser import Parser
+from parser import Parser
 
 
 class InputHandler:

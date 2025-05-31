@@ -1,6 +1,6 @@
 from collections import deque
 
-from src.world_map import WorldMap  # For type hinting
+from world_map import WorldMap  # For type hinting
 
 # No random needed here unless we add path randomization features later
 

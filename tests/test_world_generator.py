@@ -2,8 +2,8 @@ from collections import deque
 
 import pytest
 
-from src.world_generator import WorldGenerator
-from src.world_map import WorldMap
+from world_generator import WorldGenerator
+from world_map import WorldMap
 
 
 @pytest.fixture

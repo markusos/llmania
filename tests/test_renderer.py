@@ -2,10 +2,10 @@ import curses  # For curses constants and init_pair
 import unittest  # unittest first
 from unittest.mock import MagicMock, call, patch  # Removed PropertyMock
 
-from src.message_log import MessageLog  # Import MessageLog
+from message_log import MessageLog  # Import MessageLog
 
 # Assuming src is in PYTHONPATH or tests are run in a way that src can be imported
-from src.renderer import Renderer
+from renderer import Renderer
 
 
 # Dummy/mock classes for dependencies if needed

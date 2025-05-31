@@ -1,6 +1,6 @@
 import unittest
 
-from src.message_log import MessageLog
+from message_log import MessageLog
 
 
 class TestMessageLog(unittest.TestCase):

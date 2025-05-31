@@ -1,7 +1,7 @@
 from typing import List, Optional  # Sorted, Added for type hinting
 
-from src.item import Item  # Kept for type hinting
-from src.monster import Monster
+from item import Item  # Kept for type hinting
+from monster import Monster
 
 
 class Player:

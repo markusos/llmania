@@ -2,10 +2,10 @@ import random
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
-    from src.entity import Monster  # Assuming Monster class is in entity.py
-    from src.message_log import MessageLog
-    from src.player import Player
-    from src.world_map import WorldMap
+    from entity import Monster  # Assuming Monster class is in entity.py
+    from message_log import MessageLog
+    from player import Player
+    from world_map import WorldMap
 
 
 class AILogic:
