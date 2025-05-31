@@ -102,7 +102,7 @@ class FloorDensityAdjuster:
                 # Sort by adjacent_floor_count (ascending), then shuffle within counts
                 # For simplicity now, just sort. Add shuffle later if needed.
                 candidate_walls_to_floor.sort(key=lambda x: x[0])
-                # random.shuffle(candidate_walls_to_floor) # Potentially re-add if pure sort is too deterministic
+                # random.shuffle(candidate_walls_to_floor) # Potentially re-add
 
                 made_change_in_pass = False
                 for _, c_x, c_y in candidate_walls_to_floor:  # Unpack tuple

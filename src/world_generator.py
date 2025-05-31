@@ -1,6 +1,6 @@
 import random
-from typing import Optional
 from collections import deque
+from typing import Optional
 
 from src.item import Item
 from src.map_algorithms.connectivity import MapConnectivityManager
@@ -216,21 +216,29 @@ class WorldGenerator:
         end_pos: tuple[int, int],
         map_width: int,
         map_height: int,
-        max_steps: int = 200,
+        # max_steps: int = 75, # Default is now dynamically set based on floor_portion
     ):
         """
-        Performs a directed random walk from start_pos towards end_pos.
+        Performs a directed random walk from start_pos towards end_pos,
+        with a bias towards continuing in the same direction.
+        Length of walk depends on self.floor_portion.
         Now includes backtracking to avoid creating isolated areas.
         """
         current_x, current_y = start_pos
         world_map.set_tile_type(current_x, current_y, "floor")  # Carve start_pos
-        
+
+        last_dx, last_dy = 0, 0  # Initialize last direction
+
+        current_walk_max_steps = 75
+        if self.floor_portion < 0.35:
+            current_walk_max_steps = 40  # Shorter walks for low target density
+
         # Keep track of the path to enable backtracking
         path_history = [(current_x, current_y)]
         stuck_count = 0
         max_stuck_attempts = 5
 
-        for step in range(max_steps):
+        for step in range(current_walk_max_steps):
             if (current_x, current_y) == end_pos:
                 break
 
@@ -239,10 +247,17 @@ class WorldGenerator:
 
             possible_directions = []
             # Check all four directions
-            for direction_dx, direction_dy, direction_name in [(0, -1, "N"), (0, 1, "S"), (-1, 0, "W"), (1, 0, "E")]:
+            for direction_dx, direction_dy, direction_name in [
+                (0, -1, "N"),
+                (0, 1, "S"),
+                (-1, 0, "W"),
+                (1, 0, "E"),
+            ]:
                 new_x, new_y = current_x + direction_dx, current_y + direction_dy
                 if 1 <= new_x < map_width - 1 and 1 <= new_y < map_height - 1:
-                    possible_directions.append((direction_dx, direction_dy, direction_name))
+                    possible_directions.append(
+                        (direction_dx, direction_dy, direction_name)
+                    )
 
             if not possible_directions:
                 break
@@ -261,32 +276,51 @@ class WorldGenerator:
             # Filter to only valid moves
             possible_moves_set = {(d[0], d[1]) for d in possible_directions}
             preferred_directions = [
-                pd for pd in preferred_directions
+                pd
+                for pd in preferred_directions
                 if (pd[0], pd[1]) in possible_moves_set
             ]
 
             # Choose direction with 75% preference for target direction
             if preferred_directions and random.random() < 0.75:
                 chosen_dx, chosen_dy, _ = random.choice(preferred_directions)
-            else:
+            else:  # Pick any allowed direction
+                if not possible_directions:
+                    break  # Should not happen if map is >1x1 inner
                 chosen_dx, chosen_dy, _ = random.choice(possible_directions)
 
+            # Introduce inertia: bias towards continuing in the last direction
+            if last_dx != 0 or last_dy != 0:  # If there was a previous move
+                # Check if last direction is still possible
+                is_last_direction_possible = False
+                for pdx, pdy, _ in possible_directions:
+                    if pdx == last_dx and pdy == last_dy:
+                        is_last_direction_possible = True
+                        break
+
+                # Restored to 60% chance
+                if is_last_direction_possible and random.random() < 0.6:
+                    chosen_dx, chosen_dy = last_dx, last_dy
+
             next_x, next_y = current_x + chosen_dx, current_y + chosen_dy
+
+            # Update last direction
+            last_dx, last_dy = chosen_dx, chosen_dy
 
             # Always move and carve the tile
             tile = world_map.get_tile(next_x, next_y)
             if tile and (tile.type == "wall" or tile.type == "potential_floor"):
                 world_map.set_tile_type(next_x, next_y, "floor")
-            
+
             current_x, current_y = next_x, next_y
             path_history.append((current_x, current_y))
-            
+
             # Reset stuck counter when we make progress
             if len(path_history) > 1 and (current_x, current_y) != path_history[-2]:
                 stuck_count = 0
             else:
                 stuck_count += 1
-                
+
             # If we're stuck, backtrack
             if stuck_count >= max_stuck_attempts and len(path_history) > 1:
                 # Backtrack to a previous position
@@ -316,9 +350,10 @@ class WorldGenerator:
             map_width: The width of the map.
             map_height: The height of the map.
         """
-        num_quadrant_paths = 4
+        num_quadrant_paths = 4  # Restored to 4 for better coverage
 
         for quadrant_index in range(num_quadrant_paths):
+            # actual_quadrant_index logic removed, quadrant_index directly used.
             quadrant_bounds = self._get_quadrant_bounds(
                 quadrant_index, map_width, map_height
             )
@@ -379,8 +414,22 @@ class WorldGenerator:
         """
         Generates a network of additional paths from existing floor areas to
         random "potential_floor" tiles, expanding connectivity.
+        Number of paths depends on self.floor_portion and map size.
         """
-        num_additional_paths = random.randint(3, 5)
+        min_paths, max_paths = 0, 0
+        base_sum = map_width + map_height
+
+        if self.floor_portion < 0.35:
+            # Fewer paths for low density maps
+            min_paths = 1
+            # Ensure max_paths is at least min_paths
+            max_paths = max(min_paths, base_sum // 10)
+        else:
+            # More paths for higher density and larger maps
+            min_paths = max(1, base_sum // 10)
+            max_paths = max(min_paths, base_sum // 5)
+
+        num_additional_paths = random.randint(min_paths, max_paths)
 
         potential_target_tiles = []
         for y in range(1, map_height - 1):
@@ -630,7 +679,7 @@ class WorldGenerator:
             world_map, player_start_pos, original_win_pos, width, height
         )
         self._perform_random_walks(world_map, player_start_pos, width, height)
-        self._generate_path_network(
+        self._generate_path_network(  # Restored to original position
             world_map, player_start_pos, original_win_pos, width, height
         )
 
@@ -664,7 +713,7 @@ class WorldGenerator:
             reachable_tiles = set()
             queue = deque([player_start_pos])
             reachable_tiles.add(player_start_pos)
-            
+
             while queue:
                 curr_x, curr_y = queue.popleft()
                 for dx, dy in [(0, -1), (0, 1), (1, 0), (-1, 0)]:
@@ -674,7 +723,7 @@ class WorldGenerator:
                         if tile and tile.type == "floor":
                             reachable_tiles.add((next_x, next_y))
                             queue.append((next_x, next_y))
-            
+
             # Convert unreachable floor tiles to walls
             for x, y in floor_tiles:
                 if (x, y) not in reachable_tiles:
