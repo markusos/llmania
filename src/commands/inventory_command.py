@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, Dict
 from .base_command import Command
 
 if TYPE_CHECKING:
-
     # from src.world_map import WorldMap # Not strictly needed
     pass
     # from src.item import Item # Item class might be used if checking item properties
