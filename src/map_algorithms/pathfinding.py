@@ -10,6 +10,54 @@ class PathFinder:
     Provides pathfinding and path-carving functionalities on the map.
     """
 
+    def find_path_bfs(
+        self,
+        world_map: WorldMap,
+        start_pos: tuple[int, int],
+        goal_pos: tuple[int, int],
+    ) -> list[tuple[int, int]] | None:
+        """
+        Finds a path from start_pos to goal_pos using Breadth-First Search.
+        Only considers walkable tiles (not "wall" and no monsters).
+
+        Args:
+            world_map: The game world map.
+            start_pos: The starting (x, y) coordinates.
+            goal_pos: The target (x, y) coordinates.
+
+        Returns:
+            A list of (x, y) tuples representing the path from start to goal,
+            or None if no path is found. The path includes the start_pos and goal_pos.
+        """
+        queue = deque([(start_pos, [start_pos])])  # (current_pos, current_path)
+        visited = {start_pos}
+
+        while queue:
+            (curr_x, curr_y), path = queue.popleft()
+
+            if (curr_x, curr_y) == goal_pos:
+                return path
+
+            for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:  # N, S, W, E
+                next_x, next_y = curr_x + dx, curr_y + dy
+
+                if world_map.is_valid_move(next_x, next_y):
+                    # Check if the target tile for movement has a monster
+                    target_tile = world_map.get_tile(next_x, next_y)
+                    if target_tile and target_tile.monster:
+                        # If it's the goal and there's a monster, allow pathing to it
+                        # (AI will attack, not step on it)
+                        # Otherwise, don't path through other monsters.
+                        if (next_x, next_y) != goal_pos:
+                            continue
+
+                    if (next_x, next_y) not in visited:
+                        visited.add((next_x, next_y))
+                        new_path = list(path)
+                        new_path.append((next_x, next_y))
+                        queue.append(((next_x, next_y), new_path))
+        return None # No path found
+
     def find_furthest_point(
         self,
         world_map: WorldMap,
