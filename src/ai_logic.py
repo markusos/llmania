@@ -57,7 +57,7 @@ class AILogic:
             for dx in range(-1, 2):  # -1, 0, 1
                 # No need to check dx == 0 and dy == 0 if we always update current tile
                 # if dx == 0 and dy == 0:
-                #     continue # Skip the player's current tile, handled separately or included
+                #     continue # Skip the player's current tile, handled separately
 
                 map_x, map_y = player_x + dx, player_y + dy
 
@@ -77,7 +77,8 @@ class AILogic:
 
     def _get_adjacent_monsters(self) -> List["Monster"]:
         """
-        Checks N, S, E, W tiles around the player for monsters using the AI's visible map.
+        Checks N, S, E, W tiles around the player for monsters using the AI's visible
+        map.
         """
         adjacent_monsters: List["Monster"] = []
         for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:  # N, S, W, E
@@ -173,7 +174,8 @@ class AILogic:
                     self.current_path = paths_to_potions[0]
                     target_coord = self.current_path[-1]
                     self.message_log.add_message(
-                        f"AI: Low health, pathing to Health Potion at ({target_coord[0]},{target_coord[1]})."
+                        f"AI: Low health, pathing to Health Potion at "
+                        f"({target_coord[0]},{target_coord[1]})."
                     )
                     return
 
@@ -211,7 +213,8 @@ class AILogic:
                     target_coord[0], target_coord[1]
                 ).item.name
                 self.message_log.add_message(
-                    f"AI: Pathing to (visible) item {item_name} at ({target_coord[0]},{target_coord[1]})."
+                    f"AI: Pathing to (visible) item {item_name} at "
+                    f"({target_coord[0]},{target_coord[1]})."
                 )
                 target_type_sought = "item"
                 return
@@ -252,13 +255,15 @@ class AILogic:
                     target_coord[0], target_coord[1]
                 ).monster.name
                 self.message_log.add_message(
-                    f"AI: Pathing to (visible) monster {monster_name} at ({target_coord[0]},{target_coord[1]})."
+                    f"AI: Pathing to (visible) monster {monster_name} at "
+                    f"({target_coord[0]},{target_coord[1]})."
                 )
                 target_type_sought = "monster"
                 return
 
-        # 4. Explore Unvisited but Revealed Floor Tiles (tiles that are known floor but not yet stepped on)
-        #    or Explore towards edges of current visibility (tiles adjacent to known, but are themselves not explored)
+        # 4. Explore Unvisited but Revealed Floor Tiles (tiles that are known floor
+        #    but not yet stepped on) or Explore towards edges of current visibility
+        #    (tiles adjacent to known, but are themselves not explored)
 
         # First, explore known, walkable, but not physically stepped-on tiles.
         explorable_physically_unvisited_coords: List[Tuple[int, int]] = []
@@ -287,14 +292,16 @@ class AILogic:
                 self.current_path = paths_to_explore_unvisited[0]
                 target_coord = self.current_path[-1]
                 self.message_log.add_message(
-                    f"AI: Pathing to explore known but unvisited tile at ({target_coord[0]},{target_coord[1]})."
+                    f"AI: Pathing to explore known but unvisited tile at "
+                    f"({target_coord[0]},{target_coord[1]})."
                 )
                 target_type_sought = "unvisited known tile"
                 return
 
-        # Secondary: if all known walkable tiles have been physically visited, try to explore edges of fog.
-        # Find a tile that is_explored and walkable, which is adjacent to a tile that is !is_explored.
-        # Path to the known walkable tile.
+        # Secondary: if all known walkable tiles have been physically visited,
+        # try to explore edges of fog.
+        # Find a tile that is_explored and walkable, which is adjacent to a tile
+        # that is !is_explored.
         edge_exploration_targets: List[
             Tuple[int, int]
         ] = []  # Store the known walkable tile to path to
@@ -314,13 +321,16 @@ class AILogic:
                         adj_x, adj_y = x + dx_adj, y + dy_adj
                         adj_tile = self.ai_visible_map.get_tile(adj_x, adj_y)
                         if adj_tile and not adj_tile.is_explored:
-                            # (x,y) is a good candidate to path to, to reveal its neighbor (adj_x, adj_y)
+                            # (x,y) is a good candidate to path to, to reveal its
+                            # neighbor (adj_x, adj_y)
                             if (
                                 x,
                                 y,
                             ) not in edge_exploration_targets:  # Avoid duplicates
                                 edge_exploration_targets.append((x, y))
-                            break  # Found an unexplored neighbor for this tile, move to next tile
+                            # Found an unexplored neighbor for this tile, move to
+                            # next tile
+                            break
 
         if edge_exploration_targets:
             paths_to_edge_frontiers = []
@@ -339,7 +349,8 @@ class AILogic:
                 self.current_path = paths_to_edge_frontiers[0]
                 target_coord = self.current_path[-1]
                 self.message_log.add_message(
-                    f"AI: Pathing to edge of known area at ({target_coord[0]},{target_coord[1]}) to explore fog."
+                    f"AI: Pathing to edge of known area at "
+                    f"({target_coord[0]},{target_coord[1]}) to explore fog."
                 )
                 target_type_sought = "edge of fog"
                 return
@@ -347,7 +358,8 @@ class AILogic:
         self.message_log.add_message(
             f"AI: No {target_type_sought} found to explore on visible map."
         )
-        # If current_path is still None here, get_next_action will handle it (e.g. look around)
+        # If current_path is still None here, get_next_action will handle it
+        # (e.g. look around)
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
         """
@@ -399,7 +411,8 @@ class AILogic:
                 )
                 self.current_path = None
                 return ("use", health_potion_inv.name)
-            # If no potion in inventory, _find_target_and_path will prioritize finding one if visible
+            # If no potion in inventory, _find_target_and_path will prioritize
+            # finding one if visible
 
         # 3. Take Other Items (non-quest, on current tile, based on visible map)
         if (
@@ -414,11 +427,13 @@ class AILogic:
             )
             if item_is_potion and self.player.health >= self.player.max_health:
                 self.message_log.add_message(
-                    f"AI: On tile with {current_tile_on_visible_map.item.name}, but health is full. Skipping."
+                    f"AI: On tile with {current_tile_on_visible_map.item.name}, "
+                    f"but health is full. Skipping."
                 )
             else:
                 self.message_log.add_message(
-                    f"AI: Found item {current_tile_on_visible_map.item.name} on current tile, taking it."
+                    f"AI: Found item {current_tile_on_visible_map.item.name} "
+                    f"on current tile, taking it."
                 )
                 self.current_path = None
                 return ("take", current_tile_on_visible_map.item.name)
@@ -449,12 +464,14 @@ class AILogic:
                 )
 
                 # Path validation should use ai_visible_map and its is_explored status
-                # A tile is valid to move to if it's explored and not a wall, and no monster (unless target)
+                # A tile is valid to move to if it's explored and not a wall,
+                # and no monster (unless target)
                 can_move_to_next_step = False
                 if next_tile_visible and next_tile_visible.is_explored:
                     if next_tile_visible.type != "wall":
                         if next_tile_visible.monster:
-                            # Allow stepping on monster only if it's the final destination of the path
+                            # Allow stepping on monster only if it's the final
+                            # destination of the path
                             if next_step_pos == self.current_path[-1]:
                                 can_move_to_next_step = True
                             # else: path blocked by unexpected monster
@@ -472,7 +489,9 @@ class AILogic:
                     )
                     if move_command:
                         self.message_log.add_message(
-                            f"AI: Following path on visible map. Moving {move_command[1]} to ({next_step_pos[0]},{next_step_pos[1]})."
+                            f"AI: Following path on visible map. Moving "
+                            f"{move_command[1]} to "
+                            f"({next_step_pos[0]},{next_step_pos[1]})."
                         )
                         self.last_move_command = move_command
                         return move_command
@@ -483,7 +502,8 @@ class AILogic:
                         self.current_path = None
 
         if not self.current_path:
-            self._find_target_and_path()  # This now uses ai_visible_map and new priority
+            # This now uses ai_visible_map and new priority
+            self._find_target_and_path()
             if self.current_path:
                 if (
                     self.current_path[0] == current_player_pos
@@ -492,7 +512,8 @@ class AILogic:
 
                 if not self.current_path:  # Path was just to current location
                     self.message_log.add_message(
-                        "AI: New path target is current location (visible map). Looking around."
+                        "AI: New path target is current location (visible map). "
+                        "Looking around."
                     )
                     self.last_move_command = ("look", None)
                     return ("look", None)
@@ -518,14 +539,16 @@ class AILogic:
 
                     if not can_move_to_first_step:
                         self.message_log.add_message(
-                            "AI: First step of new path blocked (visible map). Looking around."
+                            "AI: First step of new path blocked (visible map). "
+                            "Looking around."
                         )
                         self.current_path = None
                         self.last_move_command = ("look", None)
                         return ("look", None)
 
                     self.message_log.add_message(
-                        f"AI: Starting new path (visible map). Moving {move_command[1]} to ({next_step_pos[0]},{next_step_pos[1]})."
+                        f"AI: Starting new path (visible map). Moving "
+                        f"{move_command[1]} to ({next_step_pos[0]},{next_step_pos[1]})."
                     )
                     self.last_move_command = move_command
                     return move_command

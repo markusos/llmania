@@ -113,7 +113,10 @@ class GameEngine:
                 map_x, map_y = player_x + dx_offset, player_y + dy_offset
 
                 # Check if the coordinates are within the bounds of the real map
-                if 0 <= map_x < self.world_map.width and 0 <= map_y < self.world_map.height:
+                if (
+                    0 <= map_x < self.world_map.width
+                    and 0 <= map_y < self.world_map.height
+                ):
                     real_tile = self.world_map.get_tile(map_x, map_y)
                     if real_tile:
                         # Get the corresponding tile in the player's visible map
@@ -122,8 +125,9 @@ class GameEngine:
                             # Copy data from real tile to visible tile
                             visible_tile.type = real_tile.type
                             # Important: Copy monster and item *references*.
-                            # If they are mutable and change (e.g. monster moves, item taken),
-                            # the visible map should reflect this if the tile remains explored.
+                            # If they are mutable and change (e.g. monster moves,
+                            # item taken), the visible map should reflect this if
+                            # the tile remains explored.
                             visible_tile.monster = real_tile.monster
                             visible_tile.item = real_tile.item
                             visible_tile.is_explored = True  # Mark as explored
@@ -159,12 +163,12 @@ class GameEngine:
                 current_command_buffer=self.input_handler.get_command_buffer(),
                 message_log=self.message_log,
                 debug_render_to_list=True,  # Ensure output is to list for debug
-                ai_mode_active=self.ai_active,  # Pass AI mode status
             )
             return
 
         try:
-            # Initial visibility update (already done in __init__, but good practice if run is called separately)
+            # Initial visibility update (already done in __init__, but good
+            # practice if run is called separately)
             self._update_fog_of_war_visibility()
             # Initial render of the game state before the loop starts.
             self.renderer.render_all(
@@ -176,12 +180,12 @@ class GameEngine:
                 current_command_buffer=self.input_handler.get_command_buffer(),
                 message_log=self.message_log,
                 debug_render_to_list=self.debug_mode,  # Should be False here for curses
-                ai_mode_active=self.ai_active,  # Pass AI mode status # This will be removed in Renderer
             )
 
             while not self.game_over:
                 # Update visibility at the start of each turn.
-                # AILogic also calls its own visibility update, which is fine as it uses the same visible_map.
+                # AILogic also calls its own visibility update, which is fine
+                # as it uses the same visible_map.
                 self._update_fog_of_war_visibility()
 
                 # Handle player input or AI action.
@@ -189,7 +193,8 @@ class GameEngine:
                 if self.ai_active and self.ai_logic:
                     if self.ai_sleep_duration > 0:
                         time.sleep(self.ai_sleep_duration)
-                    # AI's get_next_action internally calls its update_visibility on the shared visible_map.
+                    # AI's get_next_action internally calls its update_visibility
+                    # on the shared visible_map.
                     parsed_command_output = self.ai_logic.get_next_action()
                 else:
                     # Player input
@@ -204,17 +209,18 @@ class GameEngine:
                         results = self.command_processor.process_command(
                             parsed_command_output,
                             self.player,
-                            self.world_map, # Commands affect the real map
+                            self.world_map,  # Commands affect the real map
                             self.message_log,
                             self.winning_position,
                         )
                         self.game_over = results.get("game_over", False)
 
-                        # After a command (especially move), update visibility again before rendering.
-                        # This ensures that if a player moves, the new view is immediately reflected.
-                        if not self.game_over : # No need to update if game just ended
-                             self._update_fog_of_war_visibility()
-
+                        # After a command (especially move), update visibility
+                        # again before rendering.
+                        # This ensures that if a player moves, the new view is
+                        # immediately reflected.
+                        if not self.game_over:  # No need to update if game just ended
+                            self._update_fog_of_war_visibility()
 
                 # Render updated game state.
                 self.renderer.render_all(
@@ -226,7 +232,6 @@ class GameEngine:
                     current_command_buffer=self.input_handler.get_command_buffer(),
                     message_log=self.message_log,
                     debug_render_to_list=self.debug_mode,
-                    ai_mode_active=self.ai_active, # This will be removed in Renderer
                 )
 
             # After the game loop ends (game_over is True):
@@ -241,7 +246,6 @@ class GameEngine:
                 current_command_buffer=self.input_handler.get_command_buffer(),
                 message_log=self.message_log,
                 debug_render_to_list=self.debug_mode,  # Should be False here
-                ai_mode_active=self.ai_active,  # Pass AI mode status
             )
 
             # Pause briefly to let the player see the final game over screen.

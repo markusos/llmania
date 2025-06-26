@@ -86,7 +86,8 @@ class Renderer:
         current_command_buffer: str,
         message_log: MessageLog,
         debug_render_to_list: bool = False,
-        # ai_mode_active: bool = False,  # Parameter removed, fog is always active based on visible_map
+        # ai_mode_active: bool = False,  # Parameter removed, fog is always
+        # active based on visible_map
     ) -> list[str] | None:
         """
         Renders the entire game screen, including map, player, entities, UI,
@@ -102,11 +103,13 @@ class Renderer:
             player_x: Player's current x-coordinate.
             player_y: Player's current y-coordinate.
             player_health: Player's current health.
-            world_map_to_render: The WorldMap object to display (expected to be the `visible_map`).
+            world_map_to_render: The WorldMap object to display (expected to be
+                the `visible_map`).
             input_mode: The current input mode ("movement" or "command").
             current_command_buffer: The text currently in the command input buffer.
             message_log: A list of messages to display to the player.
-            debug_render_to_list: If True, renders to a list of strings instead of curses.
+            debug_render_to_list: If True, renders to a list of strings
+                instead of curses.
 
         Returns:
             A list of strings if `debug_render_to_list` is True, otherwise None.
@@ -116,7 +119,8 @@ class Renderer:
             return None
 
         # Determine which map to use for dimensions and tile data
-        # map_to_use_for_rendering = ai_visible_map if ai_mode_active and ai_visible_map else world_map
+        # map_to_use_for_rendering = ai_visible_map if ai_mode_active and
+        # ai_visible_map else world_map
         # The caller (GameEngine) will now pass the correct map as world_map_to_render.
 
         if debug_render_to_list or self.debug_mode:
@@ -130,8 +134,11 @@ class Renderer:
                     else:
                         tile = world_map_to_render.get_tile(x_map, y_map)
                         if tile:
-                            # Fog is now always active, controlled by tile.is_explored in visible_map
-                            symbol, _ = tile.get_display_info(apply_fog=True) # Parameter will be renamed
+                            # Fog is now always active, controlled by
+                            # tile.is_explored in visible_map
+                            symbol, _ = tile.get_display_info(
+                                apply_fog=True
+                            )  # Parameter will be renamed
                             char_to_draw = symbol
                         else:
                             # This case should ideally not happen if map is consistent
@@ -236,7 +243,9 @@ class Renderer:
                         # Tile outside map bounds or None. Render as fog.
                         char_to_draw = TILE_SYMBOLS.get("fog", " ")
                         color_attribute = (
-                            curses.color_pair(0)  # Default terminal background for space
+                            curses.color_pair(
+                                0
+                            )  # Default terminal background for space
                             if char_to_draw == " "
                             else curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR)
                         )

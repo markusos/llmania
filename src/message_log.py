@@ -30,6 +30,12 @@ class MessageLog:
         while len(self.messages) > self.max_messages:
             self.messages.pop(0)  # Remove the oldest message
 
+    def clear(self) -> None:
+        """
+        Clears all messages from the log.
+        """
+        self.messages.clear()
+
     def get_messages(self) -> List[str]:
         """
         Returns a copy of the current messages in the log.

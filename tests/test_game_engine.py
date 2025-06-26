@@ -174,7 +174,7 @@ class TestGameEngine(unittest.TestCase):
             current_command_buffer="",
             message_log=self.game_engine.message_log,
             debug_render_to_list=False,
-            # ai_mode_active was removed
+            ai_mode_active=False,  # Add the missing parameter
         )
         # render_all is called: initial, after move cmd processing + visibility update,
         # after quit cmd processing + visibility update.
@@ -259,12 +259,18 @@ class TestGameEngine(unittest.TestCase):
             # Ensure the mock_wm_inst_debug has integer width and height for comparisons
             mock_wm_inst_debug = MagicMock(spec=WorldMap)
             mock_wm_inst_debug.width = 10  # Integer value
-            mock_wm_inst_debug.height = 5 # Integer value
+            mock_wm_inst_debug.height = 5  # Integer value
             mock_wg_inst_debug.generate_map.return_value = (
                 mock_wm_inst_debug,
                 (0, 0),
                 (1, 1),
             )
+
+            # Set up the player mock with required attributes for initialization
+            mock_player_debug = MockPl_debug.return_value
+            mock_player_debug.x = 1
+            mock_player_debug.y = 1
+            mock_player_debug.health = 100
 
             mock_ih_inst_debug = MockIH_debug.return_value
             mock_r_inst_debug = MockR_debug.return_value
@@ -275,7 +281,7 @@ class TestGameEngine(unittest.TestCase):
             debug_engine.input_handler = mock_ih_inst_debug
             debug_engine.renderer = mock_r_inst_debug
             debug_engine.command_processor = mock_cp_inst_debug
-            debug_engine.player = MockPl_debug.return_value  # Assign the player mock
+            debug_engine.player = mock_player_debug  # Assign the player mock
             debug_engine.world_map = mock_wm_inst_debug
             debug_engine.win_pos = (1, 1)
 
@@ -295,12 +301,12 @@ class TestGameEngine(unittest.TestCase):
                 player_x=debug_engine.player.x,
                 player_y=debug_engine.player.y,
                 player_health=debug_engine.player.health,
-                world_map_to_render=debug_engine.visible_map, # Changed to visible_map
+                world_map_to_render=debug_engine.visible_map,  # Changed to visible_map
                 input_mode=mock_ih_inst_debug.get_input_mode.return_value,
                 current_command_buffer=mock_ih_inst_debug.get_command_buffer.return_value,
                 message_log=debug_engine.message_log,
                 debug_render_to_list=True,
-                # ai_mode_active was removed
+                ai_mode_active=False,  # Add the missing parameter
             )
             # Check that stdscr related calls were not made in __init__ for debug engine
             mock_curses_for_debug_engine.initscr.assert_not_called()

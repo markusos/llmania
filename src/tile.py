@@ -58,9 +58,11 @@ class Tile:
 
         Returns:
             A tuple (symbol, display_type_str), where:
-                - symbol (str): The character to display (e.g., "M", "$", "#", ".", " ").
+                - symbol (str): The character to display (e.g., "M", "$", "#",
+                  ".", " ").
                 - display_type_str (str): A string indicating the type of content
-                  for coloring purposes (e.g., "monster", "item", "wall", "floor", "fog").
+                  for coloring purposes (e.g., "monster", "item", "wall", "floor",
+                  "fog").
         """
         if apply_fog and not self.is_explored:
             return (TILE_SYMBOLS["fog"], "fog")
