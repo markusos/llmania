@@ -86,27 +86,27 @@ class Renderer:
         current_command_buffer: str,
         message_log: MessageLog,
         debug_render_to_list: bool = False,
-        ai_mode_active: bool = False,  # To know if we should apply fog of war logic
+        # ai_mode_active: bool = False,  # Parameter removed, fog is always active based on visible_map
     ) -> list[str] | None:
         """
         Renders the entire game screen, including map, player, entities, UI,
-        and messages.
+        and messages using the provided `world_map_to_render` (which is expected
+        to be the `visible_map` from GameEngine, incorporating fog of war).
 
         If `debug_render_to_list` is True, output is a list of strings representing
         the screen content. Otherwise, renders to the curses terminal.
-        In AI mode, uses the `world_map_to_render` (which should be the AI's visible map)
-        and applies fog of war.
+        Fog of war is applied based on the `is_explored` attribute of tiles in
+        `world_map_to_render`.
 
         Args:
             player_x: Player's current x-coordinate.
             player_y: Player's current y-coordinate.
             player_health: Player's current health.
-            world_map_to_render: The WorldMap object to display (could be main map or AI's visible map).
+            world_map_to_render: The WorldMap object to display (expected to be the `visible_map`).
             input_mode: The current input mode ("movement" or "command").
             current_command_buffer: The text currently in the command input buffer.
             message_log: A list of messages to display to the player.
             debug_render_to_list: If True, renders to a list of strings instead of curses.
-            ai_mode_active: True if AI is controlling the player, affects fog of war rendering.
 
         Returns:
             A list of strings if `debug_render_to_list` is True, otherwise None.
@@ -130,16 +130,13 @@ class Renderer:
                     else:
                         tile = world_map_to_render.get_tile(x_map, y_map)
                         if tile:
-                            # In AI mode, get_display_info will handle fog based on tile.is_explored
-                            symbol, _ = tile.get_display_info(for_ai_fog=ai_mode_active)
+                            # Fog is now always active, controlled by tile.is_explored in visible_map
+                            symbol, _ = tile.get_display_info(apply_fog=True) # Parameter will be renamed
                             char_to_draw = symbol
                         else:
                             # This case should ideally not happen if map is consistent
-                            char_to_draw = (
-                                TILE_SYMBOLS.get("unknown", "?")
-                                if not ai_mode_active
-                                else TILE_SYMBOLS.get("fog", " ")
-                            )
+                            # If no tile, render as fog (empty space)
+                            char_to_draw = TILE_SYMBOLS.get("fog", " ")
                     row_str += char_to_draw
                 output_buffer.append(row_str)
 
@@ -208,11 +205,12 @@ class Renderer:
                 else:
                     tile = world_map_to_render.get_tile(
                         x_tile_idx, y_map_idx
-                    )  # Use world_map_to_render
+                    )  # Use world_map_to_render (which is the visible_map)
                     if tile:
-                        # Pass for_ai_fog=ai_mode_active to get_display_info
+                        # Fog is always active, based on tile.is_explored in visible_map
+                        # The parameter to get_display_info will be renamed to apply_fog
                         char_to_draw, display_type = tile.get_display_info(
-                            for_ai_fog=ai_mode_active
+                            apply_fog=True
                         )
 
                         if display_type == "monster":
@@ -235,14 +233,10 @@ class Renderer:
                                 )  # Default terminal background color
                         # else: default color for "unknown"
                     else:
-                        # Tile outside map bounds or None. Render as fog if in AI mode.
-                        char_to_draw = (
-                            TILE_SYMBOLS.get("fog", " ")
-                            if ai_mode_active
-                            else TILE_SYMBOLS.get("unknown", "?")
-                        )
+                        # Tile outside map bounds or None. Render as fog.
+                        char_to_draw = TILE_SYMBOLS.get("fog", " ")
                         color_attribute = (
-                            curses.color_pair(0)
+                            curses.color_pair(0)  # Default terminal background for space
                             if char_to_draw == " "
                             else curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR)
                         )

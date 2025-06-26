@@ -43,21 +43,26 @@ class Tile:
         self.type = tile_type  # The base type of the tile (e.g., "wall", "floor")
         self.monster = monster  # Monster object on the tile, if any
         self.item = item  # Item object on the tile, if any
-        self.is_explored = False  # True if the AI has seen this tile
+        self.is_explored = False  # True if this tile has been seen by player/AI
 
-    def get_display_info(self, for_ai_fog: bool = False) -> tuple[str, str]:
+    def get_display_info(self, apply_fog: bool = False) -> tuple[str, str]:
         """
         Determines the character symbol and display type for rendering this tile.
+        If `apply_fog` is True and the tile hasn't been explored, it returns fog.
 
         The display priority is: Monster > Item > Tile Type.
 
+        Args:
+            apply_fog (bool): If True, fog of war logic is applied. Unexplored
+                              tiles will be rendered as fog.
+
         Returns:
             A tuple (symbol, display_type_str), where:
-                - symbol (str): The character to display (e.g., "M", "$", "#", ".").
+                - symbol (str): The character to display (e.g., "M", "$", "#", ".", " ").
                 - display_type_str (str): A string indicating the type of content
                   for coloring purposes (e.g., "monster", "item", "wall", "floor", "fog").
         """
-        if for_ai_fog and not self.is_explored:
+        if apply_fog and not self.is_explored:
             return (TILE_SYMBOLS["fog"], "fog")
 
         if self.monster:
