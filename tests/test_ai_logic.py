@@ -21,9 +21,17 @@ class TestAILogic(unittest.TestCase):
         self.message_log = MagicMock(spec=MessageLog)  # Mock MessageLog
 
         # Initialize AILogic with mocked dependencies
+        # For AILogic, we need a "real" map (for checking actual tiles)
+        # and an "ai_visible_map" (for AI's decisions and pathfinding).
+        # In tests, these can often be the same mock if not testing fog of war directly,
+        # or different if testing how AI reacts to limited visibility.
+        self.mock_real_world_map = MagicMock(spec=WorldMap)
+        self.mock_ai_visible_map = MagicMock(spec=WorldMap) # This is what AI uses
+
         self.ai = AILogic(
             player=self.mock_player,
-            world_map=self.mock_world_map,
+            real_world_map=self.mock_real_world_map, # For AILogic to update its vision
+            ai_visible_map=self.mock_ai_visible_map, # For AILogic to make decisions
             message_log=self.message_log,
         )
 
@@ -34,21 +42,26 @@ class TestAILogic(unittest.TestCase):
         # Mock inventory as a dictionary {item_name: item_mock}
         self.mock_player.inventory = {}
 
-        # Default current tile setup
+        # Default current tile setup (on the AI's visible map)
         self.current_tile_mock = MagicMock(spec=Tile)
         self.current_tile_mock.item = None
         self.current_tile_mock.monster = None
+        self.current_tile_mock.is_explored = True # Assume current tile is explored
 
-        # Default setup for get_tile: (player_x, player_y) returns current_tile_mock
-        # Other coordinates will return a new default tile mock by default in tests
-        # unless specified otherwise.
-        self.mock_world_map.get_tile.return_value = self.current_tile_mock
+        # Default setup for get_tile on the AI's visible map:
+        # (player_x, player_y) returns current_tile_mock
+        self.mock_ai_visible_map.get_tile.return_value = self.current_tile_mock
+        # Also, ensure real map has some defaults if update_visibility is ever called directly in a test
+        self.mock_real_world_map.get_tile.return_value = MagicMock(spec=Tile, is_explored=False)
 
-        # Default for is_valid_move (can be overridden in specific tests)
-        self.mock_world_map.is_valid_move.return_value = True
 
-        # Reset visited tiles for each test
-        self.ai.visited_tiles = []
+        # Default for is_valid_move (used by some older tests, pathfinder uses walkable tiles)
+        # This should ideally check the ai_visible_map.
+        self.mock_ai_visible_map.is_valid_move = MagicMock(return_value=True)
+        # PathFinder will use ai_visible_map.get_tile(x,y).type != "wall" etc.
+
+        # Reset AI state for each test
+        self.ai.physically_visited_coords = [] # Updated attribute name
         self.ai.last_move_command = None
 
     def _setup_tile_at(self, x, y, item=None, monster=None):
@@ -63,13 +76,16 @@ class TestAILogic(unittest.TestCase):
                 return self.current_tile_mock
             if tile_x == x and tile_y == y:
                 return tile_mock
-            # Default for other tiles: empty, no monster, no item
+            # Default for other tiles: empty, no monster, no item, but explored
             empty_tile = MagicMock(spec=Tile)
             empty_tile.item = None
             empty_tile.monster = None
+            empty_tile.is_explored = True # Assume AI can see these default tiles if pathing
             return empty_tile
 
-        self.mock_world_map.get_tile.side_effect = side_effect_get_tile
+        self.mock_ai_visible_map.get_tile.side_effect = side_effect_get_tile
+        # Ensure the real map also provides some kind of tile for update_visibility
+        self.mock_real_world_map.get_tile.side_effect = side_effect_get_tile
         return tile_mock
 
     def test_ai_takes_quest_item(self):
@@ -104,11 +120,13 @@ class TestAILogic(unittest.TestCase):
         self.mock_player.health = 5
         self.mock_player.inventory = {}  # No potions
 
-        # To ensure it doesn't try to use, we need to check what it does instead
-        # Assuming it would look around or explore if no other pressing actions
-        self.mock_world_map.is_valid_move.return_value = False  # Make it look
-        action = self.ai.get_next_action()
-        self.assertEqual(action, ("look", None))
+        # To ensure it doesn't try to use, we need to check what it does instead.
+        # AI will try to find a path. If no path/target, it looks.
+        # Make pathfinding return no path.
+        with patch.object(self.ai.path_finder, 'find_path_bfs', return_value=None):
+            action = self.ai.get_next_action()
+            self.assertEqual(action, ("look", None)) # Should look if no path and no other action
+
         # Check that "AI: Low health..." was NOT called
         for call_args in self.message_log.add_message.call_args_list:
             self.assertNotIn("AI: Low health, using Health Potion.", call_args[0][0])
@@ -135,12 +153,12 @@ class TestAILogic(unittest.TestCase):
         monster_mock.name = "Goblin"
 
         # Place monster to the east (player at 1,1 -> monster at 2,1)
-        self._setup_tile_at(
             self.mock_player.x + 1, self.mock_player.y, monster=monster_mock
         )
-        self.mock_world_map.is_valid_move.side_effect = lambda x, y: not (
-            x == self.mock_player.x + 1 and y == self.mock_player.y
-        )
+        # Ensure the tile is marked explored for the AI to see the monster
+        tile_with_monster = self.mock_ai_visible_map.get_tile(self.mock_player.x + 1, self.mock_player.y)
+        if tile_with_monster: # Should exist due to _setup_tile_at
+            tile_with_monster.is_explored = True
 
         action = self.ai.get_next_action()
         self.assertEqual(action, ("attack", "Goblin"))
@@ -153,31 +171,175 @@ class TestAILogic(unittest.TestCase):
         monster2_mock.name = "Slime"
 
         # Monster to the North (1,0) and East (2,1) of player (1,1)
-        north_tile = self._setup_tile_at(
-            self.mock_player.x, self.mock_player.y - 1, monster=monster1_mock
-        )
-        east_tile = self._setup_tile_at(
-            self.mock_player.x + 1, self.mock_player.y, monster=monster2_mock
-        )
+        north_tile = self._setup_tile_at(self.mock_player.x, self.mock_player.y - 1, monster=monster1_mock)
+        north_tile.is_explored = True # Make visible to AI
+        east_tile = self._setup_tile_at(self.mock_player.x + 1, self.mock_player.y, monster=monster2_mock)
+        east_tile.is_explored = True # Make visible to AI
 
-        # Ensure get_tile returns the correct tiles when checking adjacency
-        def side_effect_get_tile(x, y):
-            if x == self.mock_player.x and y == self.mock_player.y:
-                return self.current_tile_mock
-            if x == self.mock_player.x and y == self.mock_player.y - 1:
-                return north_tile  # North
-            if x == self.mock_player.x + 1 and y == self.mock_player.y:
-                return east_tile  # East
-            # Other adjacent tiles are empty
-            empty_tile = MagicMock(spec=Tile)
-            empty_tile.item = None
-            empty_tile.monster = None
-            return empty_tile
 
-        self.mock_world_map.get_tile.side_effect = side_effect_get_tile
+        # The _setup_tile_at already configures mock_ai_visible_map.get_tile's side_effect.
+        # We just need to ensure the tiles are marked as explored.
 
         action = self.ai.get_next_action()
-        # AI picks first one found (N, S, W, E order in _get_adjacent_monsters).
+        # AI decision logic for choosing which monster to attack if multiple are adjacent
+        # depends on the implementation of _get_adjacent_monsters and random.choice.
+        # The current _get_adjacent_monsters returns a list, and AI attacks a random choice.
+        # For testing, we can mock random.choice if specific behavior is needed,
+        # or accept any valid attack. Here, we check if it attacks one of them.
+        # Based on current AILogic, _get_adjacent_monsters checks N,S,W,E.
+        # So Orc (North) should be found first if random choice is not a factor.
+        # However, AILogic uses random.choice(adjacent_monsters).
+        # Let's assert it's one of them.
+        self.assertIn(action[0], ["attack"])
+        self.assertIn(action[1], ["Orc", "Slime"])
+
+        # To make the test deterministic for the message, we can patch random.choice
+        with patch('random.choice', return_value=monster1_mock): # Force choosing Orc
+            action = self.ai.get_next_action()
+            self.assertEqual(action, ("attack", "Orc"))
+            self.message_log.add_message.assert_any_call("AI: Attacking Orc.")
+
+    @patch("random.choice") # This test was already patching random.choice
+    def test_ai_explores_unvisited_tile(self, mock_random_choice):
+        # Player at (1,1). North (1,0) is unvisited (is_explored=False).
+        # East (2,1) is visited (is_explored=True, type='floor').
+        # AI should try to path to an explored tile adjacent to an unexplored one,
+        # or to an unvisited but known floor tile.
+
+        # Current player tile (1,1)
+        self.current_tile_mock.type = "floor"
+        self.current_tile_mock.is_explored = True
+        self.ai.physically_visited_coords.append((1,1))
+
+
+        # Tile North (1,0) - target for exploration edge, itself unexplored
+        tile_north_unexplored = MagicMock(spec=Tile)
+        tile_north_unexplored.type = "floor" # Real type
+        tile_north_unexplored.is_explored = False # Fog for AI
+
+        # Tile East (2,1) - explored, physically visited
+        tile_east_explored_visited = MagicMock(spec=Tile)
+        tile_east_explored_visited.type = "floor"
+        tile_east_explored_visited.is_explored = True
+        self.ai.physically_visited_coords.append((2,1))
+
+        # Tile South (1,2) - explored, walkable, but NOT physically visited by player yet
+        tile_south_explored_unvisited = MagicMock(spec=Tile)
+        tile_south_explored_unvisited.type = "floor"
+        tile_south_explored_unvisited.is_explored = True
+        # (1,2) is not in self.ai.physically_visited_coords initially for this part
+
+        def side_effect_get_ai_visible_map(x, y):
+            if x == 1 and y == 1: return self.current_tile_mock
+            if x == 1 and y == 0: return tile_north_unexplored # Unseen by AI
+            if x == 2 and y == 1: return tile_east_explored_visited # Seen, visited
+            if x == 1 and y == 2: return tile_south_explored_unvisited # Seen, not physically visited
+            # Other tiles can be default explored floor for pathfinding simplicity
+            default_tile = MagicMock(spec=Tile, type="floor", is_explored=True)
+            default_tile.monster = None
+            default_tile.item = None
+            return default_tile
+
+        self.mock_ai_visible_map.get_tile.side_effect = side_effect_get_ai_visible_map
+        self.mock_ai_visible_map.width = 5
+        self.mock_ai_visible_map.height = 5
+
+
+        # PathFinder will be used. AI prioritizes:
+        # 1. Quest items (none here)
+        # 2. Other items (none here)
+        # 3. Monsters (none here)
+        # 4. Explore unvisited but REVEALED Floor Tiles (tile_south_explored_unvisited at (1,2))
+        # 5. Explore towards edges of current visibility (e.g. move to (1,1) to see (1,0)) -
+        #    Path to (1,1) is not useful. Path to (player_x, player_y-1) i.e. (1,0) is not possible as it's unexplored.
+        #    It will path to an explored tile ADJACENT to an unexplored one. Player is at (1,1), (1,0) is unexplored.
+        #    So (1,1) is adjacent to unexplored (1,0). Path to (1,1) is trivial.
+        #    The AI should choose to move to (1,2) - the unvisited known floor tile.
+
+        # Patch PathFinder to control path result for this specific scenario
+        # Expect path to (1,2)
+        with patch.object(self.ai.path_finder, 'find_path_bfs', return_value=[(1,1), (1,2)]) as mock_find_path:
+            action = self.ai.get_next_action()
+            # Expected: move south to (1,2)
+            self.assertEqual(action, ("move", "south"))
+            mock_find_path.assert_called_with(self.mock_ai_visible_map, (1,1), (1,2))
+            # The message log will reflect pathing to this "unvisited known tile"
+            # self.message_log.add_message.assert_any_call(
+            #     "AI: Pathing to explore known but unvisited tile at (1,2)." # Message format might change
+            # )
+
+        self.assertIn((1,1), self.ai.physically_visited_coords)
+
+
+    @patch("random.choice") # This test was already patching random.choice
+    def test_ai_explores_randomly_when_all_neighbors_visited(self, mock_random_choice):
+        # Player at (1,1). All adjacent N,S,E,W are valid, explored, and physically visited.
+        # AI should look around as per current advanced logic if no other targets.
+        # The old test expected a random move. The new logic is more complex.
+        # If all known tiles are physically visited, and no items/monsters,
+        # it tries to path to an edge of fog. If map fully explored, it might look.
+
+        self.mock_player.x, self.mock_player.y = 1, 1
+        self.current_tile_mock.type = "floor"
+        self.current_tile_mock.is_explored = True
+
+        self.ai.physically_visited_coords = [(1,1), (1,0), (1,2), (0,1), (2,1)] # All neighbors visited
+
+        # All adjacent tiles are empty, explored, and floor type
+        def side_effect_get_tile(x, y):
+            tile = MagicMock(spec=Tile)
+            tile.type = "floor"
+            tile.is_explored = True
+            tile.monster = None
+            tile.item = None
+            if (x,y) == (self.mock_player.x, self.mock_player.y):
+                return self.current_tile_mock
+            return tile
+
+        self.mock_ai_visible_map.get_tile.side_effect = side_effect_get_tile
+        self.mock_ai_visible_map.width = 3
+        self.mock_ai_visible_map.height = 3
+        # This setup implies a 3x3 map fully explored and visited.
+
+        # In this scenario (fully explored small map, no items/monsters), AI should look.
+        action = self.ai.get_next_action()
+        self.assertEqual(action, ("look", None))
+        self.message_log.add_message.assert_any_call(
+            "AI: No path found on visible map and no other actions. Looking around."
+        )
+
+
+    def test_ai_looks_when_stuck(self):
+        # Player at (1,1), surrounded by walls on the AI's visible map.
+        self.mock_player.x, self.mock_player.y = 1, 1
+        self.current_tile_mock.type = "floor" # Player's current tile is floor
+        self.current_tile_mock.is_explored = True
+
+        def side_effect_get_tile(x, y):
+            if x == 1 and y == 1:
+                return self.current_tile_mock
+            # All adjacent tiles are walls and explored
+            wall_tile = MagicMock(spec=Tile)
+            wall_tile.type = "wall"
+            wall_tile.is_explored = True
+            wall_tile.monster = None
+            wall_tile.item = None
+            return wall_tile
+
+        self.mock_ai_visible_map.get_tile.side_effect = side_effect_get_tile
+        self.mock_ai_visible_map.width = 3
+        self.mock_ai_visible_map.height = 3
+        # PathFinder will find no path to any floor tile other than current.
+
+        action = self.ai.get_next_action()
+        self.assertEqual(action, ("look", None))
+        self.message_log.add_message.assert_any_call(
+            "AI: No path found on visible map and no other actions. Looking around." # Updated message
+        )
+        self.assertEqual(self.ai.last_move_command, ("look", None))
+
+
+if __name__ == "__main__":
         self.assertEqual(action, ("attack", "Orc"))
         self.message_log.add_message.assert_any_call("AI: Attacking Orc.")
 

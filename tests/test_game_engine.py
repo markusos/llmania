@@ -168,13 +168,20 @@ class TestGameEngine(unittest.TestCase):
             player_x=self.mock_player_instance.x,
             player_y=self.mock_player_instance.y,
             player_health=self.mock_player_instance.health,
-            world_map=self.mock_world_map_instance,
-            input_mode="movement",  # Assuming mode or updated by mock
-            current_command_buffer="",  # Assuming cleared or updated
-            message_log=self.game_engine.message_log,  # Passed to render_all
+            # world_map renamed to world_map_to_render, and it will be the visible_map
+            world_map_to_render=self.game_engine.visible_map,
+            input_mode="movement",
+            current_command_buffer="",
+            message_log=self.game_engine.message_log,
             debug_render_to_list=False,
+            # ai_mode_active was removed
         )
-        self.assertGreaterEqual(self.mock_renderer_instance.render_all.call_count, 2)
+        # render_all is called: initial, after move cmd processing + visibility update,
+        # after quit cmd processing + visibility update.
+        # Plus, visibility updates also happen before input and before AI action.
+        # The number of calls can be more than 3 due to extra visibility updates.
+        # Let's check for at least 3 important ones.
+        self.assertGreaterEqual(self.mock_renderer_instance.render_all.call_count, 3)
 
         # Check input_handler calls
         self.assertEqual(
@@ -249,9 +256,10 @@ class TestGameEngine(unittest.TestCase):
             "src.game_engine.Player"
         ) as MockPl_debug:  # MockP_debug unused
             mock_wg_inst_debug = MockWG_debug.return_value
+            # Ensure the mock_wm_inst_debug has integer width and height for comparisons
             mock_wm_inst_debug = MagicMock(spec=WorldMap)
-            mock_wm_inst_debug.width = 10
-            mock_wm_inst_debug.height = 5
+            mock_wm_inst_debug.width = 10  # Integer value
+            mock_wm_inst_debug.height = 5 # Integer value
             mock_wg_inst_debug.generate_map.return_value = (
                 mock_wm_inst_debug,
                 (0, 0),
@@ -287,11 +295,12 @@ class TestGameEngine(unittest.TestCase):
                 player_x=debug_engine.player.x,
                 player_y=debug_engine.player.y,
                 player_health=debug_engine.player.health,
-                world_map=mock_wm_inst_debug,
+                world_map_to_render=debug_engine.visible_map, # Changed to visible_map
                 input_mode=mock_ih_inst_debug.get_input_mode.return_value,
                 current_command_buffer=mock_ih_inst_debug.get_command_buffer.return_value,
                 message_log=debug_engine.message_log,
-                debug_render_to_list=True,  # This is key for debug mode
+                debug_render_to_list=True,
+                # ai_mode_active was removed
             )
             # Check that stdscr related calls were not made in __init__ for debug engine
             mock_curses_for_debug_engine.initscr.assert_not_called()

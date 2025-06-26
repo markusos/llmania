@@ -27,8 +27,12 @@ class MockTile:
     def __init__(self, symbol, display_type="floor"):
         self.symbol = symbol
         self.display_type = display_type
+        self.is_explored = True # Assume tiles are explored by default in mock for simplicity
 
-    def get_display_info(self):
+    def get_display_info(self, apply_fog: bool = False): # Added apply_fog parameter
+        if apply_fog and not self.is_explored:
+            # This part of the logic is specific to how real Tile handles fog
+            return " ", "fog" # Example fog representation
         return self.symbol, self.display_type
 
 
