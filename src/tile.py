@@ -7,7 +7,7 @@ TILE_SYMBOLS = {
     "wall": "#",  # Symbol for wall tiles
     "floor": ".",  # Symbol for floor tiles
     "unknown": "?",  # Symbol for unknown or undefined tiles
-    "fog": " ", # Symbol for unexplored areas in AI mode
+    "fog": " ",  # Symbol for unexplored areas in AI mode
 }
 # Note: The TILE_REPRESENTATIONS dictionary was previously here but has been
 # integrated into TILE_SYMBOLS and ENTITY_SYMBOLS for clarity and direct use.
@@ -43,7 +43,7 @@ class Tile:
         self.type = tile_type  # The base type of the tile (e.g., "wall", "floor")
         self.monster = monster  # Monster object on the tile, if any
         self.item = item  # Item object on the tile, if any
-        self.is_explored = False # True if the AI has seen this tile
+        self.is_explored = False  # True if the AI has seen this tile
 
     def get_display_info(self, for_ai_fog: bool = False) -> tuple[str, str]:
         """

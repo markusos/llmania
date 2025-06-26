@@ -56,7 +56,7 @@ class PathFinder:
                         new_path = list(path)
                         new_path.append((next_x, next_y))
                         queue.append(((next_x, next_y), new_path))
-        return None # No path found
+        return None  # No path found
 
     def find_furthest_point(
         self,

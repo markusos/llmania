@@ -1,9 +1,8 @@
 import curses
-from typing import Optional # Added for type hinting
 
 from src.message_log import MessageLog
 from src.tile import TILE_SYMBOLS
-from src.world_map import WorldMap # Added for type hinting
+from src.world_map import WorldMap  # Added for type hinting
 
 
 class Renderer:
@@ -82,12 +81,12 @@ class Renderer:
         player_x: int,
         player_y: int,
         player_health: int,
-        world_map_to_render: WorldMap, # This will be the main map or AI's visible map
+        world_map_to_render: WorldMap,  # This will be the main map or AI's visible map
         input_mode: str,
         current_command_buffer: str,
         message_log: MessageLog,
         debug_render_to_list: bool = False,
-        ai_mode_active: bool = False, # To know if we should apply fog of war logic
+        ai_mode_active: bool = False,  # To know if we should apply fog of war logic
     ) -> list[str] | None:
         """
         Renders the entire game screen, including map, player, entities, UI,
@@ -136,7 +135,11 @@ class Renderer:
                             char_to_draw = symbol
                         else:
                             # This case should ideally not happen if map is consistent
-                            char_to_draw = TILE_SYMBOLS.get("unknown", "?") if not ai_mode_active else TILE_SYMBOLS.get("fog", " ")
+                            char_to_draw = (
+                                TILE_SYMBOLS.get("unknown", "?")
+                                if not ai_mode_active
+                                else TILE_SYMBOLS.get("fog", " ")
+                            )
                     row_str += char_to_draw
                 output_buffer.append(row_str)
 
@@ -203,10 +206,14 @@ class Renderer:
                     char_to_draw = self.player_symbol
                     color_attribute = curses.color_pair(self.PLAYER_COLOR_PAIR)
                 else:
-                    tile = world_map_to_render.get_tile(x_tile_idx, y_map_idx) # Use world_map_to_render
+                    tile = world_map_to_render.get_tile(
+                        x_tile_idx, y_map_idx
+                    )  # Use world_map_to_render
                     if tile:
                         # Pass for_ai_fog=ai_mode_active to get_display_info
-                        char_to_draw, display_type = tile.get_display_info(for_ai_fog=ai_mode_active)
+                        char_to_draw, display_type = tile.get_display_info(
+                            for_ai_fog=ai_mode_active
+                        )
 
                         if display_type == "monster":
                             color_attribute = curses.color_pair(self.MONSTER_COLOR_PAIR)
@@ -219,14 +226,26 @@ class Renderer:
                         elif display_type == "fog":
                             # Assuming fog is black on black or similar default.
                             # Or, define a specific FOG_COLOR_PAIR if needed.
-                            color_attribute = curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR) # Example: White on Black for fog char if it's not ' '
-                            if char_to_draw == ' ': # If fog is just empty space
-                                color_attribute = curses.color_pair(0) # Default terminal background color
+                            color_attribute = curses.color_pair(
+                                self.DEFAULT_TEXT_COLOR_PAIR
+                            )  # Example: White on Black for fog char if it's not ' '
+                            if char_to_draw == " ":  # If fog is just empty space
+                                color_attribute = curses.color_pair(
+                                    0
+                                )  # Default terminal background color
                         # else: default color for "unknown"
                     else:
                         # Tile outside map bounds or None. Render as fog if in AI mode.
-                        char_to_draw = TILE_SYMBOLS.get("fog", " ") if ai_mode_active else TILE_SYMBOLS.get("unknown", "?")
-                        color_attribute = curses.color_pair(0) if char_to_draw == ' ' else curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR)
+                        char_to_draw = (
+                            TILE_SYMBOLS.get("fog", " ")
+                            if ai_mode_active
+                            else TILE_SYMBOLS.get("unknown", "?")
+                        )
+                        color_attribute = (
+                            curses.color_pair(0)
+                            if char_to_draw == " "
+                            else curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR)
+                        )
 
                 try:
                     # Add the character to the screen at (y_map_idx, current_screen_x)
