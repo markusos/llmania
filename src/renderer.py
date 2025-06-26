@@ -1,7 +1,9 @@
 import curses
+from typing import Optional # Added for type hinting
 
 from src.message_log import MessageLog
 from src.tile import TILE_SYMBOLS
+from src.world_map import WorldMap # Added for type hinting
 
 
 class Renderer:
@@ -80,12 +82,12 @@ class Renderer:
         player_x: int,
         player_y: int,
         player_health: int,
-        world_map,  # Type hint: world_map: "WorldMap"
-        # (requires from __future__ import annotations or string literal)
+        world_map_to_render: WorldMap, # This will be the main map or AI's visible map
         input_mode: str,
         current_command_buffer: str,
-        message_log: MessageLog,  # Updated type hint
+        message_log: MessageLog,
         debug_render_to_list: bool = False,
+        ai_mode_active: bool = False, # To know if we should apply fog of war logic
     ) -> list[str] | None:
         """
         Renders the entire game screen, including map, player, entities, UI,
@@ -93,51 +95,48 @@ class Renderer:
 
         If `debug_render_to_list` is True, output is a list of strings representing
         the screen content. Otherwise, renders to the curses terminal.
+        In AI mode, uses the `world_map_to_render` (which should be the AI's visible map)
+        and applies fog of war.
 
         Args:
             player_x: Player's current x-coordinate.
             player_y: Player's current y-coordinate.
             player_health: Player's current health.
-            world_map: The WorldMap object containing map data.
+            world_map_to_render: The WorldMap object to display (could be main map or AI's visible map).
             input_mode: The current input mode ("movement" or "command").
             current_command_buffer: The text currently in the command input buffer.
             message_log: A list of messages to display to the player.
-            debug_render_to_list: If True, renders to a list of strings
-                                  instead of curses.
+            debug_render_to_list: If True, renders to a list of strings instead of curses.
+            ai_mode_active: True if AI is controlling the player, affects fog of war rendering.
 
         Returns:
             A list of strings if `debug_render_to_list` is True, otherwise None.
         """
         if not debug_render_to_list and not self.stdscr and not self.debug_mode:
-            # Curses rendering expected but stdscr not available, and not in general
-            # debug_mode (where stdscr is expected to be None). Inconsistent state.
-            # Example: GameEngine(debug_mode=False) but curses init failed.
             print("Error: Renderer.stdscr not initialized for curses rendering.")
             return None
 
-        if (
-            debug_render_to_list or self.debug_mode
-        ):  # If general debug_mode, always render to list.
+        # Determine which map to use for dimensions and tile data
+        # map_to_use_for_rendering = ai_visible_map if ai_mode_active and ai_visible_map else world_map
+        # The caller (GameEngine) will now pass the correct map as world_map_to_render.
+
+        if debug_render_to_list or self.debug_mode:
             output_buffer = []
-            # Render map content
-            # Use the full dimensions of the world_map for list-based rendering.
-            for y_map in range(world_map.height):
+            for y_map in range(world_map_to_render.height):
                 row_str = ""
-                for x_map in range(world_map.width):
+                for x_map in range(world_map_to_render.width):
                     char_to_draw = ""
                     if x_map == player_x and y_map == player_y:
                         char_to_draw = self.player_symbol
                     else:
-                        tile = world_map.get_tile(x_map, y_map)
+                        tile = world_map_to_render.get_tile(x_map, y_map)
                         if tile:
-                            symbol, _ = (
-                                tile.get_display_info()
-                            )  # Disregard display_type for simple char rendering
+                            # In AI mode, get_display_info will handle fog based on tile.is_explored
+                            symbol, _ = tile.get_display_info(for_ai_fog=ai_mode_active)
                             char_to_draw = symbol
                         else:
-                            char_to_draw = TILE_SYMBOLS.get(
-                                "unknown", "?"
-                            )  # Use .get for safety
+                            # This case should ideally not happen if map is consistent
+                            char_to_draw = TILE_SYMBOLS.get("unknown", "?") if not ai_mode_active else TILE_SYMBOLS.get("fog", " ")
                     row_str += char_to_draw
                 output_buffer.append(row_str)
 
@@ -204,9 +203,11 @@ class Renderer:
                     char_to_draw = self.player_symbol
                     color_attribute = curses.color_pair(self.PLAYER_COLOR_PAIR)
                 else:
-                    tile = world_map.get_tile(x_tile_idx, y_map_idx)
+                    tile = world_map_to_render.get_tile(x_tile_idx, y_map_idx) # Use world_map_to_render
                     if tile:
-                        char_to_draw, display_type = tile.get_display_info()
+                        # Pass for_ai_fog=ai_mode_active to get_display_info
+                        char_to_draw, display_type = tile.get_display_info(for_ai_fog=ai_mode_active)
+
                         if display_type == "monster":
                             color_attribute = curses.color_pair(self.MONSTER_COLOR_PAIR)
                         elif display_type == "item":
@@ -215,11 +216,17 @@ class Renderer:
                             color_attribute = curses.color_pair(self.WALL_COLOR_PAIR)
                         elif display_type == "floor":
                             color_attribute = curses.color_pair(self.FLOOR_COLOR_PAIR)
-                        # else: default color (e.g., for unknown tile types)
+                        elif display_type == "fog":
+                            # Assuming fog is black on black or similar default.
+                            # Or, define a specific FOG_COLOR_PAIR if needed.
+                            color_attribute = curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR) # Example: White on Black for fog char if it's not ' '
+                            if char_to_draw == ' ': # If fog is just empty space
+                                color_attribute = curses.color_pair(0) # Default terminal background color
+                        # else: default color for "unknown"
                     else:
-                        # Tile outside map bounds or None (should not happen in map).
-                        char_to_draw = TILE_SYMBOLS.get("unknown", "?")
-                        # Use default color_attribute
+                        # Tile outside map bounds or None. Render as fog if in AI mode.
+                        char_to_draw = TILE_SYMBOLS.get("fog", " ") if ai_mode_active else TILE_SYMBOLS.get("unknown", "?")
+                        color_attribute = curses.color_pair(0) if char_to_draw == ' ' else curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR)
 
                 try:
                     # Add the character to the screen at (y_map_idx, current_screen_x)
