@@ -31,6 +31,8 @@ class TestCommandProcessor(unittest.TestCase):
         self.win_pos = (10, 10)
 
     def common_process_command(self, command_tuple):
+        # Reset mocks for player's position before each command if necessary,
+        # or ensure tests set it up as needed. For now, it's static.
         return self.command_processor.process_command(
             command_tuple,
             self.mock_player,
@@ -39,33 +41,12 @@ class TestCommandProcessor(unittest.TestCase):
             self.win_pos,
         )
 
-    def test_get_adjacent_monsters(self):
-        player_x, player_y = 5, 5
-        monster_north = MagicMock(spec=Monster)
-        monster_north.name = "Northy"
-        monster_east = MagicMock(spec=Monster)
-        monster_east.name = "Easty"
-
-        def get_tile_for_adj_test(x, y):
-            m_tile = MagicMock(spec=Tile)
-            m_tile.item = None
-            if x == 5 and y == 4:
-                m_tile.monster = monster_north
-            elif x == 6 and y == 5:
-                m_tile.monster = monster_east
-            else:
-                m_tile.monster = None
-            return m_tile
-
-        self.mock_world_map.get_tile.side_effect = get_tile_for_adj_test
-        adj_monsters = self.command_processor._get_adjacent_monsters(
-            player_x, player_y, self.mock_world_map
-        )
-        self.assertEqual(len(adj_monsters), 2)
-        self.assertIn((monster_north, 5, 4), adj_monsters)
-        self.assertIn((monster_east, 6, 5), adj_monsters)
+    # test_get_adjacent_monsters removed (logic in Command/AttackCommand)
 
     def test_process_command_move_valid(self):
+        # Ensure player position is reset for this test or set as needed.
+        # self.mock_player.x = 1
+        # self.mock_player.y = 1
         tile_mock = MagicMock(spec=Tile)
         tile_mock.monster = None
         self.mock_world_map.get_tile.return_value = tile_mock
@@ -190,11 +171,23 @@ class TestCommandProcessor(unittest.TestCase):
         self.assertFalse(result["game_over"])
 
     def test_process_command_attack_monster_defeated(self):
+        self.mock_player.x, self.mock_player.y = 1, 1  # Player at (1,1)
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Rat"
-        self.command_processor._get_adjacent_monsters = MagicMock(
-            return_value=[(mock_monster, 2, 1)]
-        )
+
+        # Setup get_tile to place monster at (2,1) - adjacent to player
+        def get_tile_side_effect(x, y):
+            tile = MagicMock(spec=Tile)
+            tile.item = None
+            if x == 2 and y == 1:  # East of player
+                tile.monster = mock_monster
+            else:
+                tile.monster = None
+            return tile
+
+        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+        # self.command_processor._get_adjacent_monsters = MagicMock(...) # Removed
+
         self.mock_player.attack_monster.return_value = {
             "damage_dealt": 10,
             "monster_defeated": True,
@@ -210,11 +203,21 @@ class TestCommandProcessor(unittest.TestCase):
         self.assertFalse(result["game_over"])
 
     def test_process_command_attack_monster_survives_player_survives(self):
+        self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Orc"
-        self.command_processor._get_adjacent_monsters = MagicMock(
-            return_value=[(mock_monster, 2, 1)]
-        )
+
+        def get_tile_side_effect(x, y):
+            tile = MagicMock(spec=Tile)
+            tile.item = None
+            if x == 2 and y == 1:
+                tile.monster = mock_monster
+            else:
+                tile.monster = None
+            return tile
+
+        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+
         self.mock_player.attack_monster.return_value = {
             "damage_dealt": 5,
             "monster_defeated": False,
@@ -234,11 +237,21 @@ class TestCommandProcessor(unittest.TestCase):
         self.assertFalse(result["game_over"])
 
     def test_process_command_attack_monster_survives_player_defeated(self):
+        self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Dragon"
-        self.command_processor._get_adjacent_monsters = MagicMock(
-            return_value=[(mock_monster, 2, 1)]
-        )
+
+        def get_tile_side_effect(x, y):
+            tile = MagicMock(spec=Tile)
+            tile.item = None
+            if x == 2 and y == 1:
+                tile.monster = mock_monster
+            else:
+                tile.monster = None
+            return tile
+
+        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+
         self.mock_player.attack_monster.return_value = {
             "damage_dealt": 10,
             "monster_defeated": False,
@@ -261,11 +274,21 @@ class TestCommandProcessor(unittest.TestCase):
         self.assertTrue(result["game_over"])
 
     def test_process_command_attack_no_monster_specified_one_nearby(self):
+        self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Slime"
-        self.command_processor._get_adjacent_monsters = MagicMock(
-            return_value=[(mock_monster, 1, 2)]
-        )
+
+        def get_tile_side_effect(x, y):  # Monster at (1,2) - South of player
+            tile = MagicMock(spec=Tile)
+            tile.item = None
+            if x == 1 and y == 2:
+                tile.monster = mock_monster
+            else:
+                tile.monster = None
+            return tile
+
+        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+
         self.mock_player.attack_monster.return_value = {
             "damage_dealt": 1,
             "monster_defeated": True,
@@ -279,13 +302,25 @@ class TestCommandProcessor(unittest.TestCase):
         self.assertFalse(result["game_over"])
 
     def test_process_command_attack_no_monster_specified_multiple_nearby(self):
+        self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster1 = MagicMock(spec=Monster)
-        mock_monster1.name = "Imp"
+        mock_monster1.name = "Imp"  # West
         mock_monster2 = MagicMock(spec=Monster)
-        mock_monster2.name = "Bat"
-        self.command_processor._get_adjacent_monsters = MagicMock(
-            return_value=[(mock_monster1, 0, 1), (mock_monster2, 2, 1)]
-        )
+        mock_monster2.name = "Bat"  # East
+
+        def get_tile_side_effect(x, y):
+            tile = MagicMock(spec=Tile)
+            tile.item = None
+            if x == 0 and y == 1:
+                tile.monster = mock_monster1
+            elif x == 2 and y == 1:
+                tile.monster = mock_monster2
+            else:
+                tile.monster = None
+            return tile
+
+        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+
         result = self.common_process_command(("attack", None))
         self.mock_player.attack_monster.assert_not_called()
         self.message_log.add_message.assert_any_call(
@@ -294,7 +329,18 @@ class TestCommandProcessor(unittest.TestCase):
         self.assertFalse(result["game_over"])
 
     def test_process_command_attack_no_monster_nearby(self):
-        self.command_processor._get_adjacent_monsters = MagicMock(return_value=[])
+        self.mock_player.x, self.mock_player.y = 1, 1
+
+        def get_tile_side_effect(x, y):  # No monsters adjacent
+            tile = MagicMock(spec=Tile)
+            tile.item = None
+            tile.monster = None
+            return tile
+
+        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+        # self.command_processor._get_adjacent_monsters = MagicMock(return_value=[])
+        # # Removed
+
         result = self.common_process_command(("attack", None))
         self.message_log.add_message.assert_any_call(
             "There is no monster nearby to attack."
@@ -302,11 +348,22 @@ class TestCommandProcessor(unittest.TestCase):
         self.assertFalse(result["game_over"])
 
     def test_process_command_attack_specified_monster_not_found(self):
+        self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster_present = MagicMock(spec=Monster)
-        mock_monster_present.name = "Wolf"
-        self.command_processor._get_adjacent_monsters = MagicMock(
-            return_value=[(mock_monster_present, 0, 1)]
-        )
+        mock_monster_present.name = "Wolf"  # Present at (0,1)
+
+        def get_tile_side_effect(x, y):
+            tile = MagicMock(spec=Tile)
+            tile.item = None
+            if x == 0 and y == 1:
+                tile.monster = mock_monster_present
+            else:
+                tile.monster = None
+            return tile
+
+        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+        # self.command_processor._get_adjacent_monsters = MagicMock(...) # Removed
+
         result = self.common_process_command(("attack", "Ghost"))
         self.message_log.add_message.assert_any_call("No monster named 'Ghost' nearby.")
         self.assertFalse(result["game_over"])
@@ -330,9 +387,23 @@ class TestCommandProcessor(unittest.TestCase):
     def test_process_command_look_clear_area(self):
         tile_mock = MagicMock(spec=Tile)
         tile_mock.item = None
-        tile_mock.monster = None
-        self.mock_world_map.get_tile.return_value = tile_mock
-        self.command_processor._get_adjacent_monsters = MagicMock(return_value=[])
+        tile_mock.monster = None  # Monster on current tile
+
+        # For _get_adjacent_monsters, need side_effect if checking other tiles
+        def get_tile_side_effect(x, y):
+            # If it's player's current tile
+            if x == self.mock_player.x and y == self.mock_player.y:
+                return tile_mock
+            # For adjacent tiles, assume they are empty of monsters
+            # for this specific test
+            adj_tile = MagicMock(spec=Tile)
+            adj_tile.item = None
+            adj_tile.monster = None
+            return adj_tile
+
+        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+        # self.command_processor._get_adjacent_monsters = MagicMock(return_value=[])
+        # # Removed
         result = self.common_process_command(("look", None))
         self.message_log.add_message.assert_any_call(
             f"You are at ({self.mock_player.x}, {self.mock_player.y})."
@@ -367,18 +438,36 @@ class TestCommandProcessor(unittest.TestCase):
         )
 
     def test_process_command_look_adjacent_monster(self):
-        tile_mock = MagicMock(spec=Tile)
-        tile_mock.item = None
-        tile_mock.monster = None
-        self.mock_world_map.get_tile.return_value = tile_mock
+        self.mock_player.x, self.mock_player.y = 1, 1
+        current_tile_mock = MagicMock(spec=Tile)  # Player's current tile
+        current_tile_mock.item = None
+        current_tile_mock.monster = None
+
         mock_adj_monster = MagicMock(spec=Monster)
         mock_adj_monster.name = "Zombie"
-        self.command_processor._get_adjacent_monsters = MagicMock(
-            return_value=[(mock_adj_monster, 1, 2)]
-        )
+
+        adj_monster_x, adj_monster_y = 1, 2  # South of player at (1,1)
+
+        def get_tile_side_effect(x, y):
+            if x == self.mock_player.x and y == self.mock_player.y:
+                return current_tile_mock
+            elif x == adj_monster_x and y == adj_monster_y:
+                adj_tile = MagicMock(spec=Tile)
+                adj_tile.item = None
+                adj_tile.monster = mock_adj_monster
+                return adj_tile
+            else:  # Other adjacent tiles are empty
+                empty_tile = MagicMock(spec=Tile)
+                empty_tile.item = None
+                empty_tile.monster = None
+                return empty_tile
+
+        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+        # self.command_processor._get_adjacent_monsters = MagicMock(...) # Removed
+
         self.common_process_command(("look", None))
         self.message_log.add_message.assert_any_call(
-            f"You see a {mock_adj_monster.name} at (1, 2)."
+            f"You see a {mock_adj_monster.name} at ({adj_monster_x}, {adj_monster_y})."
         )
 
     def test_process_command_quit(self):
