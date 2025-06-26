@@ -11,6 +11,7 @@ from src.parser import Parser
 from src.player import Player
 from src.renderer import Renderer  # Import Renderer
 from src.world_generator import WorldGenerator
+from src.world_map import WorldMap # Added for AI visible map
 
 # Monster class is forward-declared as a string literal in type hints
 
@@ -47,14 +48,34 @@ class GameEngine:
         self.ai_active = ai_active
         self.ai_sleep_duration = ai_sleep_duration
         self.ai_logic = None
+        self.ai_visible_map = None # Will hold the AI's known map
+
         # Player symbol is now defined and passed to Renderer directly.
 
         # Generate the game world, player starting position, and winning position.
+        # This is the "real" map.
         self.world_map, player_start_pos, self.winning_position = (
             self.world_generator.generate_map(
                 map_width, map_height, seed=None
             )  # Consider making seed configurable for testing
         )
+
+        if self.ai_active:
+            # Create a separate map for what the AI can see.
+            # It has the same dimensions as the real map.
+            # Initially, all tiles in ai_visible_map will have tile.is_explored = False.
+            # The default Tile initializer sets is_explored to False.
+            # The default tile_type is "floor", which is fine; rendering will handle fog.
+            self.ai_visible_map = WorldMap(width=self.world_map.width, height=self.world_map.height)
+            # Optional: Could explicitly set all ai_visible_map tiles to a specific "fog" type here
+            # for y in range(self.ai_visible_map.height):
+            #     for x in range(self.ai_visible_map.width):
+            #         tile = self.ai_visible_map.get_tile(x,y)
+            #         if tile:
+            #             tile.type = "fog" # A hypothetical type, if we use it over is_explored for rendering
+            #             tile.is_explored = False
+            # However, relying on is_explored = False and the Renderer handling it is simpler.
+
 
         # Instantiate Renderer first (handles curses init if not debug_mode).
         player_symbol = "@"  # Define the player's visual representation on the map.
@@ -76,11 +97,20 @@ class GameEngine:
         self.message_log = MessageLog(max_messages=5)  # Use MessageLog class
 
         if self.ai_active:
+            if not self.ai_visible_map: # Should have been created above
+                # This case should ideally not be reached if logic is correct.
+                # Fallback: create it now, though it's better to ensure it's created before Renderer.
+                self.ai_visible_map = WorldMap(width=self.world_map.width, height=self.world_map.height)
+
             self.ai_logic = AILogic(
                 player=self.player,
-                world_map=self.world_map,
+                real_world_map=self.world_map,       # Pass the actual map
+                ai_visible_map=self.ai_visible_map, # Pass the AI's map
                 message_log=self.message_log,
             )
+            # Initial visibility update for AI's starting position
+            self.ai_logic.update_visibility()
+
 
     # Note: Methods like handle_input_and_get_command, render_map,
     # process_command_tuple, and _get_adjacent_monsters were removed.
@@ -102,29 +132,33 @@ class GameEngine:
             )
             self.game_over = True  # Set game_over for test conditions.
             # Perform a single render to list for debug inspection, as per some tests.
+            map_to_render_debug = self.ai_visible_map if self.ai_active and self.ai_visible_map else self.world_map
             self.renderer.render_all(
                 player_x=self.player.x,
                 player_y=self.player.y,
                 player_health=self.player.health,
-                world_map=self.world_map,
+                world_map_to_render=map_to_render_debug, # Pass correct map
                 input_mode=self.input_handler.get_input_mode(),
                 current_command_buffer=self.input_handler.get_command_buffer(),
                 message_log=self.message_log,
                 debug_render_to_list=True,  # Ensure output is to list for debug
+                ai_mode_active=self.ai_active # Pass AI mode status
             )
             return
 
         try:
             # Initial render of the game state before the loop starts.
+            initial_map_to_render = self.ai_visible_map if self.ai_active and self.ai_visible_map else self.world_map
             self.renderer.render_all(
                 player_x=self.player.x,
                 player_y=self.player.y,
                 player_health=self.player.health,
-                world_map=self.world_map,
+                world_map_to_render=initial_map_to_render, # Pass correct map
                 input_mode=self.input_handler.get_input_mode(),
                 current_command_buffer=self.input_handler.get_command_buffer(),
                 message_log=self.message_log,
                 debug_render_to_list=self.debug_mode,  # Should be False here for curses
+                ai_mode_active=self.ai_active # Pass AI mode status
             )
 
             while not self.game_over:
@@ -167,28 +201,32 @@ class GameEngine:
                         self.game_over = results.get("game_over", False)
 
                 # Render updated game state after command (or if no command).
+                map_to_render_loop = self.ai_visible_map if self.ai_active and self.ai_visible_map else self.world_map
                 self.renderer.render_all(
                     player_x=self.player.x,
                     player_y=self.player.y,
                     player_health=self.player.health,
-                    world_map=self.world_map,
+                    world_map_to_render=map_to_render_loop, # Pass correct map
                     input_mode=self.input_handler.get_input_mode(),
                     current_command_buffer=self.input_handler.get_command_buffer(),
                     message_log=self.message_log,
                     debug_render_to_list=self.debug_mode,  # Should be False here
+                    ai_mode_active=self.ai_active # Pass AI mode status
                 )
 
             # After the game loop ends (game_over is True):
             # Perform a final render to show the game over state.
+            final_map_to_render = self.ai_visible_map if self.ai_active and self.ai_visible_map else self.world_map
             self.renderer.render_all(
                 player_x=self.player.x,
                 player_y=self.player.y,
                 player_health=self.player.health,
-                world_map=self.world_map,
+                world_map_to_render=final_map_to_render, # Pass correct map
                 input_mode=self.input_handler.get_input_mode(),
                 current_command_buffer=self.input_handler.get_command_buffer(),
                 message_log=self.message_log,
                 debug_render_to_list=self.debug_mode,  # Should be False here
+                ai_mode_active=self.ai_active # Pass AI mode status
             )
 
             # Pause briefly to let the player see the final game over screen.
