@@ -560,6 +560,55 @@ class AILogic:
                     self.last_move_command = ("look", None)
                     return ("look", None)
 
+        # Random exploration fallback: try to move in a random valid direction
+        possible_moves = []
+        for direction, (dx, dy) in [
+            ("north", (0, -1)),
+            ("south", (0, 1)),
+            ("west", (-1, 0)),
+            ("east", (1, 0)),
+        ]:
+            check_x, check_y = current_player_pos[0] + dx, current_player_pos[1] + dy
+            if self.ai_visible_map.is_valid_move(check_x, check_y):
+                possible_moves.append(("move", direction))
+
+        if possible_moves:
+            # Check if we should explore unvisited tiles specifically
+            unvisited_moves = []
+            for move_cmd, direction in possible_moves:
+                dx, dy = {
+                    "north": (0, -1),
+                    "south": (0, 1),
+                    "west": (-1, 0),
+                    "east": (1, 0),
+                }[direction]
+                check_x, check_y = (
+                    current_player_pos[0] + dx,
+                    current_player_pos[1] + dy,
+                )
+                if (check_x, check_y) not in self.physically_visited_coords:
+                    unvisited_moves.append((move_cmd, direction))
+
+            if unvisited_moves:
+                # Explore unvisited tiles (pick first one for deterministic behavior)
+                chosen_move = unvisited_moves[0]
+                self.message_log.add_message(
+                    f"AI: Exploring unvisited. Moving {chosen_move[1]}."
+                )
+                # Add current position to visited coords as it will be left
+                if current_player_pos not in self.physically_visited_coords:
+                    self.physically_visited_coords.append(current_player_pos)
+                self.last_move_command = chosen_move
+                return chosen_move
+            else:
+                # All nearby tiles visited, explore randomly
+                chosen_move = random.choice(possible_moves)
+                self.message_log.add_message(
+                    f"AI: All visited nearby. Moving {chosen_move[1]}."
+                )
+                self.last_move_command = chosen_move
+                return chosen_move
+
         self.message_log.add_message(
             "AI: No path found on visible map and no other actions. Looking around."
         )
