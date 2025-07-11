@@ -1,4 +1,5 @@
 import random
+from typing import Optional, List # Ensure this is present
 
 from src.map_algorithms.connectivity import MapConnectivityManager
 from src.world_map import WorldMap  # For type hinting
@@ -44,15 +45,21 @@ class FloorDensityAdjuster:
         map_width: int,
         map_height: int,
         target_floor_portion: float,
+        protected_coords: Optional[list[tuple[int,int]]] = None
     ) -> None:
         """
         Adjusts the number of floor tiles in the inner map area to match
         target_floor_portion, while maintaining connectivity between player_start_pos
-        and original_win_pos.
+        and original_win_pos. Tiles in protected_coords are not modified.
         This method was formerly _adjust_floor_density in WorldGenerator.
         """
+        effective_protected_coords = set(protected_coords) if protected_coords else set()
+        # Add player_start and original_win_pos to protected_coords implicitly
+        effective_protected_coords.add(player_start_pos)
+        effective_protected_coords.add(original_win_pos)
+
         if map_width < 3 or map_height < 3:
-            return  # Should be caught by generator earlier
+            return
 
         total_inner_tiles = (map_width - 2) * (map_height - 2)
         if total_inner_tiles <= 0:
@@ -75,53 +82,50 @@ class FloorDensityAdjuster:
                 candidate_walls_to_floor = []
                 for r_y in range(1, map_height - 1):
                     for r_x in range(1, map_width - 1):
+                        if (r_x, r_y) in effective_protected_coords: # Skip protected tiles
+                            continue
                         tile = world_map.get_tile(r_x, r_y)
                         if tile and tile.type == "wall":
-                            adjacent_floor_count = 0
                             is_adjacent_to_floor = False
-                            # Check N, S, E, W neighbors
                             for dr, dc in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
                                 adj_x, adj_y = r_x + dr, r_y + dc
-                                # Boundary checks for adj_x, adj_y are important if
-                                # adjacency can extend outside inner map, but here
-                                # we are converting inner walls, so adj_tile_check
-                                # handles out-of-bounds by returning None.
                                 adj_tile_check = world_map.get_tile(adj_x, adj_y)
                                 if adj_tile_check and adj_tile_check.type == "floor":
                                     is_adjacent_to_floor = True
-                                    adjacent_floor_count += 1
+                                    break # Found one adjacent floor, that's enough
 
                             if is_adjacent_to_floor:
-                                candidate_walls_to_floor.append(
-                                    (adjacent_floor_count, r_x, r_y)
-                                )
+                                # Store without adjacent_floor_count for now, can be added if needed for sorting
+                                candidate_walls_to_floor.append((r_x, r_y))
 
                 if not candidate_walls_to_floor:
-                    break  # No more walls can be converted
+                    break
 
                 # Sort by adjacent_floor_count (ascending), then shuffle within counts
                 # For simplicity now, just sort. Add shuffle later if needed.
                 candidate_walls_to_floor.sort(key=lambda x: x[0])
-                # random.shuffle(candidate_walls_to_floor) # Potentially re-add
+                # For simplicity, just shuffle candidates now. Sorting by adjacency can be added if needed.
+                random.shuffle(candidate_walls_to_floor)
 
                 made_change_in_pass = False
-                for _, c_x, c_y in candidate_walls_to_floor:  # Unpack tuple
+                for c_x, c_y in candidate_walls_to_floor: # No longer sorting by adj_count
                     if num_current_floor >= target_floor_tiles:
                         break
+                    # Already checked if (c_x,c_y) in effective_protected_coords when building list
                     world_map.set_tile_type(c_x, c_y, "floor")
                     num_current_floor += 1
                     made_change_in_pass = True
 
                 if not made_change_in_pass:
-                    break
+                    break # No suitable walls converted in this pass
 
         # Case 2: Too Many Floors
         elif num_current_floor > target_floor_tiles:
-            protected_tiles = {player_start_pos, original_win_pos}
+            # effective_protected_coords already includes player_start_pos and original_win_pos
             candidate_floors_to_wall = [
                 (f_x, f_y)
                 for f_x, f_y in current_inner_floor_tiles
-                if (f_x, f_y) not in protected_tiles
+                if (f_x, f_y) not in effective_protected_coords # Use the broader set
             ]
             random.shuffle(candidate_floors_to_wall)
 

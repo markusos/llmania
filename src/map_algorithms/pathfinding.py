@@ -170,13 +170,16 @@ class PathFinder:
         end_pos: tuple[int, int],
         map_width: int,
         map_height: int,
+        protected_coords: Optional[List[tuple[int,int]]] = None
     ) -> None:
         """
         Carves a path of "floor" tiles between start_pos and end_pos using a
         Bresenham-like line algorithm. Ensures the path stays within map bounds.
+        If protected_coords are provided, tiles at these coordinates will not be changed.
         This method was formerly _carve_path in WorldGenerator.
         """
         path_points = []
+        effective_protected_coords = set(protected_coords) if protected_coords else set()
         curr_x, curr_y = start_pos
         dx = end_pos[0] - curr_x
         dy = end_pos[1] - curr_y
@@ -194,6 +197,7 @@ class PathFinder:
                 if 0 <= px < map_width and 0 <= py < map_height:
                     path_points.append((px, py))
 
-        for px, py in set(path_points):
+        for px, py in set(path_points): # Use set to avoid redundant checks/sets on same point
             if 0 <= px < map_width and 0 <= py < map_height:
-                world_map.set_tile_type(px, py, "floor")
+                if (px, py) not in effective_protected_coords:
+                    world_map.set_tile_type(px, py, "floor")
