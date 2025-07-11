@@ -252,12 +252,11 @@ class TestRenderer(unittest.TestCase):
             with patch("curses.color_pair", return_value=0):
                 renderer = Renderer(
                     debug_mode=False,
-                    map_width=self.map_height,  # Corrected: should be self.map_width for consistency
+                    map_width=self.map_width,  # Corrected for consistency
                     map_height=self.map_height,
                     player_symbol=self.player_symbol,
                 )
-                # Re-assign map_width for renderer instance if it was wrong in constructor
-                renderer.map_width = self.map_width
+                # renderer.map_width = self.map_width # Not needed if constructor is correct
 
                 world_map = MockWorldMap(
                     self.map_width,

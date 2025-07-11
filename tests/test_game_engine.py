@@ -88,7 +88,7 @@ class TestGameEngine(unittest.TestCase):
 
     def test_game_engine_initialization(self):
         self.mock_world_gen_instance._generate_single_floor.assert_called_once_with(
-            20, 10, seed=None
+            20, 10, current_seed=None
         )
         self.MockPlayer.assert_called_once_with(
             x=self.player_start_coords_f0[0],
@@ -205,7 +205,7 @@ class TestGameEngine(unittest.TestCase):
     def test_run_loop_debug_mode_no_curses_cleanup(self, mock_curses_for_debug_engine):
         with patch("src.game_engine.WorldGenerator") as MockWG_debug, patch(
             "src.game_engine.InputHandler"
-        ) as MockIH_debug, patch("src.game_engine.Renderer") as MockR_debug, patch(
+        ) as MockIH_debug, patch("src.game_engine.Renderer"), patch(
             "src.game_engine.CommandProcessor"
         ) as MockCP_debug, patch("src.game_engine.Parser"), patch(
             "src.game_engine.Player"

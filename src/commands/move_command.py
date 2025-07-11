@@ -67,8 +67,8 @@ class MoveCommand(Command):
                 self.message_log.add_message(
                     f"You step through the portal to floor {new_floor_id}!"
                 )
-                # GameEngine will handle updating fog of war for the new floor
-                # and CommandProcessor will provide the correct map for the next command.
+                # GameEngine handles fog of war for the new floor.
+                # CommandProcessor provides the correct map for the next command.
             elif target_tile and target_tile.monster:
                 # Bump into monster
                 msg = f"You bump into a {target_tile.monster.name}!"
@@ -85,10 +85,10 @@ class MoveCommand(Command):
                     self.player.y,
                     self.player.current_floor_id,
                 ) == self.winning_position:
-                    # Ensure we are checking the correct map for the win tile item
-                    # This should be the map of the floor where the winning_position is.
-                    # However, self.world_map is already the current floor's map.
-                    # If winning_position's floor_id matches player.current_floor_id, this is fine.
+                    # Ensure we are checking the correct map for the win tile item.
+                    # This should be the map of the winning_position's floor.
+                    # self.world_map is current floor's map.
+                    # If win_pos floor_id matches player.current_floor_id, it's fine.
                     win_tile = self.world_map.get_tile(
                         self.winning_position[0], self.winning_position[1]
                     )
@@ -100,8 +100,7 @@ class MoveCommand(Command):
                         self.message_log.add_message(
                             "You reached the Amulet of Yendor's location!"
                         )
-                        # Potentially set game_over = True here if taking amulet wins
-                        # For now, just a message. Taking the amulet is a separate command.
+                        # Taking amulet is a separate command, this just notes location.
         else:
             self.message_log.add_message("You can't move there.")
 

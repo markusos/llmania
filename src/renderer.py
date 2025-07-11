@@ -142,7 +142,7 @@ class Renderer:
                         # AI path is List[Tuple[int, int, int]]
                         # We only care about path segments on the current_floor_id
                         # for 2D map display.
-                        # Check if (x_map, y_map) is part of the path on the current floor
+                        # Check if (x_map, y_map) is part of path on current floor
                         path_segment_on_current_floor = [
                             (px, py)
                             for px, py, pf_id in ai_path
