@@ -117,6 +117,9 @@ class TestRenderer(unittest.TestCase):
         ]
         self.mock_init_pair.assert_has_calls(expected_init_pair_calls, any_order=False)
         self.assertEqual(renderer.FLOOR_COLOR_PAIR, 1)
+        # Check for the new PATH_COLOR_PAIR
+        self.mock_init_pair.assert_any_call(7, curses.COLOR_BLUE, curses.COLOR_GREEN)
+        self.assertEqual(renderer.PATH_COLOR_PAIR, 7)
 
     def test_init_debug_mode_stdscr_none(self):
         # Reset mocks as they might have been called by other tests
@@ -404,6 +407,155 @@ class TestRenderer(unittest.TestCase):
             mock_echo.assert_not_called()
             mock_nocbreak.assert_not_called()
             self.mock_endwin.assert_not_called()
+
+    def test_render_all_debug_with_ai_path(self):
+        renderer = Renderer(
+            debug_mode=True,
+            map_width=self.map_width,
+            map_height=self.map_height,
+            player_symbol=self.player_symbol,
+        )
+        mock_map_tiles = [
+            [MockTile(".") for _ in range(self.map_width)]
+            for _ in range(self.map_height)
+        ]
+        world_map = MockWorldMap(self.map_width, self.map_height, tiles=mock_map_tiles)
+        player_x, player_y = 0, 0
+        ai_path_to_render = [(1, 0), (2, 0), (2, 1)]  # Path: (1,0)* -> (2,0)* -> (2,1)x
+
+        mock_message_log = MagicMock(spec=MessageLog)
+        mock_message_log.get_messages.return_value = []
+        mock_message_log.max_messages = 5
+
+        output_buffer = renderer.render_all(
+            player_x,
+            player_y,
+            100,  # player_health
+            world_map,
+            "movement",  # input_mode
+            "",  # current_command_buffer
+            mock_message_log,
+            debug_render_to_list=True,
+            ai_path=ai_path_to_render,
+        )
+
+        # Expected map rows:
+        # Player at (0,0), Path: (1,0)*, (2,0)*, Destination (2,1)x
+        # Row 0: @**.......
+        # Row 1: ..x.......
+        # Row 2: .......... (assuming height >= 3)
+        # ...
+
+        self.assertEqual(output_buffer[0], f"{self.player_symbol}**.......")
+        self.assertEqual(output_buffer[1], "..x.......")
+        for i in range(2, self.map_height):  # Check remaining map rows are floors
+            self.assertEqual(output_buffer[i], "..........")
+
+        # Check UI elements are still present
+        self.assertIn("HP: 100", output_buffer)
+        self.assertIn("MODE: MOVEMENT", output_buffer)
+
+    def test_render_all_debug_ai_path_player_on_path(self):
+        renderer = Renderer(
+            debug_mode=True,
+            map_width=self.map_width,
+            map_height=self.map_height,
+            player_symbol=self.player_symbol,
+        )
+        mock_map_tiles = [
+            [MockTile(".") for _ in range(self.map_width)]
+            for _ in range(self.map_height)
+        ]
+        world_map = MockWorldMap(self.map_width, self.map_height, tiles=mock_map_tiles)
+        player_x, player_y = 1, 0  # Player is on the path
+        # Path: (0,0) -> (1,0) (player loc) -> (2,0)x
+        ai_path_to_render = [(0, 0), (1, 0), (2, 0)]
+
+        mock_message_log = MagicMock(spec=MessageLog)
+        mock_message_log.get_messages.return_value = []
+
+        output_buffer = renderer.render_all(
+            player_x,
+            player_y,
+            100,
+            world_map,
+            "movement",
+            "",
+            mock_message_log,
+            debug_render_to_list=True,
+            ai_path=ai_path_to_render,
+        )
+        # Expected: Player symbol '@' should override path symbol '*' at (1,0)
+        # Row 0: *@x.......
+        self.assertEqual(output_buffer[0], f"*{self.player_symbol}x.......")
+
+    def test_render_all_debug_ai_path_destination_is_player_loc(self):
+        renderer = Renderer(
+            debug_mode=True,
+            map_width=self.map_width,
+            map_height=self.map_height,
+            player_symbol=self.player_symbol,
+        )
+        mock_map_tiles = [
+            [MockTile(".") for _ in range(self.map_width)]
+            for _ in range(self.map_height)
+        ]
+        world_map = MockWorldMap(self.map_width, self.map_height, tiles=mock_map_tiles)
+        player_x, player_y = 2, 0  # Player is AT the destination
+        # Path: (0,0) -> (1,0) -> (2,0) (player loc and destination)
+        ai_path_to_render = [(0, 0), (1, 0), (2, 0)]
+
+        mock_message_log = MagicMock(spec=MessageLog)
+        mock_message_log.get_messages.return_value = []
+
+        output_buffer = renderer.render_all(
+            player_x,
+            player_y,
+            100,
+            world_map,
+            "movement",
+            "",
+            mock_message_log,
+            debug_render_to_list=True,
+            ai_path=ai_path_to_render,
+        )
+        # Expected: Player symbol '@' should override destination symbol 'x' at (2,0)
+        # Row 0: **@.......
+        self.assertEqual(output_buffer[0], f"**{self.player_symbol}.......")
+
+    def test_render_all_debug_ai_path_empty(self):
+        renderer = Renderer(
+            debug_mode=True,
+            map_width=self.map_width,
+            map_height=self.map_height,
+            player_symbol=self.player_symbol,
+        )
+        mock_map_tiles = [
+            [MockTile(".") for _ in range(self.map_width)]
+            for _ in range(self.map_height)
+        ]
+        world_map = MockWorldMap(self.map_width, self.map_height, tiles=mock_map_tiles)
+        player_x, player_y = 0, 0
+        ai_path_to_render = []  # Empty path
+
+        mock_message_log = MagicMock(spec=MessageLog)
+        mock_message_log.get_messages.return_value = []
+
+        output_buffer = renderer.render_all(
+            player_x,
+            player_y,
+            100,
+            world_map,
+            "movement",
+            "",
+            mock_message_log,
+            debug_render_to_list=True,
+            ai_path=ai_path_to_render,
+        )
+        # Expected: Should render normally, as if no path was given.
+        # Row 0: @.........
+        self.assertEqual(output_buffer[0], f"{self.player_symbol}.........")
+        self.assertEqual(output_buffer[1], "..........")
 
 
 if __name__ == "__main__":

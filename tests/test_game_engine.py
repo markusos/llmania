@@ -174,6 +174,7 @@ class TestGameEngine(unittest.TestCase):
             current_command_buffer="",
             message_log=self.game_engine.message_log,
             debug_render_to_list=False,
+            ai_path=None,  # Added ai_path
         )
         # render_all is called: initial, after move cmd processing + visibility update,
         # after quit cmd processing + visibility update.
@@ -305,6 +306,7 @@ class TestGameEngine(unittest.TestCase):
                 current_command_buffer=mock_ih_inst_debug.get_command_buffer.return_value,
                 message_log=debug_engine.message_log,
                 debug_render_to_list=True,
+                ai_path=None,  # Added ai_path
             )
             # Check that stdscr related calls were not made in __init__ for debug engine
             mock_curses_for_debug_engine.initscr.assert_not_called()

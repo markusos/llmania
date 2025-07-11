@@ -154,6 +154,9 @@ class GameEngine:
             # Perform a single render to list for debug inspection, as per some tests.
             # Update visibility before rendering, even in debug mode.
             self._update_fog_of_war_visibility()
+            current_ai_path_debug = None
+            if self.ai_active and self.ai_logic:
+                current_ai_path_debug = self.ai_logic.current_path
             self.renderer.render_all(
                 player_x=self.player.x,
                 player_y=self.player.y,
@@ -163,6 +166,7 @@ class GameEngine:
                 current_command_buffer=self.input_handler.get_command_buffer(),
                 message_log=self.message_log,
                 debug_render_to_list=True,  # Ensure output is to list for debug
+                ai_path=current_ai_path_debug,
             )
             return
 
@@ -171,6 +175,9 @@ class GameEngine:
             # practice if run is called separately)
             self._update_fog_of_war_visibility()
             # Initial render of the game state before the loop starts.
+            current_ai_path_initial = None
+            if self.ai_active and self.ai_logic:
+                current_ai_path_initial = self.ai_logic.current_path
             self.renderer.render_all(
                 player_x=self.player.x,
                 player_y=self.player.y,
@@ -180,6 +187,7 @@ class GameEngine:
                 current_command_buffer=self.input_handler.get_command_buffer(),
                 message_log=self.message_log,
                 debug_render_to_list=self.debug_mode,  # Should be False here for curses
+                ai_path=current_ai_path_initial,
             )
 
             while not self.game_over:
@@ -223,6 +231,10 @@ class GameEngine:
                             self._update_fog_of_war_visibility()
 
                 # Render updated game state.
+                current_ai_path = None
+                if self.ai_active and self.ai_logic:
+                    current_ai_path = self.ai_logic.current_path
+
                 self.renderer.render_all(
                     player_x=self.player.x,
                     player_y=self.player.y,
@@ -232,11 +244,16 @@ class GameEngine:
                     current_command_buffer=self.input_handler.get_command_buffer(),
                     message_log=self.message_log,
                     debug_render_to_list=self.debug_mode,
+                    ai_path=current_ai_path,
                 )
 
             # After the game loop ends (game_over is True):
             # Perform a final visibility update and render to show the game over state.
             self._update_fog_of_war_visibility()
+            current_ai_path_final = None
+            if self.ai_active and self.ai_logic:
+                current_ai_path_final = self.ai_logic.current_path
+
             self.renderer.render_all(
                 player_x=self.player.x,
                 player_y=self.player.y,
@@ -246,6 +263,7 @@ class GameEngine:
                 current_command_buffer=self.input_handler.get_command_buffer(),
                 message_log=self.message_log,
                 debug_render_to_list=self.debug_mode,  # Should be False here
+                ai_path=current_ai_path_final,
             )
 
             # Pause briefly to let the player see the final game over screen.
