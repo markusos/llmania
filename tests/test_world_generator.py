@@ -11,33 +11,33 @@ def generator():
     return WorldGenerator()
 
 
-# Test `generate_map` returns correct types
-def test_generate_map_return_types(generator):
-    world_map, player_start, win_pos = generator.generate_map(10, 10)
+# Test `_generate_single_floor` returns correct types
+def test_generate_single_floor_return_types(generator):
+    world_map, player_start, poi_pos = generator._generate_single_floor(10, 10)
     assert isinstance(world_map, WorldMap)
     assert isinstance(player_start, tuple)
     assert len(player_start) == 2
     assert isinstance(player_start[0], int)
     assert isinstance(player_start[1], int)
-    assert isinstance(win_pos, tuple)
-    assert len(win_pos) == 2
-    assert isinstance(win_pos[0], int)
-    assert isinstance(win_pos[1], int)
+    assert isinstance(poi_pos, tuple)
+    assert len(poi_pos) == 2
+    assert isinstance(poi_pos[0], int)
+    assert isinstance(poi_pos[1], int)
 
 
-# Test `generate_map` dimensions
-def test_generate_map_dimensions(generator):
+# Test `_generate_single_floor` dimensions
+def test_generate_single_floor_dimensions(generator):
     width, height = 15, 12
-    world_map, _, _ = generator.generate_map(width, height)
+    world_map, _, _ = generator._generate_single_floor(width, height)
     assert world_map.width == width
     assert world_map.height == height
 
 
-# Test `generate_map` content
-def test_generate_map_content(generator):
+# Test `_generate_single_floor` content
+def test_generate_single_floor_content(generator):
     width, height = 20, 20
-    world_map, player_start_pos, win_pos = generator.generate_map(
-        width, height, seed=123
+    world_map, player_start_pos, poi_pos = generator._generate_single_floor(
+        width, height, current_seed=123
     )  # Use seed for consistency
 
     # Ensure player_start_pos is a "floor" tile
@@ -47,6 +47,16 @@ def test_generate_map_content(generator):
     assert player_tile.type == "floor", (
         f"Player start tile at {player_start_pos} is not a floor tile."
     )
+    # Ensure poi_pos is also a "floor" tile (point of interest)
+    # and does not have the actual "Amulet of Yendor" as that's placed by generate_world
+    poi_x, poi_y = poi_pos
+    poi_tile = world_map.get_tile(poi_x, poi_y)
+    assert poi_tile is not None, "POI position is out of bounds"
+    assert poi_tile.type == "floor", f"POI tile at {poi_pos} is not a floor tile."
+    if poi_tile.item:  # It might have other items placed by _place_additional_entities
+        assert poi_tile.item.name != "Amulet of Yendor", (
+            "Single floor POI should not be the final Amulet"
+        )
 
 
 # Tests for new quadrant-based random walk logic
@@ -423,14 +433,11 @@ def test_generate_map_reproducibility_with_seed(generator):
         42,
     )  # Use a slightly larger map for better test of content
 
-    map1, ps1, wp1 = generator.generate_map(width, height, seed)
-    map2, ps2, wp2 = generator.generate_map(width, height, seed)
+    map1, ps1, poi1 = generator._generate_single_floor(width, height, current_seed=seed)
+    map2, ps2, poi2 = generator._generate_single_floor(width, height, current_seed=seed)
 
     assert ps1 == ps2, "Player start positions differ with the same seed."
-    # original_win_pos is not directly returned by generate_map anymore
-    # in the same way for amulet placement, but the final actual_win_pos
-    # should be reproducible.
-    assert wp1 == wp2, "Actual win positions (amulet) differ with the same seed."
+    assert poi1 == poi2, "POI positions differ with the same seed."
 
     for y in range(height):
         for x in range(width):
@@ -503,8 +510,12 @@ def test_generate_map_with_different_seeds(generator):
     seed2 = 456
     assert seed1 != seed2  # Ensure seeds are different
 
-    map1, ps1, wp1 = generator.generate_map(width, height, seed1)
-    map2, ps2, wp2 = generator.generate_map(width, height, seed2)
+    map1, ps1, poi1 = generator._generate_single_floor(
+        width, height, current_seed=seed1
+    )
+    map2, ps2, poi2 = generator._generate_single_floor(
+        width, height, current_seed=seed2
+    )
 
     # It's highly probable that the results will be different.
     # A full map comparison can be complex. Check key differentiating factors:
@@ -545,7 +556,7 @@ def test_generate_map_with_different_seeds(generator):
 
     are_maps_different = (
         ps1 != ps2
-        or wp1 != wp2
+        or poi1 != poi2
         or map1_repr != map2_repr
         or items1 != items2
         or monsters1 != monsters2
@@ -596,90 +607,91 @@ def find_path_bfs(
 )  # Test with random map and a few seeded maps
 def test_guaranteed_path_exists(generator, seed_val):
     width, height = 10, 10  # Valid size
-    world_map, player_start, win_pos = generator.generate_map(
-        width, height, seed=seed_val
+    world_map, player_start, poi_pos = generator._generate_single_floor(
+        width, height, current_seed=seed_val
     )
 
     assert world_map.get_tile(player_start[0], player_start[1]).type == "floor", (
         f"Player start {player_start} is not floor. Seed: {seed_val}"
     )
-    assert world_map.get_tile(win_pos[0], win_pos[1]).type == "floor", (
-        f"Win position {win_pos} is not floor. Seed: {seed_val}"
+    assert world_map.get_tile(poi_pos[0], poi_pos[1]).type == "floor", (
+        f"POI position {poi_pos} is not floor. Seed: {seed_val}"
     )
 
-    if player_start == win_pos:  # Should be rare on a 10x10 map
+    if player_start == poi_pos:  # Should be rare on a 10x10 map
         path_found = True
     else:
-        path_found = find_path_bfs(world_map, player_start, win_pos)
+        path_found = find_path_bfs(world_map, player_start, poi_pos)
 
     assert path_found, (
         f"No path found between player_start {player_start} and "
-        f"win_pos {win_pos}. Seed: {seed_val}"
+        f"poi_pos {poi_pos}. Seed: {seed_val}"
     )
 
 
-# Test that player start and win positions are not on the edge
-def test_start_win_positions_not_on_edge(generator):
+# Test that player start and POI positions are not on the edge
+def test_start_poi_positions_not_on_edge(generator):
     for seed_val in range(5):
         width, height = 5, 5  # Valid size, allows inner area
-        world_map, player_start, win_pos = generator.generate_map(
-            width, height, seed=seed_val
+        world_map, player_start, poi_pos = generator._generate_single_floor(
+            width, height, current_seed=seed_val
         )
 
-        # player_start and win_pos are from inner area (1 to width-2, etc.)
         assert 0 < player_start[0] < width - 1, (
             f"Player start X ({player_start[0]}) on edge. Seed: {seed_val}"
         )
         assert 0 < player_start[1] < height - 1, (
             f"Player start Y ({player_start[1]}) on edge. Seed: {seed_val}"
         )
-        # Amulet position determined by furthest point, should also be inner.
-        assert 0 < win_pos[0] < width - 1, (
-            f"Win pos X ({win_pos[0]}) on edge. Seed: {seed_val}"
+        assert 0 < poi_pos[0] < width - 1, (
+            f"POI pos X ({poi_pos[0]}) on edge. Seed: {seed_val}"
         )
-        assert 0 < win_pos[1] < height - 1, (
-            f"Win pos Y ({win_pos[1]}) on edge. Seed: {seed_val}"
+        assert 0 < poi_pos[1] < height - 1, (
+            f"POI pos Y ({poi_pos[1]}) on edge. Seed: {seed_val}"
         )
 
 
-def test_generate_map_valid_minimum_size(generator):
+def test_generate_single_floor_valid_minimum_size(generator):
     valid_sizes = [(3, 4), (4, 3), (5, 5)]  # (w,h)
     for width, height in valid_sizes:
         try:
-            world_map, player_start, win_pos = generator.generate_map(
-                width, height, seed=1
+            world_map, player_start, poi_pos = generator._generate_single_floor(
+                width, height, current_seed=1
             )
             assert world_map.width == width
             assert world_map.height == height
             assert 0 < player_start[0] < width - 1
             assert 0 < player_start[1] < height - 1
-            assert 0 < win_pos[0] < width - 1
-            assert 0 < win_pos[1] < height - 1
+            assert 0 < poi_pos[0] < width - 1
+            assert 0 < poi_pos[1] < height - 1
             player_tile = world_map.get_tile(player_start[0], player_start[1])
-            win_tile = world_map.get_tile(win_pos[0], win_pos[1])
+            poi_tile = world_map.get_tile(poi_pos[0], poi_pos[1])
             assert player_tile.type == "floor"
-            assert win_tile.type == "floor"
-            assert win_tile.item is not None
-            assert win_tile.item.name == "Amulet of Yendor"
+            assert poi_tile.type == "floor"
+            # _generate_single_floor does not place the final "Amulet of Yendor"
+            # It determines a POI, which might have other items.
+            # So, we cannot assert win_tile.item.name == "Amulet of Yendor" here.
         except ValueError:
             pytest.fail(
-                f"generate_map raised ValueError for valid size {width}x{height}"
+                f"_generate_single_floor raised ValueError for valid size {width}x{height}"
             )
 
 
-def test_generate_map_invalid_small_size(generator):
+def test_generate_single_floor_invalid_small_size(generator):
     invalid_sizes = [(2, 2), (1, 5), (5, 1), (3, 3), (2, 4), (4, 2)]
     for width, height in invalid_sizes:
         with pytest.raises(
             ValueError, match="Map dimensions must be at least 3x4 or 4x3"
         ):
-            generator.generate_map(width, height, seed=1)
+            generator._generate_single_floor(width, height, current_seed=1)
 
 
 def test_outer_layer_is_always_wall(generator):
     sizes_to_test = [(4, 5), (5, 4), (10, 10)]
     for width, height in sizes_to_test:
-        world_map, _, _ = generator.generate_map(width, height, seed=1)
+        world_map, _, _ = generator._generate_single_floor(
+            width, height, current_seed=1
+        )
         for x_coord in range(width):
             msg_top = f"Top edge at ({x_coord},0) not wall for {width}x{height}"
             msg_bottom = (
@@ -698,7 +710,9 @@ def test_outer_layer_is_always_wall(generator):
 
 def test_all_floor_tiles_are_accessible(generator):
     width, height = 10, 10  # A reasonably sized map
-    world_map, player_start_pos, _ = generator.generate_map(width, height, seed=123)
+    world_map, player_start_pos, _ = generator._generate_single_floor(
+        width, height, current_seed=123
+    )
 
     inner_floor_tiles = []
     for y in range(1, height - 1):
@@ -748,7 +762,9 @@ def test_floor_portion_respected(generator):
         for portion in portions_to_test:
             # Create a new generator with the specific floor_portion
             specific_generator = WorldGenerator(floor_portion=portion)
-            world_map, _, _ = specific_generator.generate_map(width, height, seed=1)
+            world_map, _, _ = specific_generator._generate_single_floor(
+                width, height, current_seed=1
+            )
 
             inner_floor_tiles_count = 0
             for y in range(1, height - 1):
@@ -795,10 +811,11 @@ def test_win_item_placed_furthest(generator):
     # If player starts at (1,1) (absolute), the furthest in a 1x3 inner area
     # [(1,1), (1,2), (1,3)] would be (1,3).
     width, height = 3, 5  # Inner area: 1x3 tiles
-    world_map, player_start_pos, actual_win_pos = generator.generate_map(
+    # _generate_single_floor returns map, start_pos, poi_pos
+    world_map, player_start_pos, actual_poi_pos = generator._generate_single_floor(
         width,
         height,
-        seed=42,  # seed makes player_start_pos predictable
+        current_seed=42,  # seed makes player_start_pos predictable
     )
 
     # For this test, we rely on the seed to make player_start_pos predictable.
@@ -839,7 +856,6 @@ def test_win_item_placed_furthest(generator):
             calculated_furthest_tiles.add(current_pos)
 
         for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]:  # N, S, E, W
-            # Note: BFS explores (y,x) but tile positions are (x,y)
             next_tile_x, next_tile_y = (
                 current_pos[0] + dc,
                 current_pos[1] + dr,
@@ -852,8 +868,8 @@ def test_win_item_placed_furthest(generator):
                 visited_distances[(next_tile_x, next_tile_y)] = distance + 1
                 queue.append(((next_tile_x, next_tile_y), distance + 1))
 
-    assert actual_win_pos in calculated_furthest_tiles, (
-        f"Amulet at {actual_win_pos} is not one of the furthest tiles "
+    assert actual_poi_pos in calculated_furthest_tiles, (
+        f"POI at {actual_poi_pos} is not one of the furthest tiles "
         f"{calculated_furthest_tiles} from {player_start_pos} "
         f"(max_dist: {current_max_dist})."
     )
@@ -872,7 +888,9 @@ def test_visual_inspection_of_generated_maps():
     for seed_val in seeds:
         for width, height in dimensions:
             print(f"\nMap for seed={seed_val}, Dimensions: {width}x{height}")
-            world_map, _, _ = generator.generate_map(width, height, seed=seed_val)
+            world_map, _, _ = generator._generate_single_floor(
+                width, height, current_seed=seed_val
+            )
             for y in range(height):
                 row_str = ""
                 for x in range(width):
@@ -909,7 +927,9 @@ def test_path_like_structures_metric():
 
     for config in test_configs:
         width, height, seed_val = config["width"], config["height"], config["seed"]
-        world_map, _, _ = generator.generate_map(width, height, seed=seed_val)
+        world_map, _, _ = generator._generate_single_floor(
+            width, height, current_seed=seed_val
+        )
 
         path_tile_count = 0
 

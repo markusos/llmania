@@ -1,16 +1,44 @@
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from .base_command import Command
 
 if TYPE_CHECKING:
-    pass  # For type hint from _get_adjacent_monsters
-    # from src.item import Item # For type hint from tile.item
+    from src.game_engine import GameEngine
+    from src.message_log import MessageLog
+    from src.player import Player
+    from src.world_map import WorldMap
+    # from src.item import Item
+    # from src.monster import Monster
 
 
 class LookCommand(Command):
-    def execute(self) -> Dict[str, Any]:
-        self.message_log.add_message(f"You are at ({self.player.x}, {self.player.y}).")
+    def __init__(
+        self,
+        player: "Player",
+        world_map: "WorldMap",
+        message_log: "MessageLog",
+        winning_position: tuple[int, int, int],
+        argument: Optional[str] = None,
+        world_maps: Optional[Dict[int, "WorldMap"]] = None,
+        game_engine: Optional["GameEngine"] = None,
+    ):
+        super().__init__(
+            player,
+            world_map,
+            message_log,
+            winning_position,
+            argument,
+            world_maps,
+            game_engine,
+        )
 
+    def execute(self) -> Dict[str, Any]:
+        self.message_log.add_message(
+            f"You are at ({self.player.x}, {self.player.y}) "
+            f"on floor {self.player.current_floor_id}."
+        )
+
+        # self.world_map is current floor's map (from CommandProcessor)
         current_tile = self.world_map.get_tile(self.player.x, self.player.y)
         item_seen_on_tile = False
         monster_on_tile = False  # Initialized

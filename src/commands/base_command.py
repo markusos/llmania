@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
+    from src.game_engine import GameEngine  # Added
     from src.message_log import MessageLog
-    from src.monster import Monster  # Added for _get_adjacent_monsters type hint
+    from src.monster import Monster
     from src.player import Player
     from src.world_map import WorldMap
 
@@ -16,16 +17,22 @@ class Command(ABC):
     def __init__(
         self,
         player: "Player",
-        world_map: "WorldMap",
+        world_map: "WorldMap",  # Represents the current floor's map
         message_log: "MessageLog",
-        winning_position: tuple[int, int],
+        winning_position: tuple[int, int, int],  # Now (x, y, floor_id)
         argument: Optional[str] = None,
+        world_maps: Optional[Dict[int, "WorldMap"]] = None,  # All floor maps
+        game_engine: Optional["GameEngine"] = None,  # Reference to game engine
     ):
         self.player = player
-        self.world_map = world_map
+        self.world_map = world_map  # Current floor's map
         self.message_log = message_log
-        self.winning_position = winning_position
+        self.winning_position = winning_position  # (x,y,floor_id)
         self.argument = argument
+        self.world_maps = world_maps  # All maps, needed for cross-floor actions
+        self.game_engine = (
+            game_engine  # For complex state changes like floor transition
+        )
 
     @abstractmethod
     def execute(self) -> Dict[str, Any]:

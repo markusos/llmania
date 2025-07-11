@@ -27,18 +27,28 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_world_map.place_item = MagicMock()
         self.mock_world_map.remove_monster = MagicMock()
 
+        # For multi-floor, CommandProcessor needs a dictionary of world_maps
+        self.mock_world_maps_dict = {0: self.mock_world_map}  # Player starts on floor 0
+
         self.message_log = MagicMock(spec=MessageLog)
-        self.win_pos = (10, 10)
+        self.win_pos = (10, 10, 0)  # Now a 3-tuple (x,y,floor_id)
+
+        self.mock_game_engine = MagicMock()  # For the game_engine argument
 
     def common_process_command(self, command_tuple):
         # Reset mocks for player's position before each command if necessary,
         # or ensure tests set it up as needed. For now, it's static.
+        # Player's current_floor_id is assumed to be 0 by default in setUp for mock_player
+        if not hasattr(self.mock_player, "current_floor_id"):  # Ensure it's set
+            self.mock_player.current_floor_id = 0
+
         return self.command_processor.process_command(
             command_tuple,
             self.mock_player,
-            self.mock_world_map,
+            self.mock_world_maps_dict,  # Pass the dictionary of maps
             self.message_log,
             self.win_pos,
+            game_engine=self.mock_game_engine,  # Pass the mock game_engine
         )
 
     # test_get_adjacent_monsters removed (logic in Command/AttackCommand)
@@ -49,6 +59,8 @@ class TestCommandProcessor(unittest.TestCase):
         # self.mock_player.y = 1
         tile_mock = MagicMock(spec=Tile)
         tile_mock.monster = None
+        tile_mock.is_portal = False  # Added for MoveCommand check
+        tile_mock.portal_to_floor_id = None  # Added for MoveCommand check
         self.mock_world_map.get_tile.return_value = tile_mock
         result = self.common_process_command(("move", "north"))
         self.mock_player.move.assert_called_once_with(0, -1)
@@ -67,6 +79,8 @@ class TestCommandProcessor(unittest.TestCase):
         mock_monster.name = "Goblin"
         tile_mock = MagicMock(spec=Tile)
         tile_mock.monster = mock_monster
+        tile_mock.is_portal = False  # Added for MoveCommand check
+        tile_mock.portal_to_floor_id = None  # Added for MoveCommand check
         self.mock_world_map.get_tile.return_value = tile_mock
         self.mock_world_map.is_valid_move.return_value = True
         result = self.common_process_command(("move", "north"))
@@ -93,7 +107,9 @@ class TestCommandProcessor(unittest.TestCase):
         self.assertFalse(result["game_over"])
 
     def test_process_command_take_quest_item_win(self):
-        self.mock_player.x, self.mock_player.y = self.win_pos
+        self.mock_player.x = self.win_pos[0]
+        self.mock_player.y = self.win_pos[1]
+        self.mock_player.current_floor_id = self.win_pos[2]
         quest_item = MagicMock(spec=Item)
         quest_item.name = "Amulet of Yendor"
         quest_item.properties = {"type": "quest"}
@@ -406,7 +422,7 @@ class TestCommandProcessor(unittest.TestCase):
         # # Removed
         result = self.common_process_command(("look", None))
         self.message_log.add_message.assert_any_call(
-            f"You are at ({self.mock_player.x}, {self.mock_player.y})."
+            f"You are at ({self.mock_player.x}, {self.mock_player.y}) on floor {self.mock_player.current_floor_id}."
         )
         self.message_log.add_message.assert_any_call("The area is clear.")
         self.assertFalse(result["game_over"])

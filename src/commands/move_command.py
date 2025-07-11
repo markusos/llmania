@@ -1,12 +1,35 @@
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from .base_command import Command
 
 if TYPE_CHECKING:
-    pass
+    from src.game_engine import GameEngine
+    from src.message_log import MessageLog
+    from src.player import Player
+    from src.world_map import WorldMap
 
 
 class MoveCommand(Command):
+    def __init__(
+        self,
+        player: "Player",
+        world_map: "WorldMap",  # Current floor's map
+        message_log: "MessageLog",
+        winning_position: tuple[int, int, int],  # (x,y,floor_id)
+        argument: Optional[str] = None,
+        world_maps: Optional[Dict[int, "WorldMap"]] = None,
+        game_engine: Optional["GameEngine"] = None,
+    ):
+        super().__init__(
+            player,
+            world_map,
+            message_log,
+            winning_position,
+            argument,
+            world_maps,
+            game_engine,
+        )
+
     def execute(self) -> Dict[str, Any]:
         current_game_over_state = False
         dx, dy = 0, 0
@@ -23,15 +46,49 @@ class MoveCommand(Command):
             return {"game_over": current_game_over_state}
 
         new_x, new_y = self.player.x + dx, self.player.y + dy
+
+        # world_map is the map of the player's current floor.
         if self.world_map.is_valid_move(new_x, new_y):
             target_tile = self.world_map.get_tile(new_x, new_y)
-            if target_tile and target_tile.monster:
+
+            if (
+                target_tile
+                and target_tile.is_portal
+                and target_tile.portal_to_floor_id is not None
+            ):
+                # Portal traversal
+                # Player's (x,y) effectively stays the same relative to the portal,
+                # but they are now on a new floor.
+                # The move action places them "on" the portal tile.
+                self.player.x = new_x
+                self.player.y = new_y
+                new_floor_id = target_tile.portal_to_floor_id
+                self.player.current_floor_id = new_floor_id
+                self.message_log.add_message(
+                    f"You step through the portal to floor {new_floor_id}!"
+                )
+                # GameEngine will handle updating fog of war for the new floor
+                # and CommandProcessor will provide the correct map for the next command.
+            elif target_tile and target_tile.monster:
+                # Bump into monster
                 msg = f"You bump into a {target_tile.monster.name}!"
                 self.message_log.add_message(msg)
             else:
-                self.player.move(dx, dy)
+                # Standard move on the current floor
+                self.player.move(dx, dy)  # Updates player.x, player.y
                 self.message_log.add_message(f"You move {self.argument}.")
-                if (self.player.x, self.player.y) == self.winning_position:
+
+                # Check for winning condition only if not a portal step
+                # Winning position includes floor_id.
+                if (
+                    self.player.x,
+                    self.player.y,
+                    self.player.current_floor_id,
+                ) == self.winning_position:
+                    # Ensure we are checking the correct map for the win tile item
+                    # This should be the map of the floor where the winning_position is.
+                    # However, self.world_map is already the current floor's map.
+                    # If winning_position's floor_id matches player.current_floor_id, this is fine.
                     win_tile = self.world_map.get_tile(
                         self.winning_position[0], self.winning_position[1]
                     )
@@ -43,6 +100,9 @@ class MoveCommand(Command):
                         self.message_log.add_message(
                             "You reached the Amulet of Yendor's location!"
                         )
+                        # Potentially set game_over = True here if taking amulet wins
+                        # For now, just a message. Taking the amulet is a separate command.
         else:
             self.message_log.add_message("You can't move there.")
+
         return {"game_over": current_game_over_state}

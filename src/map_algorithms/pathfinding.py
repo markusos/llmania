@@ -1,4 +1,5 @@
 from collections import deque
+from typing import Dict, List, Optional, Tuple  # Added Dict, List, Optional, Tuple
 
 from src.world_map import WorldMap  # For type hinting
 
@@ -12,50 +13,106 @@ class PathFinder:
 
     def find_path_bfs(
         self,
-        world_map: WorldMap,
-        start_pos: tuple[int, int],
-        goal_pos: tuple[int, int],
-    ) -> list[tuple[int, int]] | None:
+        world_maps: Dict[int, WorldMap],
+        start_pos_xy: Tuple[int, int],
+        start_floor_id: int,
+        goal_pos_xy: Tuple[int, int],
+        goal_floor_id: int,
+    ) -> Optional[List[Tuple[int, int, int]]]:
         """
-        Finds a path from start_pos to goal_pos using Breadth-First Search.
-        Only considers walkable tiles (not "wall" and no monsters).
+        Finds a path from (start_pos_xy, start_floor_id) to
+        (goal_pos_xy, goal_floor_id) using Breadth-First Search across multiple floors.
+        Only considers walkable tiles (not "wall" and no monsters, unless goal).
+        Portals are used to transition between floors.
 
         Args:
-            world_map: The game world map.
-            start_pos: The starting (x, y) coordinates.
-            goal_pos: The target (x, y) coordinates.
+            world_maps: A dictionary mapping floor_id to WorldMap objects.
+            start_pos_xy: The starting (x, y) coordinates.
+            start_floor_id: The starting floor ID.
+            goal_pos_xy: The target (x, y) coordinates.
+            goal_floor_id: The target floor ID.
 
         Returns:
-            A list of (x, y) tuples representing the path from start to goal,
-            or None if no path is found. The path includes the start_pos and goal_pos.
+            A list of (x, y, floor_id) tuples representing the path,
+            or None if no path is found. Includes start and goal positions.
         """
-        queue = deque([(start_pos, [start_pos])])  # (current_pos, current_path)
-        visited = {start_pos}
+        start_node = (start_pos_xy[0], start_pos_xy[1], start_floor_id)
+        goal_node = (goal_pos_xy[0], goal_pos_xy[1], goal_floor_id)
+
+        # queue stores (current_pos_xyz, current_path_xyz_list)
+        queue = deque([(start_node, [start_node])])
+        # visited stores (x,y,floor_id) tuples
+        visited = {start_node}
 
         while queue:
-            (curr_x, curr_y), path = queue.popleft()
+            (curr_x, curr_y, curr_floor_id), path = queue.popleft()
 
-            if (curr_x, curr_y) == goal_pos:
+            if (curr_x, curr_y, curr_floor_id) == goal_node:
                 return path
 
-            for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:  # N, S, W, E
+            current_map = world_maps.get(curr_floor_id)
+            if not current_map:
+                continue  # Should not happen if world_maps is consistent
+
+            # Explore neighbors on the current floor (N, S, W, E)
+            for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
                 next_x, next_y = curr_x + dx, curr_y + dy
+                next_node_on_floor = (next_x, next_y, curr_floor_id)
 
-                if world_map.is_valid_move(next_x, next_y):
-                    # Check if the target tile for movement has a monster
-                    target_tile = world_map.get_tile(next_x, next_y)
+                if current_map.is_valid_move(next_x, next_y):
+                    target_tile = current_map.get_tile(next_x, next_y)
                     if target_tile and target_tile.monster:
-                        # If it's the goal and there's a monster, allow pathing to it
-                        # (AI will attack, not step on it)
-                        # Otherwise, don't path through other monsters.
-                        if (next_x, next_y) != goal_pos:
-                            continue
+                        # Allow pathing to monster only if it's the goal node
+                        if next_node_on_floor != goal_node:
+                            continue  # Don't path through other monsters
 
-                    if (next_x, next_y) not in visited:
-                        visited.add((next_x, next_y))
+                    if next_node_on_floor not in visited:
+                        visited.add(next_node_on_floor)
                         new_path = list(path)
-                        new_path.append((next_x, next_y))
-                        queue.append(((next_x, next_y), new_path))
+                        new_path.append(next_node_on_floor)
+                        queue.append((next_node_on_floor, new_path))
+
+            # Check for portals on the current tile (curr_x, curr_y, curr_floor_id)
+            current_tile = current_map.get_tile(curr_x, curr_y)
+            if (
+                current_tile
+                and current_tile.is_portal
+                and current_tile.portal_to_floor_id is not None
+            ):
+                portal_to_floor = current_tile.portal_to_floor_id
+                # Portal leads to the same (x,y) on the destination floor
+                next_node_via_portal = (curr_x, curr_y, portal_to_floor)
+
+                # Check if destination map for portal exists
+                if portal_to_floor not in world_maps:
+                    continue
+
+                # Check if the destination tile of the portal is valid to land on
+                # (e.g., not a wall, no monster unless it's the goal)
+                # This assumes portals are two-way and lead to valid landing spots.
+                # If a portal leads directly into a wall on the other side,
+                # pathfinding should not use it.
+                dest_map_for_portal = world_maps[portal_to_floor]
+                dest_tile_of_portal = dest_map_for_portal.get_tile(curr_x, curr_y)
+
+                can_use_portal = False
+                if dest_tile_of_portal:
+                    if dest_tile_of_portal.type != "wall":
+                        if dest_tile_of_portal.monster:
+                            # Allow landing on monster only if it's the goal node
+                            if next_node_via_portal == goal_node:
+                                can_use_portal = True
+                            # else: portal blocked by monster
+                        else:  # No monster on destination tile
+                            can_use_portal = True
+                # else: portal leads to invalid tile type or out of bounds on dest map
+
+                if can_use_portal and next_node_via_portal not in visited:
+                    visited.add(next_node_via_portal)
+                    new_path_portal = list(path)  # Path up to current tile
+                    new_path_portal.append(next_node_via_portal)  # Add landing spot
+                    queue.append((next_node_via_portal, new_path_portal))
+
         return None  # No path found
 
     def find_furthest_point(

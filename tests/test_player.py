@@ -8,7 +8,7 @@ from src.player import Player
 
 class TestPlayer(unittest.TestCase):
     def test_player_initialization(self):
-        player = Player(x=1, y=2, health=100)
+        player = Player(x=1, y=2, health=100, current_floor_id=0)
         self.assertEqual(player.x, 1)
         self.assertEqual(player.y, 2)
         self.assertEqual(player.health, 100)
@@ -17,7 +17,7 @@ class TestPlayer(unittest.TestCase):
         self.assertIsNone(player.equipped_weapon)
 
     def test_player_move(self):
-        player = Player(x=5, y=5, health=100)
+        player = Player(x=5, y=5, health=100, current_floor_id=0)
         player.move(1, -1)
         self.assertEqual(player.x, 6)
         self.assertEqual(player.y, 4)
@@ -26,7 +26,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(player.y, 7)
 
     def test_player_take_item(self):
-        player = Player(x=0, y=0, health=50)
+        player = Player(x=0, y=0, health=50, current_floor_id=0)
         potion = Item("Potion", "Heals", {"type": "heal", "amount": 10})
         player.take_item(potion)
         self.assertEqual(len(player.inventory), 1)
@@ -34,7 +34,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(player.inventory[0].name, "Potion")
 
     def test_player_drop_item_found(self):
-        player = Player(x=0, y=0, health=50)
+        player = Player(x=0, y=0, health=50, current_floor_id=0)
         potion = Item("Potion", "Heals", {"type": "heal", "amount": 10})
         sword = Item("Sword", "A sharp blade", {"type": "weapon", "attack_bonus": 5})
         player.take_item(potion)
@@ -52,7 +52,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(len(player.inventory), 0)
 
     def test_player_drop_item_not_found(self):
-        player = Player(x=0, y=0, health=50)
+        player = Player(x=0, y=0, health=50, current_floor_id=0)
         potion = Item("Potion", "Heals", {"type": "heal", "amount": 10})
         player.take_item(potion)
 
@@ -61,7 +61,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(len(player.inventory), 1)
 
     def test_player_use_item_heal(self):
-        player = Player(x=0, y=0, health=50)
+        player = Player(x=0, y=0, health=50, current_floor_id=0)
         player.max_health = 100  # Explicitly set max_health for this test
         potion = Item(
             "Health Potion", "Restores 10 HP.", {"type": "heal", "amount": 10}
@@ -74,7 +74,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(result, "Used Health Potion, healed by 10 HP.")
 
     def test_player_use_item_weapon(self):
-        player = Player(x=0, y=0, health=100)
+        player = Player(x=0, y=0, health=100, current_floor_id=0)
         sword = Item(
             "Iron Sword", "A basic sword.", {"type": "weapon", "attack_bonus": 5}
         )
@@ -87,7 +87,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(result, "Equipped Iron Sword.")
 
     def test_player_use_item_unusable_or_not_found(self):
-        player = Player(x=0, y=0, health=100)
+        player = Player(x=0, y=0, health=100, current_floor_id=0)
         rock = Item("Rock", "Just a rock.", {"type": "junk"})
         player.take_item(rock)
 
@@ -100,7 +100,7 @@ class TestPlayer(unittest.TestCase):
 
     # Test attack_monster
     def test_player_attack_monster_no_weapon_monster_survives(self):
-        player = Player(x=0, y=0, health=100)
+        player = Player(x=0, y=0, health=100, current_floor_id=0)
         player.base_attack_power = 3
 
         mock_monster = MagicMock(spec=Monster)
@@ -119,7 +119,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(actual_return, expected_return)
 
     def test_player_attack_monster_with_weapon_monster_defeated(self):
-        player = Player(x=0, y=0, health=100)
+        player = Player(x=0, y=0, health=100, current_floor_id=0)
         player.base_attack_power = 3
         sword = Item(
             "Steel Sword", "A fine sword.", {"type": "weapon", "attack_bonus": 7}
@@ -148,7 +148,7 @@ class TestPlayer(unittest.TestCase):
 
     # Test take_damage
     def test_player_take_damage_reduces_health_and_returns_dict(self):
-        player = Player(x=0, y=0, health=100)
+        player = Player(x=0, y=0, health=100, current_floor_id=0)
 
         result1 = player.take_damage(20)
         self.assertEqual(player.health, 80)
@@ -159,7 +159,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(result2, {"damage_taken": 30, "is_defeated": False})
 
     def test_player_take_damage_health_not_below_zero_and_defeated_true(self):
-        player = Player(x=0, y=0, health=10)
+        player = Player(x=0, y=0, health=10, current_floor_id=0)
 
         result = player.take_damage(15)
         self.assertEqual(player.health, 0)
@@ -171,7 +171,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(result_more_damage, {"damage_taken": 5, "is_defeated": True})
 
     def test_player_take_zero_damage(self):
-        player = Player(x=0, y=0, health=75)
+        player = Player(x=0, y=0, health=75, current_floor_id=0)
         result = player.take_damage(0)
         self.assertEqual(player.health, 75)
         self.assertEqual(result, {"damage_taken": 0, "is_defeated": False})

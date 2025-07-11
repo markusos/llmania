@@ -15,6 +15,7 @@ from src.commands import (
 )
 
 if TYPE_CHECKING:
+    from src.game_engine import GameEngine  # Added for game_engine reference
     from src.message_log import MessageLog
     from src.player import Player
     from src.world_map import WorldMap
@@ -43,24 +44,24 @@ class CommandProcessor:
         self,
         parsed_command_tuple: tuple[str, str | None] | None,
         player: "Player",
-        world_map: "WorldMap",
-        message_log: "MessageLog",  # Changed from list[str] to MessageLog
-        winning_position: tuple[int, int],
-    ) -> Dict[str, Any]:  # Return type changed to match Command.execute()
+        world_maps: Dict[int, "WorldMap"],
+        message_log: "MessageLog",
+        winning_full_pos: tuple[int, int, int],
+        game_engine: "GameEngine",
+    ) -> Dict[str, Any]:
         """
-        Processes a parsed command tuple (verb, argument) using the Command pattern.
+        Processes a parsed command tuple.
 
         Args:
-            parsed_command_tuple: A tuple containing the command verb and its argument.
-                                 Example: ("move", "north"), ("take", "potion").
+            parsed_command_tuple: Command verb and argument, e.g., ("move", "north").
             player: The Player instance.
-            world_map: The WorldMap instance.
+            world_maps: All WorldMap instances, keyed by floor_id.
             message_log: The MessageLog instance.
-            winning_position: The (x,y) tuple for the winning location.
+            winning_full_pos: (x,y,floor_id) for the Amulet.
+            game_engine: GameEngine instance for complex state changes (e.g. floor).
 
         Returns:
-            dict: A dictionary containing game state updates from the executed command,
-                  typically {"game_over": bool}.
+            Command execution results, typically {"game_over": bool}.
         """
         if parsed_command_tuple is None:
             message_log.add_message("Unknown command.")
@@ -70,13 +71,21 @@ class CommandProcessor:
         command_class = self._commands.get(verb.lower())
 
         if command_class:
-            # Instantiate the command with all necessary context
+            current_map = world_maps.get(player.current_floor_id)
+            if not current_map:
+                message_log.add_message(
+                    f"Error: Floor {player.current_floor_id} not found."
+                )
+                return {"game_over": True}  # Critical error
+
             command_instance = command_class(
                 player=player,
-                world_map=world_map,
+                world_map=current_map,  # Current floor's map
                 message_log=message_log,
-                winning_position=winning_position,
+                winning_position=winning_full_pos,
                 argument=argument,
+                world_maps=world_maps,  # All maps for context
+                game_engine=game_engine,
             )
             return command_instance.execute()
         else:

@@ -11,6 +11,7 @@ class Player:
     Attributes:
         x (int): The player's current x-coordinate on the map.
         y (int): The player's current y-coordinate on the map.
+        current_floor_id (int): The ID of the floor the player is currently on.
         health (int): The player's current health points.
         max_health (int): The player's maximum health points.
         inventory (List[Item]): A list of items currently held by the player.
@@ -18,17 +19,19 @@ class Player:
         equipped_weapon (Optional[Item]): Currently equipped weapon, if any.
     """
 
-    def __init__(self, x: int, y: int, health: int):
+    def __init__(self, x: int, y: int, current_floor_id: int, health: int):
         """
         Initializes a Player instance.
 
         Args:
             x: The initial x-coordinate of the player.
             y: The initial y-coordinate of the player.
+            current_floor_id: The initial floor ID for the player.
             health: The initial and maximum health of the player.
         """
         self.x = x
         self.y = y
+        self.current_floor_id = current_floor_id
         self.health = health
         self.max_health = health  # Player starts with max health.
         self.inventory: List[Item] = []
