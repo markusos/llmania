@@ -673,7 +673,7 @@ def test_generate_single_floor_valid_minimum_size(generator):
             # So, we cannot assert win_tile.item.name == "Amulet of Yendor" here.
         except ValueError:
             pytest.fail(
-                f"_generate_single_floor raised ValueError for valid size {width}x{height}"
+                f"_generate_single_floor raised ValueError for {width}x{height}"
             )
 
 
@@ -989,3 +989,109 @@ def test_path_like_structures_metric():
             )
 
     print("\nPath-like structures metric test complete. Review output above.")
+
+
+def test_generate_single_floor_with_seed_deterministic(generator: WorldGenerator):
+    """
+    Tests if _generate_single_floor produces deterministic results when a
+    current_seed is provided.
+    """
+    width, height = 15, 15
+    seed = 42
+
+    # Generate map1
+    map1, start1, poi1 = generator._generate_single_floor(
+        width, height, current_seed=seed
+    )
+
+    # Generate map2 with the same seed
+    map2, start2, poi2 = generator._generate_single_floor(
+        width, height, current_seed=seed
+    )
+
+    # Compare player start and POI positions
+    assert start1 == start2, f"Player start positions differ with seed {seed}"
+    assert poi1 == poi2, f"POI positions differ with seed {seed}"
+
+    # Compare tile types and contents (items/monsters)
+    for y_coord in range(height):
+        for x_coord in range(width):
+            tile1 = map1.get_tile(x_coord, y_coord)
+            tile2 = map2.get_tile(x_coord, y_coord)
+
+            assert tile1.type == tile2.type, (
+                f"Tile type at ({x_coord},{y_coord}) differs: {tile1.type} vs "
+                f"{tile2.type} with seed {seed}"
+            )
+
+            # Compare items
+            if tile1.item:
+                assert tile2.item is not None, (
+                    f"Item mismatch at ({x_coord},{y_coord}): tile1 has "
+                    f"'{tile1.item.name}', tile2 has no item. Seed {seed}"
+                )
+                assert tile1.item.name == tile2.item.name, (
+                    f"Item name mismatch at ({x_coord},{y_coord}): "
+                    f"'{tile1.item.name}' vs '{tile2.item.name}'. Seed {seed}"
+                )
+                # Could add more item property checks if necessary
+            elif tile2.item:
+                assert tile1.item is None, (
+                    f"Item mismatch at ({x_coord},{y_coord}): tile1 has no item, "
+                    f"tile2 has '{tile2.item.name}'. Seed {seed}"
+                )
+
+            # Compare monsters
+            if tile1.monster:
+                assert tile2.monster is not None, (
+                    f"Monster mismatch at ({x_coord},{y_coord}): tile1 has "
+                    f"'{tile1.monster.name}', tile2 has no monster. Seed {seed}"
+                )
+                assert tile1.monster.name == tile2.monster.name, (
+                    f"Monster name mismatch at ({x_coord},{y_coord}): "
+                    f"'{tile1.monster.name}' vs '{tile2.monster.name}'. Seed {seed}"
+                )
+                # Could add more monster property checks if necessary
+            elif tile2.monster:
+                assert tile1.monster is None, (
+                    f"Monster mismatch at ({x_coord},{y_coord}): tile1 has no monster, "
+                    f"tile2 has '{tile2.monster.name}'. Seed {seed}"
+                )
+
+    # Generate map3 with a different seed
+    map3, start3, poi3 = generator._generate_single_floor(
+        width, height, current_seed=seed + 1
+    )
+
+    # Check that map3 is different from map1 (probabilistic check)
+    # Comparing entire map representations or key features like start/poi
+    map1_tiles_repr = "".join(
+        map1.get_tile(x, y).type for y in range(height) for x in range(width)
+    )
+    map3_tiles_repr = "".join(
+        map3.get_tile(x, y).type for y in range(height) for x in range(width)
+    )
+
+    items_map1 = sum(
+        1
+        for y in range(height)
+        for x in range(width)
+        if map1.get_tile(x, y) and map1.get_tile(x, y).item
+    )
+    items_map3 = sum(
+        1
+        for y in range(height)
+        for x in range(width)
+        if map3.get_tile(x, y) and map3.get_tile(x, y).item
+    )
+
+    is_different = (
+        start1 != start3
+        or poi1 != poi3
+        or map1_tiles_repr != map3_tiles_repr
+        or items_map1 != items_map3
+    )
+    assert is_different, (
+        f"Maps generated with different seeds ({seed} and {seed + 1}) "
+        f"were identical, which is highly unlikely."
+    )

@@ -1,6 +1,6 @@
 import unittest
 
-# from src.player import Player # Removed as unused (F401) - this was from ruff output, not my current manual list
+# from src.player import Player # Removed as unused (F401)
 from src.map_algorithms.pathfinding import PathFinder
 from src.monster import Monster
 from src.tile import Tile

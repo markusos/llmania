@@ -66,7 +66,7 @@ class GameEngine:
 
         temp_single_map, temp_player_start_coords, temp_winning_coords = (
             self.world_generator._generate_single_floor(
-                map_width, map_height, seed=None
+                map_width, map_height, current_seed=None
             )
         )  # Changed to _generate_single_floor
 

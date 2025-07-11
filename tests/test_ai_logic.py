@@ -353,8 +353,11 @@ class TestAILogic(unittest.TestCase):
             )
         self.assertTrue(
             any(
-                f"AI: Pathing to explore unvisited tile at ({self.ai.current_path[-1][0]},{self.ai.current_path[-1][1]}) on current floor."
-                in str(call_args)
+                (
+                    f"AI: Pathing to explore unvisited tile at "
+                    f"({self.ai.current_path[-1][0]},{self.ai.current_path[-1][1]}) "
+                    f"on current floor."
+                ) in str(call_args)
                 for call_args in self.message_log.add_message.call_args_list
             ),
             "Log message for exploring unvisited tile not found or incorrect.",
@@ -409,13 +412,13 @@ class TestAILogic(unittest.TestCase):
                 for c in actual_log_calls
                 if c.args
             ),
-            "Expected 'No path found for any target or exploration.' log message was not found.",
+            "Log 'No path found for any target or exploration.' not found.",
         )
 
         self.assertEqual(
             len(actual_log_calls),
             2,
-            f"Expected 2 log calls, got {len(actual_log_calls)}. Calls: {actual_log_calls}",
+            f"Expected 2 logs, got {len(actual_log_calls)}. Calls: {actual_log_calls}",
         )
         if len(actual_log_calls) == 2:
             actual_msg_text = str(actual_log_calls[1].args[0])

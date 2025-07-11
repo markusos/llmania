@@ -38,7 +38,7 @@ class TestCommandProcessor(unittest.TestCase):
     def common_process_command(self, command_tuple):
         # Reset mocks for player's position before each command if necessary,
         # or ensure tests set it up as needed. For now, it's static.
-        # Player's current_floor_id is assumed to be 0 by default in setUp for mock_player
+        # Player's current_floor_id is assumed to be 0 by default in setUp.
         if not hasattr(self.mock_player, "current_floor_id"):  # Ensure it's set
             self.mock_player.current_floor_id = 0
 
@@ -422,7 +422,8 @@ class TestCommandProcessor(unittest.TestCase):
         # # Removed
         result = self.common_process_command(("look", None))
         self.message_log.add_message.assert_any_call(
-            f"You are at ({self.mock_player.x}, {self.mock_player.y}) on floor {self.mock_player.current_floor_id}."
+            f"You are at ({self.mock_player.x}, {self.mock_player.y}) "
+            f"on floor {self.mock_player.current_floor_id}."
         )
         self.message_log.add_message.assert_any_call("The area is clear.")
         self.assertFalse(result["game_over"])
