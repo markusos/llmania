@@ -76,16 +76,16 @@ class CommandProcessor:
                 message_log.add_message(
                     f"Error: Floor {player.current_floor_id} not found."
                 )
-                return {"game_over": True} # Critical error
+                return {"game_over": True}  # Critical error
 
             command_instance = command_class(
                 player=player,
-                world_map=current_map, # Current floor's map
+                world_map=current_map,  # Current floor's map
                 message_log=message_log,
                 winning_position=winning_full_pos,
                 argument=argument,
-                world_maps=world_maps, # All maps for context
-                game_engine=game_engine
+                world_maps=world_maps,  # All maps for context
+                game_engine=game_engine,
             )
             return command_instance.execute()
         else:

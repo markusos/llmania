@@ -637,15 +637,16 @@ class WorldGenerator:
                         monster_to_place, chosen_tile_pos[0], chosen_tile_pos[1]
                     )
 
-    def _generate_single_floor( # Renamed from generate_map
+    def _generate_single_floor(  # Renamed from generate_map
         self, width: int, height: int, current_seed: int | None = None
     ) -> tuple[WorldMap, tuple[int, int], tuple[int, int]]:
         """
-        Generates a single complete game map (floor) with player start, goal, paths, items,
-        and monsters. Requires map dimensions to be at least 3x3.
+        Generates a single complete game map (floor) with player start, goal,
+        paths, items, and monsters. Requires map dimensions to be at least 3x3.
 
         The process involves:
-        1. Initializing a map with border walls and inner "potential_floor" tiles.
+        1. Initializing a map with border walls and inner "potential_floor"
+           tiles.
         2. Selecting player start and initial win positions, making them floor.
         3. Carving a guaranteed path between player start and win positions.
         4. Performing random walks to create more open floor areas.
@@ -656,13 +657,16 @@ class WorldGenerator:
         Args:
             width: The desired width of the map.
             height: The desired height of the map.
-            current_seed: Optional seed for RNG for deterministic map generation for this floor.
+            current_seed: Optional seed for RNG for deterministic map generation
+                          for this floor.
 
         Returns:
             A tuple containing:
                 - world_map (WorldMap): The generated game map.
-                - player_start_pos (tuple[int, int]): Player's start (x,y) coordinates on this floor.
-                - actual_win_pos (tuple[int, int]): Goal item's (x,y) coordinates on this floor.
+                - player_start_pos (tuple[int, int]): Player's start (x,y)
+                  coordinates on this floor.
+                - actual_win_pos (tuple[int, int]): Goal item's (x,y)
+                  coordinates on this floor.
         Raises:
             ValueError: If dimensions are less than 3x4 or 4x3.
         """
@@ -703,7 +707,9 @@ class WorldGenerator:
             world_map,
             floor_start,
             floor_potential_win,
-            width, height, self.floor_portion,
+            width,
+            height,
+            self.floor_portion,
         )
 
         self.connectivity_manager.ensure_connectivity(
@@ -720,7 +726,7 @@ class WorldGenerator:
             if start_bfs_tile and start_bfs_tile.type == "floor":
                 queue.append(floor_start)
                 reachable_tiles.add(floor_start)
-            elif floor_tiles: # Fallback if floor_start isn't floor
+            elif floor_tiles:  # Fallback if floor_start isn't floor
                 # This is a fallback; ideally floor_start is always valid.
                 bfs_fallback_start = floor_tiles[0]
                 queue.append(bfs_fallback_start)
@@ -753,12 +759,12 @@ class WorldGenerator:
             if floor_start not in floor_tiles:
                 floor_tiles.append(floor_start)
 
-            if floor_potential_win != floor_start or ((width-2)*(height-2) > 1) :
+            if floor_potential_win != floor_start or ((width - 2) * (height - 2) > 1):
                 world_map.set_tile_type(
                     floor_potential_win[0], floor_potential_win[1], "floor"
                 )
                 if floor_potential_win not in floor_tiles:
-                     floor_tiles.append(floor_potential_win)
+                    floor_tiles.append(floor_potential_win)
 
         # "Win item" (Amulet) is placed by generate_world.
         # For a single floor, _place_win_item_at_furthest_point determines a
@@ -777,8 +783,11 @@ class WorldGenerator:
         # TODO: Refactor _place_win_item_at_furthest_point to not place the item,
         # or to accept the item to be placed.
         amulet_tile = world_map.get_tile(poi_pos[0], poi_pos[1])
-        if amulet_tile and amulet_tile.item and \
-           amulet_tile.item.name == "Amulet of Yendor":
+        if (
+            amulet_tile
+            and amulet_tile.item
+            and amulet_tile.item.name == "Amulet of Yendor"
+        ):
             world_map.remove_item(poi_pos[0], poi_pos[1])
 
         self._place_additional_entities(
@@ -790,13 +799,13 @@ class WorldGenerator:
     def _place_portals_on_floor(
         self,
         world_map: WorldMap,
-        num_portals_to_place: int, # Currently unused, logic derives candidates
-        taken_portal_coords: set[tuple[int,int]]
-    ) -> list[tuple[int,int]]:
+        num_portals_to_place: int,  # Currently unused, logic derives candidates
+        taken_portal_coords: set[tuple[int, int]],
+    ) -> list[tuple[int, int]]:
         """Identifies candidate portal locations on available floor tiles."""
         # This method primarily identifies candidates; _ensure_portal_connectivity
         # does the actual placement and linking.
-        placed_portals_coords = [] # Stores (x,y) of candidates from this floor
+        # placed_portals_coords = [] # Stores (x,y) of candidates from this floor
         floor_tiles_map = self._collect_floor_tiles(
             world_map, world_map.width, world_map.height
         )
@@ -804,9 +813,11 @@ class WorldGenerator:
         # Filter out coords already used by portals on other floors,
         # and tiles with items.
         available_for_portal = [
-            (x,y) for x,y in floor_tiles_map
-            if (x,y) not in taken_portal_coords and
-               world_map.get_tile(x,y) and world_map.get_tile(x,y).item is None
+            (x, y)
+            for x, y in floor_tiles_map
+            if (x, y) not in taken_portal_coords
+            and world_map.get_tile(x, y)
+            and world_map.get_tile(x, y).item is None
         ]
         random.shuffle(available_for_portal)
 
@@ -831,14 +842,10 @@ class WorldGenerator:
         # For simplicity, let's return all available spots.
         # `taken_portal_coords` is updated by the caller if a portal is actually made.
 
-        return available_for_portal # Return all valid spots
-
+        return available_for_portal  # Return all valid spots
 
     def _ensure_portal_connectivity(
-        self,
-        world_maps: dict[int, WorldMap],
-        width: int,
-        height: int
+        self, world_maps: dict[int, WorldMap], width: int, height: int
     ) -> None:
         """
         Ensures all floors are connected by portals.
@@ -850,19 +857,19 @@ class WorldGenerator:
 
         # Track which (x,y) coordinates are already used by portals on any floor
         # to maintain the same (x,y) rule for linked portals.
-        taken_portal_coords: set[tuple[int,int]] = set()
+        taken_portal_coords: set[tuple[int, int]] = set()
 
         # Adjacency list for floor connectivity graph
         floor_connections: dict[int, set[int]] = {i: set() for i in range(num_floors)}
 
         # First pass: identify some portal candidates on each floor
-        portal_coords_by_floor: dict[int, list[tuple[int,int]]] = {}
+        portal_coords_by_floor: dict[int, list[tuple[int, int]]] = {}
 
         for floor_id, current_map in world_maps.items():
             floor_tiles = self._collect_floor_tiles(current_map, width, height)
             if not floor_tiles:
                 portal_coords_by_floor[floor_id] = []
-                continue # Skip if floor has no floor tiles
+                continue  # Skip if floor has no floor tiles
 
             # Try to pick a few diverse spots for portals (max 3 candidates per floor).
             num_candidates_on_floor = min(len(floor_tiles), 3)
@@ -870,8 +877,10 @@ class WorldGenerator:
             candidates_on_this_floor = []
             # Portals should not overwrite items.
             available_spots = [
-                (x,y) for x,y in floor_tiles
-                if current_map.get_tile(x,y) and current_map.get_tile(x,y).item is None
+                (x, y)
+                for x, y in floor_tiles
+                if current_map.get_tile(x, y)
+                and current_map.get_tile(x, y).item is None
             ]
             random.shuffle(available_spots)
 
@@ -882,10 +891,12 @@ class WorldGenerator:
                 candidates_on_this_floor.append(spot)
 
             portal_coords_by_floor[floor_id] = candidates_on_this_floor
-            # The variable all_potential_portal_spots was here previously but removed as unused.
+            # The variable all_potential_portal_spots was here previously but
+            # removed as unused.
 
         # Ensure overall connectivity using Disjoint Set Union (DSU).
         parent = list(range(num_floors))
+
         def find(i):
             if parent[i] == i:
                 return i
@@ -897,17 +908,19 @@ class WorldGenerator:
             root_j = find(j)
             if root_i != root_j:
                 parent[root_i] = root_j
-                return True # Merge occurred
-            return False # Already in same set
+                return True  # Merge occurred
+            return False  # Already in same set
 
         # Create initial portal pairs. Connect floor i with (i+1)%num_floors at a
         # shared available (x,y) coordinate. This needs to be robust.
 
-        processed_portal_locations: set[tuple[int,int,int]] = set() # (floor_id, x, y)
+        processed_portal_locations: set[tuple[int, int, int]] = (
+            set()
+        )  # (floor_id, x, y)
 
         for i in range(num_floors):
             floor1_id = i
-            floor2_id = (i + 1) % num_floors # Connect to next floor, wrap around
+            floor2_id = (i + 1) % num_floors  # Connect to next floor, wrap around
 
             if find(floor1_id) == find(floor2_id) and num_floors > 2:
                 # Already connected, and other floors exist.
@@ -923,8 +936,10 @@ class WorldGenerator:
 
             for x_coord, y_coord in coords1_candidates:
                 # Check if (x,y) is candidate on floor2 & not globally taken.
-                if (x_coord, y_coord) in coords2_candidates and \
-                   (x_coord, y_coord) not in taken_portal_coords:
+                if (x_coord, y_coord) in coords2_candidates and (
+                    x_coord,
+                    y_coord,
+                ) not in taken_portal_coords:
                     possible_link_coords.append((x_coord, y_coord))
 
             if possible_link_coords:
@@ -937,9 +952,10 @@ class WorldGenerator:
                 # `taken_portal_coords` checks if (x,y) is used by ANY pair.
                 # `processed_portal_locations` checks if this specific
                 # (floor_id, x, y) endpoint is used.
-                if portal_key1 not in processed_portal_locations and \
-                   portal_key2 not in processed_portal_locations:
-
+                if (
+                    portal_key1 not in processed_portal_locations
+                    and portal_key2 not in processed_portal_locations
+                ):
                     tile1 = world_maps[floor1_id].grid[portal_y][portal_x]
                     tile2 = world_maps[floor2_id].grid[portal_y][portal_x]
 
@@ -960,19 +976,18 @@ class WorldGenerator:
                     floor_connections[floor1_id].add(floor2_id)
                     floor_connections[floor2_id].add(floor1_id)
 
-
         # After initial pairing, check DSU. If not all connected, add more portals.
         # Count number of disjoint sets
         num_components = 0
         for i in range(num_floors):
             if parent[i] == i:
-                num_components +=1
+                num_components += 1
 
         # Attempt to connect remaining components
         connection_attempts = 0
-        max_connection_attempts = num_floors * 2 # Heuristic for max attempts
+        max_connection_attempts = num_floors * 2  # Heuristic for max attempts
 
-        while num_components > 1 and connection_attempts < max_connection_attempts :
+        while num_components > 1 and connection_attempts < max_connection_attempts:
             connection_attempts += 1
             # Try to connect two different components
             # Pick two random floors from different components
@@ -981,21 +996,25 @@ class WorldGenerator:
 
             components_roots = [r for r in range(num_floors) if parent[r] == r]
             if not components_roots:
-                break # Should not happen
+                break  # Should not happen
 
             root1 = random.choice(components_roots)
             possible_root2 = [r for r in components_roots if r != root1]
             if not possible_root2:
-                break # Only one component left
+                break  # Only one component left
 
             root2 = random.choice(possible_root2)
 
             # Find floors belonging to these two components
-            floors_in_comp1 = [f_id for f_id in range(num_floors) if find(f_id) == root1]
-            floors_in_comp2 = [f_id for f_id in range(num_floors) if find(f_id) == root2]
+            floors_in_comp1 = [
+                f_id for f_id in range(num_floors) if find(f_id) == root1
+            ]
+            floors_in_comp2 = [
+                f_id for f_id in range(num_floors) if find(f_id) == root2
+            ]
 
             if not floors_in_comp1 or not floors_in_comp2:
-                continue # Should not happen
+                continue  # Should not happen
 
             floor1_id_new_link = random.choice(floors_in_comp1)
             floor2_id_new_link = random.choice(floors_in_comp2)
@@ -1014,16 +1033,26 @@ class WorldGenerator:
             )
             # map2_floor_tiles is not strictly needed if we check tile on map2
 
-            random.shuffle(map1_floor_tiles) # Shuffle to randomize choice
+            random.shuffle(map1_floor_tiles)  # Shuffle to randomize choice
 
             for x_coord_link, y_coord_link in map1_floor_tiles:
                 if (x_coord_link, y_coord_link) not in taken_portal_coords:
-                    tile1_obj = world_maps[floor1_id_new_link].get_tile(x_coord_link, y_coord_link)
-                    tile2_obj = world_maps[floor2_id_new_link].get_tile(x_coord_link, y_coord_link)
-                    if tile1_obj and tile1_obj.type == "floor" and tile1_obj.item is None and \
-                       tile2_obj and tile2_obj.type == "floor" and tile2_obj.item is None:
+                    tile1_obj = world_maps[floor1_id_new_link].get_tile(
+                        x_coord_link, y_coord_link
+                    )
+                    tile2_obj = world_maps[floor2_id_new_link].get_tile(
+                        x_coord_link, y_coord_link
+                    )
+                    if (
+                        tile1_obj
+                        and tile1_obj.type == "floor"
+                        and tile1_obj.item is None
+                        and tile2_obj
+                        and tile2_obj.type == "floor"
+                        and tile2_obj.item is None
+                    ):
                         potential_link_coords.append((x_coord_link, y_coord_link))
-                        break # Found one potential spot
+                        break  # Found one potential spot
 
             if potential_link_coords:
                 portal_x, portal_y = potential_link_coords[0]
@@ -1048,21 +1077,21 @@ class WorldGenerator:
                 floor_connections[floor2_id_new_link].add(floor1_id_new_link)
 
                 num_components = 0
-                for i_comp_check in range(num_floors): # Renamed i to avoid conflict
+                for i_comp_check in range(num_floors):  # Renamed i to avoid conflict
                     if parent[i_comp_check] == i_comp_check:
-                        num_components +=1
+                        num_components += 1
             else:
                 # Could not find a common spot for these two components.
                 # This might indicate map is too small or dense.
                 # Or bad luck in random choices. For now, might loop or give up.
                 # To prevent infinite loops if truly impossible:
-                break # Break if no common coords found for this attempt.
+                break  # Break if no common coords found for this attempt.
 
         # Final check: if still not connected, log an error.
         final_num_components = 0
-        for i_final_check in range(num_floors): # Renamed i
+        for i_final_check in range(num_floors):  # Renamed i
             if parent[i_final_check] == i_final_check:
-                final_num_components +=1
+                final_num_components += 1
         if final_num_components > 1:
             # Using print for now, consider proper logging for a library.
             print(
@@ -1070,7 +1099,6 @@ class WorldGenerator:
                 f"{final_num_components} components remain."
             )
             # Potentially, could iterate again or add emergency portals.
-
 
     def generate_world(
         self, width: int, height: int, seed: int | None = None
@@ -1081,9 +1109,12 @@ class WorldGenerator:
 
         Returns:
             A tuple containing:
-                - world_maps (dict[int, WorldMap]): Dictionary of generated floors.
-                - player_start_full_pos (tuple[int, int, int]): Player's start (x,y,floor_id).
-                - actual_win_full_pos (tuple[int, int, int]): Goal item's (x,y,floor_id).
+                - world_maps (dict[int, WorldMap]): Dictionary of generated
+                  floors.
+                - player_start_full_pos (tuple[int, int, int]): Player's start
+                  (x,y,floor_id).
+                - actual_win_full_pos (tuple[int, int, int]): Goal item's
+                  (x,y,floor_id).
         """
         if seed is not None:
             random.seed(seed)
@@ -1101,10 +1132,14 @@ class WorldGenerator:
                 width, height, current_seed=floor_seed
             )
             world_maps[floor_id] = world_map
-            floor_details.append({
-                "id": floor_id, "map": world_map,
-                "start": floor_start_pos, "poi": floor_poi_pos
-            })
+            floor_details.append(
+                {
+                    "id": floor_id,
+                    "map": world_map,
+                    "start": floor_start_pos,
+                    "poi": floor_poi_pos,
+                }
+            )
 
         self._ensure_portal_connectivity(world_maps, width, height)
 
@@ -1116,10 +1151,14 @@ class WorldGenerator:
         # Place Amulet on a different floor from player start.
         amulet_floor_id = player_start_floor_id
         if num_floors > 1:
-            possible_floors = [f["id"] for f in floor_details
-                               if f["id"] != player_start_floor_id]
-            amulet_floor_id = (random.choice(possible_floors) if possible_floors
-                               else (player_start_floor_id + 1) % num_floors)
+            possible_floors = [
+                f["id"] for f in floor_details if f["id"] != player_start_floor_id
+            ]
+            amulet_floor_id = (
+                random.choice(possible_floors)
+                if possible_floors
+                else (player_start_floor_id + 1) % num_floors
+            )
 
         amulet_map = world_maps[amulet_floor_id]
         amulet_floor_tiles = self._collect_floor_tiles(amulet_map, width, height)
@@ -1127,17 +1166,19 @@ class WorldGenerator:
         # Temp: use single-floor furthest point. Start search from portal or POI.
         start_node_amulet = floor_details[amulet_floor_id]["poi"]
         amulet_portals = [
-            (x, y) for x in range(1, width-1) for y in range(1, height-1)
-            if amulet_map.get_tile(x,y) and amulet_map.get_tile(x,y).is_portal
+            (x, y)
+            for x in range(1, width - 1)
+            for y in range(1, height - 1)
+            if amulet_map.get_tile(x, y) and amulet_map.get_tile(x, y).is_portal
         ]
         if amulet_portals:
             start_node_amulet = random.choice(amulet_portals)
         elif not amulet_floor_tiles:
-            amulet_map.set_tile_type(1,1,"floor") # Error case
-            amulet_floor_tiles.append((1,1))
-            start_node_amulet = (1,1)
+            amulet_map.set_tile_type(1, 1, "floor")  # Error case
+            amulet_floor_tiles.append((1, 1))
+            start_node_amulet = (1, 1)
 
-        actual_win_full_pos : tuple[int,int,int]
+        actual_win_full_pos: tuple[int, int, int]
         if not amulet_floor_tiles:
             # Major fallback: Amulet on player start floor.
             amulet_x = world_maps[player_start_floor_id].width // 2
@@ -1148,7 +1189,7 @@ class WorldGenerator:
             start_tile = amulet_map.get_tile(start_node_amulet[0], start_node_amulet[1])
             # If POI/portal became wall or invalid, pick any floor tile.
             if not start_tile or start_tile.type != "floor":
-                 start_node_amulet = random.choice(amulet_floor_tiles)
+                start_node_amulet = random.choice(amulet_floor_tiles)
 
             amulet_x, amulet_y = self.path_finder.find_furthest_point(
                 amulet_map, start_node_amulet, width, height
@@ -1161,11 +1202,11 @@ class WorldGenerator:
         win_x, win_y, _ = actual_win_full_pos
 
         win_tile = target_map.get_tile(win_x, win_y)
-        if not win_tile or win_tile.type != "floor": # Ensure win pos is floor
+        if not win_tile or win_tile.type != "floor":  # Ensure win pos is floor
             target_map.set_tile_type(win_x, win_y, "floor")
             win_tile = target_map.get_tile(win_x, win_y)
 
-        if win_tile and win_tile.item is not None: # Clear if item already there
+        if win_tile and win_tile.item is not None:  # Clear if item already there
             target_map.remove_item(win_x, win_y)
 
         target_map.place_item(amulet_item, win_x, win_y)
@@ -1174,8 +1215,12 @@ class WorldGenerator:
         for f_id, f_map in world_maps.items():
             all_f_tiles = self._collect_floor_tiles(f_map, width, height)
 
-            f_player_start = player_start_full_pos[:2] if f_id == player_start_full_pos[2] else None
-            f_amulet_pos = actual_win_full_pos[:2] if f_id == actual_win_full_pos[2] else None
+            f_player_start = (
+                player_start_full_pos[:2] if f_id == player_start_full_pos[2] else None
+            )
+            f_amulet_pos = (
+                actual_win_full_pos[:2] if f_id == actual_win_full_pos[2] else None
+            )
 
             # Use floor's specific start/poi if global player/amulet not on this floor.
             ref_start = f_player_start or floor_details[f_id]["start"]
