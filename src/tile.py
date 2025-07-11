@@ -1,4 +1,7 @@
 # Defines the symbols used for rendering different entities and tile types on the map.
+from typing import Optional
+
+# Defines the symbols used for rendering different entities and tile types on the map.
 ENTITY_SYMBOLS = {
     "monster": "M",  # Symbol for monsters
     "item": "$",  # Symbol for items
@@ -6,6 +9,7 @@ ENTITY_SYMBOLS = {
 TILE_SYMBOLS = {
     "wall": "#",  # Symbol for wall tiles
     "floor": ".",  # Symbol for floor tiles
+    "portal": "▢",  # Symbol for portal tiles
     "unknown": "?",  # Symbol for unknown or undefined tiles
     "fog": " ",  # Symbol for unexplored areas in AI mode
 }
@@ -18,20 +22,28 @@ class Tile:
     """
     Represents a single tile on the game map.
 
-    A tile can have a base type (e.g., "wall", "floor") and can optionally
+    A tile can have a base type (e.g., "wall", "floor", "portal") and can optionally
     contain a monster or an item. The tile's appearance is determined by its
     content, with monsters taking precedence over items, and items over the
     base tile type.
 
     Attributes:
-        type (str): The base type of the tile (e.g., "floor", "wall").
+        type (str): The base type of the tile (e.g., "floor", "wall", "portal").
         monster (Optional[Monster]): The monster occupying this tile, if any.
         item (Optional[Item]): The item on this tile, if any (and no monster).
+        is_explored (bool): True if this tile has been seen by the player/AI.
+        is_portal (bool): True if this tile is a portal.
+        portal_to_floor_id (Optional[int]): If is_portal is True, this stores the
+                                           ID of the floor this portal leads to.
     """
 
     def __init__(
-        self, tile_type: str = "floor", monster=None, item=None
-    ):  # monster and item types are Optional[Monster] and Optional[Item]
+        self,
+        tile_type: str = "floor",
+        monster=None,  # Optional[Monster]
+        item=None,  # Optional[Item]
+        portal_to_floor_id: Optional[int] = None,
+    ):
         """
         Initializes a Tile instance.
 
@@ -39,11 +51,19 @@ class Tile:
             tile_type: The base type of the tile. Defaults to "floor".
             monster: A Monster object if a monster is on this tile. Defaults to None.
             item: An Item object if an item is on this tile. Defaults to None.
+            portal_to_floor_id: If this tile is a portal, the ID of the target floor.
+                                Defaults to None.
         """
-        self.type = tile_type  # The base type of the tile (e.g., "wall", "floor")
-        self.monster = monster  # Monster object on the tile, if any
-        self.item = item  # Item object on the tile, if any
-        self.is_explored = False  # True if this tile has been seen by player/AI
+        self.type = tile_type
+        self.monster = monster
+        self.item = item
+        self.is_explored = False
+        self.is_portal = tile_type == "portal"
+        self.portal_to_floor_id = portal_to_floor_id
+        if self.is_portal and portal_to_floor_id is None:
+            # This state should ideally be prevented by the world generator,
+            # but it's a good safeguard.
+            raise ValueError("Portal tile must have a portal_to_floor_id.")
 
     def get_display_info(self, apply_fog: bool = False) -> tuple[str, str]:
         """
@@ -70,7 +90,10 @@ class Tile:
         if self.monster:
             return (ENTITY_SYMBOLS["monster"], "monster")
         elif self.item:
+            # Items should not be on portal tiles, but if they are, they take precedence.
             return (ENTITY_SYMBOLS["item"], "item")
+        elif self.is_portal: # Check for portal before generic floor/wall
+            return (TILE_SYMBOLS["portal"], "portal")
         elif self.type == "wall":
             return (TILE_SYMBOLS["wall"], "wall")
         elif self.type == "floor":

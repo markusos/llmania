@@ -1,15 +1,38 @@
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from .base_command import Command
 
 if TYPE_CHECKING:
-    pass
-    # Item is used directly, so it might be needed outside TYPE_CHECKING
+    from src.game_engine import GameEngine
+    from src.message_log import MessageLog
+    from src.player import Player
+    from src.world_map import WorldMap
     # from src.item import Item
 
 
 class TakeCommand(Command):
+    def __init__(
+        self,
+        player: "Player",
+        world_map: "WorldMap",
+        message_log: "MessageLog",
+        winning_position: tuple[int, int, int],
+        argument: Optional[str] = None,
+        world_maps: Optional[Dict[int, "WorldMap"]] = None,
+        game_engine: Optional["GameEngine"] = None,
+    ):
+        super().__init__(
+            player,
+            world_map,
+            message_log,
+            winning_position,
+            argument,
+            world_maps,
+            game_engine,
+        )
+
     def execute(self) -> Dict[str, Any]:
+        # self.world_map refers to the current floor's map
         tile = self.world_map.get_tile(self.player.x, self.player.y)
         if not (tile and tile.item):
             item_name_msg = self.argument if self.argument else "item"
