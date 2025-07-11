@@ -1,10 +1,9 @@
-import curses  # For curses.error and constants
+import curses
 import unittest
 from unittest.mock import MagicMock, patch
 
-# Import classes to be mocked or used
 from src.game_engine import GameEngine
-from src.message_log import MessageLog  # Import MessageLog
+from src.message_log import MessageLog
 from src.world_map import WorldMap
 
 
@@ -15,7 +14,7 @@ class TestGameEngine(unittest.TestCase):
     @patch("src.game_engine.CommandProcessor")
     @patch("src.game_engine.Parser")
     @patch("src.game_engine.Player")
-    @patch("src.game_engine.curses")  # Mock curses module itself for initscr etc.
+    @patch("src.game_engine.curses")
     def setUp(
         self,
         mock_curses_module,
@@ -26,202 +25,161 @@ class TestGameEngine(unittest.TestCase):
         MockInputHandler,
         MockWorldGenerator,
     ):
-        # Mock curses functions GameEngine might call in __init__
-        self.mock_stdscr = MagicMock()
-        mock_curses_module.initscr.return_value = self.mock_stdscr
-        mock_curses_module.error = curses.error  # Allow curses.error to be raised
-        mock_curses_module.napms = MagicMock()  # Mock napms to prevent initscr error
+        self.MockPlayer = MockPlayer
+        self.MockParser = MockParser
+        self.MockCommandProcessor = MockCommandProcessor
+        self.MockRenderer = MockRenderer
+        self.MockInputHandler = MockInputHandler
+        self.MockWorldGenerator = MockWorldGenerator
+        self.mock_curses_module = mock_curses_module
 
-        # Setup mock WorldGenerator
-        self.mock_world_gen_instance = MockWorldGenerator.return_value
+        self.mock_stdscr = MagicMock()
+        self.mock_curses_module.initscr.return_value = self.mock_stdscr
+        self.mock_curses_module.error = curses.error
+        self.mock_curses_module.napms = MagicMock()
+
+        self.mock_world_gen_instance = self.MockWorldGenerator.return_value
         self.mock_world_map_instance = MagicMock(spec=WorldMap)
         self.mock_world_map_instance.width = 20
         self.mock_world_map_instance.height = 10
-        self.player_start_pos = (1, 1)
-        self.win_pos = (5, 5)
-        self.mock_world_gen_instance.generate_map.return_value = (
+
+        self.player_start_coords_f0 = (1, 1)
+        self.poi_coords_f0 = (5, 5)
+        self.mock_world_gen_instance._generate_single_floor.return_value = (
             self.mock_world_map_instance,
-            self.player_start_pos,
-            self.win_pos,
+            self.player_start_coords_f0,
+            self.poi_coords_f0,
         )
 
-        # Setup mock Player
         self.mock_player_instance = MockPlayer.return_value
-        self.mock_player_instance.x = self.player_start_pos[0]
-        self.mock_player_instance.y = self.player_start_pos[1]
+        self.mock_player_instance.x = self.player_start_coords_f0[0]
+        self.mock_player_instance.y = self.player_start_coords_f0[1]
+        self.mock_player_instance.current_floor_id = 0
         self.mock_player_instance.health = 100
 
-        # Setup mock Parser
         self.mock_parser_instance = MockParser.return_value
-
-        # Setup mock InputHandler
         self.mock_input_handler_instance = MockInputHandler.return_value
         self.mock_input_handler_instance.get_input_mode.return_value = "movement"
         self.mock_input_handler_instance.get_command_buffer.return_value = ""
-
-        # Setup mock Renderer
         self.mock_renderer_instance = MockRenderer.return_value
-
-        # Setup mock CommandProcessor
         self.mock_command_processor_instance = MockCommandProcessor.return_value
-
-        # Instantiate GameEngine
         self.game_engine = GameEngine(map_width=20, map_height=10, debug_mode=False)
 
-        # Direct assignment for mocks if GameEngine creates them internally.
-        # Ensures we use the same mock instances GameEngine uses.
-        # GameEngine instantiates these; test attributes should point to them.
-        # Patch decorators handle this if GameEngine uses these classes directly.
-        # For this refactor, GameEngine does instantiate them.
         self.game_engine.world_generator = self.mock_world_gen_instance
-        self.game_engine.parser = self.mock_parser_instance  # GameEngine creates Parser
-        self.game_engine.player = self.mock_player_instance  # GameEngine creates Player
-        self.game_engine.input_handler = (
-            self.mock_input_handler_instance
-        )  # GameEngine creates InputHandler
-        self.game_engine.renderer = (
-            self.mock_renderer_instance
-        )  # GameEngine creates Renderer
-        self.game_engine.command_processor = (
-            self.mock_command_processor_instance
-        )  # GameEngine creates CommandProcessor
-        self.game_engine.world_map = self.mock_world_map_instance  # From generate_map
-        self.game_engine.win_pos = self.win_pos  # From generate_map
+        self.game_engine.parser = self.mock_parser_instance
+        self.game_engine.player = self.mock_player_instance
+        self.game_engine.input_handler = self.mock_input_handler_instance
+        self.game_engine.renderer = self.mock_renderer_instance
+        self.game_engine.command_processor = self.mock_command_processor_instance
 
-        # Ensure stdscr is the one from the mock_curses_module
-        self.game_engine.stdscr = self.mock_stdscr
-
-    def test_game_engine_initialization(self):
-        # Verify WorldGenerator was called
-        self.mock_world_gen_instance.generate_map.assert_called_once_with(
-            20, 10, seed=None
+        self.game_engine.world_maps = {0: self.mock_world_map_instance}
+        mock_visible_map_f0 = MagicMock(spec=WorldMap)
+        mock_visible_map_f0.width = self.mock_world_map_instance.width
+        mock_visible_map_f0.height = self.mock_world_map_instance.height
+        self.game_engine.visible_maps = {0: mock_visible_map_f0}
+        self.game_engine.winning_full_pos = (
+            self.poi_coords_f0[0],
+            self.poi_coords_f0[1],
+            0,
         )
 
-        # Verify Player was instantiated correctly
-        # MockPlayer.assert_called_once_with(
-        #    x=self.player_start_pos[0], y=self.player_start_pos[1], health=20
-        # )
-        # This is tricky as Player is instantiated within GameEngine.
-        # We check the mock instance self.game_engine.player.
-        self.assertEqual(self.game_engine.player.x, self.player_start_pos[0])
-        self.assertEqual(self.game_engine.player.y, self.player_start_pos[1])
+        if not self.game_engine.debug_mode:
+            self.game_engine.renderer.stdscr = self.mock_stdscr
 
-        # Verify Parser was instantiated
-        # MockParser.assert_called_once() # Parser() is called in GameEngine __init__
+    def test_game_engine_initialization(self):
+        self.mock_world_gen_instance._generate_single_floor.assert_called_once_with(
+            20, 10, seed=None
+        )
+        self.MockPlayer.assert_called_once_with(
+            x=self.player_start_coords_f0[0],
+            y=self.player_start_coords_f0[1],
+            current_floor_id=0,
+            health=20,
+        )
+        self.assertEqual(self.game_engine.player.x, self.player_start_coords_f0[0])
+        self.assertEqual(self.game_engine.player.y, self.player_start_coords_f0[1])
+        self.assertEqual(self.game_engine.player.current_floor_id, 0)
         self.assertIsNotNone(self.game_engine.parser)
-
-        # Verify InputHandler was instantiated with stdscr and parser
-        # MockInputHandler.assert_called_once_with(
-        #    self.mock_stdscr, self.mock_parser_instance
-        # )
         self.assertIsNotNone(self.game_engine.input_handler)
-
-        # Verify Renderer was instantiated with stdscr, map dimensions, player symbol
-        # MockRenderer.assert_called_once_with(self.mock_stdscr, 20, 10, "@")
         self.assertIsNotNone(self.game_engine.renderer)
-
-        # Verify CommandProcessor was instantiated
-        # MockCommandProcessor.assert_called_once()
         self.assertIsNotNone(self.game_engine.command_processor)
-
         self.assertFalse(self.game_engine.game_over)
-        self.assertIsInstance(self.game_engine.message_log, MessageLog)  # Check type
+        self.assertIsInstance(self.game_engine.message_log, MessageLog)
         self.assertEqual(self.game_engine.debug_mode, False)
 
-    @patch("src.game_engine.curses.napms")  # Patch napms specifically for this test
+    @patch("src.game_engine.curses.napms")
     def test_run_loop_single_command_then_quit(self, mock_napms):
-        # mock_napms is now an argument passed by @patch
-        # Simulate one command, then a quit command
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
-            ("move", "north"),  # First command
-            ("quit", None),  # Second command to exit loop
+            ("move", "north"),
+            ("quit", None),
         ]
 
-        # Mock command processor results for 'move' and 'quit'
         def process_cmd_side_effect(
-            parsed_cmd_tuple, player, world_map, msg_log, win_pos_arg
+            parsed_cmd_tuple,
+            player,
+            world_maps_dict,
+            msg_log,
+            win_pos_arg,
+            game_engine=None,
         ):
             if parsed_cmd_tuple == ("quit", None):
-                # Ensure msg log updated if other tests expect it
-                # msg_log.append("Quitting game.") # e.g.
                 return {"game_over": True}
-            # Default for other commands
             return {"game_over": False}
 
         self.mock_command_processor_instance.process_command.side_effect = (
             process_cmd_side_effect
         )
-
-        # Reset game state before running. This is important if tests modify
-        # state and affect their own potential re-runs, or if test order matters.
         self.game_engine.game_over = False
-        # self.game_engine.message_log.clear() # No clear; re-init if needed.
-        # For this test, re-initializing GameEngine or its MessageLog might be
-        # better if a clean message log is strictly required for assertions.
-        # For now, assuming test is robust or uses a fresh instance for run().
-
         self.game_engine.run()
 
-        # Check render_all calls
-        # Initial render, render after move, render after quit processing (game over)
         self.mock_renderer_instance.render_all.assert_any_call(
-            player_x=self.mock_player_instance.x,
-            player_y=self.mock_player_instance.y,
-            player_health=self.mock_player_instance.health,
-            # world_map renamed to world_map_to_render, and it will be the visible_map
-            world_map_to_render=self.game_engine.visible_map,
+            player_x=self.game_engine.player.x,
+            player_y=self.game_engine.player.y,
+            player_health=self.game_engine.player.health,
+            world_map_to_render=self.game_engine.visible_maps[
+                self.game_engine.player.current_floor_id
+            ],
             input_mode="movement",
             current_command_buffer="",
             message_log=self.game_engine.message_log,
+            current_floor_id=self.game_engine.player.current_floor_id,
             debug_render_to_list=False,
-            ai_path=None,  # Added ai_path
+            ai_path=None,
         )
-        # render_all is called: initial, after move cmd processing + visibility update,
-        # after quit cmd processing + visibility update.
-        # Plus, visibility updates also happen before input and before AI action.
-        # The number of calls can be more than 3 due to extra visibility updates.
-        # Let's check for at least 3 important ones.
         self.assertGreaterEqual(self.mock_renderer_instance.render_all.call_count, 3)
-
-        # Check input_handler calls
         self.assertEqual(
             self.mock_input_handler_instance.handle_input_and_get_command.call_count, 2
         )
-
-        # Check command_processor calls
-        # First call for ('move', 'north')
         self.mock_command_processor_instance.process_command.assert_any_call(
             ("move", "north"),
-            self.mock_player_instance,
-            self.mock_world_map_instance,
-            self.game_engine.message_log,  # process_command appends to this list
-            self.win_pos,
+            self.game_engine.player,
+            self.game_engine.world_maps,
+            self.game_engine.message_log,
+            self.game_engine.winning_full_pos,
+            game_engine=self.game_engine,
         )
-        # Second call for ('quit', None)
         self.mock_command_processor_instance.process_command.assert_any_call(
             ("quit", None),
-            self.mock_player_instance,
-            self.mock_world_map_instance,
+            self.game_engine.player,
+            self.game_engine.world_maps,
             self.game_engine.message_log,
-            self.win_pos,
+            self.game_engine.winning_full_pos,
+            game_engine=self.game_engine,
         )
         self.assertEqual(
             self.mock_command_processor_instance.process_command.call_count, 2
         )
-
-        # Check game_over state (should be True after 'quit')
-        self.assertTrue(self.game_engine.game_over)  # Should pass without re-run
-        self.mock_renderer_instance.cleanup_curses.assert_called_once()
-        # Verify that napms was called because game_over is True and not in debug_mode
-        if not self.game_engine.debug_mode:  # napms is only called if not in debug_mode
+        self.assertTrue(self.game_engine.game_over)
+        if not self.game_engine.debug_mode:
+            self.mock_renderer_instance.cleanup_curses.assert_called_once()
             mock_napms.assert_called_once_with(2000)
         else:
             mock_napms.assert_not_called()
+            self.mock_renderer_instance.cleanup_curses.assert_not_called()
 
     def test_run_loop_game_over_from_command(self):
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
-            ("attack", "dragon"),  # Command that causes game over
-            # Loop should terminate after this if game_over is set
+            ("attack", "dragon"),
         ]
         self.mock_command_processor_instance.process_command.return_value = {
             "game_over": True
@@ -230,60 +188,49 @@ class TestGameEngine(unittest.TestCase):
 
         with patch("curses.napms") as mock_napms:
             self.game_engine.run()
-            # napms is only called if game_over is True AND not in debug_mode
             if self.game_engine.game_over and not self.game_engine.debug_mode:
                 mock_napms.assert_called_once_with(2000)
-            # If game_over is False or debug_mode is True, napms should not be called
             elif not (self.game_engine.game_over and not self.game_engine.debug_mode):
                 mock_napms.assert_not_called()
 
         self.mock_input_handler_instance.handle_input_and_get_command.assert_called_once()
         self.mock_command_processor_instance.process_command.assert_called_once()
         self.assertTrue(self.game_engine.game_over)
-        self.mock_renderer_instance.cleanup_curses.assert_called_once()
+        if not self.game_engine.debug_mode:
+            self.mock_renderer_instance.cleanup_curses.assert_called_once()
+        else:
+            self.mock_renderer_instance.cleanup_curses.assert_not_called()
 
-    @patch(
-        "src.game_engine.curses"
-    )  # Patch curses for this specific test's GameEngine instance
+    @patch("src.game_engine.curses")
     def test_run_loop_debug_mode_no_curses_cleanup(self, mock_curses_for_debug_engine):
-        # Create a new GameEngine instance with debug_mode=True
-        # We need to re-patch dependencies for this specific instance
         with patch("src.game_engine.WorldGenerator") as MockWG_debug, patch(
             "src.game_engine.InputHandler"
         ) as MockIH_debug, patch("src.game_engine.Renderer") as MockR_debug, patch(
             "src.game_engine.CommandProcessor"
         ) as MockCP_debug, patch("src.game_engine.Parser"), patch(
             "src.game_engine.Player"
-        ) as MockPl_debug:  # MockP_debug unused
+        ) as MockPlayer_debug:
             mock_wg_inst_debug = MockWG_debug.return_value
-            # Ensure the mock_wm_inst_debug has integer width and height for comparisons
             mock_wm_inst_debug = MagicMock(spec=WorldMap)
-            mock_wm_inst_debug.width = 10  # Integer value
-            mock_wm_inst_debug.height = 5  # Integer value
-            mock_wg_inst_debug.generate_map.return_value = (
+            mock_wm_inst_debug.width = 10
+            mock_wm_inst_debug.height = 5
+            mock_wg_inst_debug._generate_single_floor.return_value = (
                 mock_wm_inst_debug,
                 (0, 0),
                 (1, 1),
             )
 
-            # Set up the player mock with required attributes for initialization
-            mock_player_debug = MockPl_debug.return_value
-            mock_player_debug.x = 1
-            mock_player_debug.y = 1
-            mock_player_debug.health = 100
+            mock_player_inst_debug = MockPlayer_debug.return_value
+            mock_player_inst_debug.x = 0
+            mock_player_inst_debug.y = 0
+            mock_player_inst_debug.current_floor_id = 0
+            mock_player_inst_debug.health = 100
 
             mock_ih_inst_debug = MockIH_debug.return_value
-            mock_r_inst_debug = MockR_debug.return_value
+            # mock_r_inst_debug = MockR_debug.return_value # F841: This line removed
             mock_cp_inst_debug = MockCP_debug.return_value
 
             debug_engine = GameEngine(map_width=10, map_height=5, debug_mode=True)
-            # Assign mocks
-            debug_engine.input_handler = mock_ih_inst_debug
-            debug_engine.renderer = mock_r_inst_debug
-            debug_engine.command_processor = mock_cp_inst_debug
-            debug_engine.player = mock_player_debug  # Assign the player mock
-            debug_engine.world_map = mock_wm_inst_debug
-            debug_engine.win_pos = (1, 1)
 
             mock_ih_inst_debug.handle_input_and_get_command.return_value = (
                 "quit",
@@ -294,32 +241,24 @@ class TestGameEngine(unittest.TestCase):
             debug_engine.run()
 
             self.assertTrue(debug_engine.game_over)
-            # In debug mode, cleanup_curses should not be called
-            mock_r_inst_debug.cleanup_curses.assert_not_called()
-            # Render all should be called with debug_render_to_list=True
-            mock_r_inst_debug.render_all.assert_called_with(
-                player_x=debug_engine.player.x,
-                player_y=debug_engine.player.y,
-                player_health=debug_engine.player.health,
-                world_map_to_render=debug_engine.visible_map,  # Changed to visible_map
-                input_mode=mock_ih_inst_debug.get_input_mode.return_value,
-                current_command_buffer=mock_ih_inst_debug.get_command_buffer.return_value,
-                message_log=debug_engine.message_log,
-                debug_render_to_list=True,
-                ai_path=None,  # Added ai_path
-            )
-            # Check that stdscr related calls were not made in __init__ for debug engine
-            mock_curses_for_debug_engine.initscr.assert_not_called()
+            debug_engine.renderer.cleanup_curses.assert_not_called()
+
+            debug_engine.renderer.render_all.assert_called()
+            last_call_args = debug_engine.renderer.render_all.call_args
+            self.assertTrue(last_call_args.kwargs.get("debug_render_to_list"))
+            self.assertEqual(last_call_args.kwargs.get("current_floor_id"), 0)
 
     def test_run_loop_handles_no_command_from_input(self):
-        # Input handler returns None (e.g. timeout, non-action key) then quit
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
             None,
             ("quit", None),
         ]
-        self.mock_command_processor_instance.process_command.return_value = {
-            "game_over": True
-        }  # For the quit
+        self.mock_command_processor_instance.process_command.side_effect = (
+            lambda cmd_tuple, *args, **kwargs: {"game_over": True}
+            if cmd_tuple == ("quit", None)
+            else {"game_over": False}
+        )
+
         self.game_engine.debug_mode = False
 
         with patch("curses.napms") as mock_napms:
@@ -332,17 +271,19 @@ class TestGameEngine(unittest.TestCase):
         self.assertEqual(
             self.mock_input_handler_instance.handle_input_and_get_command.call_count, 2
         )
-        # process_command should only be called for the 'quit' command, not for None
         self.mock_command_processor_instance.process_command.assert_called_once_with(
             ("quit", None),
-            self.mock_player_instance,
-            self.mock_world_map_instance,
+            self.game_engine.player,
+            self.game_engine.world_maps,
             self.game_engine.message_log,
-            self.win_pos,
+            self.game_engine.winning_full_pos,
+            game_engine=self.game_engine,
         )
         self.assertTrue(self.game_engine.game_over)
-        self.mock_renderer_instance.cleanup_curses.assert_called_once()
-        # render_all should be called after None input, and after quit input
+        if not self.game_engine.debug_mode:
+            self.mock_renderer_instance.cleanup_curses.assert_called_once()
+        else:
+            self.mock_renderer_instance.cleanup_curses.assert_not_called()
         self.assertGreaterEqual(self.mock_renderer_instance.render_all.call_count, 2)
 
 

@@ -89,8 +89,9 @@ class Renderer:
         input_mode: str,
         current_command_buffer: str,
         message_log: MessageLog,
+        current_floor_id: int,  # Added to display current floor
         debug_render_to_list: bool = False,
-        ai_path: Optional[List[Tuple[int, int]]] = None,
+        ai_path: Optional[List[Tuple[int, int, int]]] = None,  # Path includes floor_id
         # ai_mode_active: bool = False,  # Parameter removed, fog is always
         # active based on visible_map
     ) -> list[str] | None:
@@ -138,13 +139,35 @@ class Renderer:
                     if x_map == player_x and y_map == player_y:
                         char_to_draw = self.player_symbol
                     elif ai_path:
-                        current_coord = (x_map, y_map)
-                        if current_coord == ai_path[-1]:  # Destination
-                            char_to_draw = "x"
-                            is_path_tile = True
-                        elif current_coord in ai_path:
-                            char_to_draw = "*"
-                            is_path_tile = True
+                        # AI path is List[Tuple[int, int, int]]
+                        # We only care about path segments on the current_floor_id
+                        # for 2D map display.
+                        # Check if (x_map, y_map) is part of the path on the current floor
+                        path_segment_on_current_floor = [
+                            (px, py)
+                            for px, py, pf_id in ai_path
+                            if pf_id == current_floor_id
+                        ]
+                        current_coord_xy = (x_map, y_map)
+
+                        if path_segment_on_current_floor:
+                            # Check if it's the destination of the segment on this floor
+                            # Note: ai_path[-1] is the overall destination (x,y,floor).
+                            # We need to check if (x_map,y_map) is the last step
+                            # of the path *on this specific floor*.
+                            # This logic might need refinement if path can zigzag floors
+                            # and then end on current. For now, simple check.
+                            if (
+                                current_coord_xy == (ai_path[-1][0], ai_path[-1][1])
+                                and current_floor_id == ai_path[-1][2]
+                            ):
+                                char_to_draw = "x"  # Overall destination on this floor
+                                is_path_tile = True
+                            elif current_coord_xy in path_segment_on_current_floor:
+                                char_to_draw = "*"  # Part of path on this floor
+                                is_path_tile = True
+                            # If the final destination is on another floor, "x" won't show here.
+                            # A portal tile leading to it might be marked as '*'.
 
                     if not char_to_draw:  # If not player or path, draw tile content
                         tile = world_map_to_render.get_tile(x_map, y_map)
@@ -158,6 +181,7 @@ class Renderer:
 
             # Append UI elements as strings to the buffer.
             output_buffer.append(f"HP: {player_health}")
+            output_buffer.append(f"Floor: {current_floor_id}")  # Display current floor
             output_buffer.append(f"MODE: {input_mode.upper()}")
             if input_mode == "command":
                 output_buffer.append(f"> {current_command_buffer}")
@@ -183,8 +207,8 @@ class Renderer:
         self.stdscr.clear()  # Clear the screen before drawing new content.
 
         # Define a buffer for UI lines at the bottom of the screen.
-        # This includes lines for HP, Mode, Command Input, and some messages.
-        UI_LINES_BUFFER = 4
+        # This includes lines for HP, Floor, Mode, Command Input, and some messages.
+        UI_LINES_BUFFER = 5  # Increased to accommodate Floor ID
 
         # Get terminal dimensions. Handle curses error if terminal not ready.
         try:
@@ -219,18 +243,26 @@ class Renderer:
                 if x_tile_idx == player_x and y_map_idx == player_y:
                     char_to_draw = self.player_symbol
                     color_attribute = curses.color_pair(self.PLAYER_COLOR_PAIR)
-                elif ai_path:
-                    current_coord = (x_tile_idx, y_map_idx)
-                    # Check destination first
-                    if current_coord == ai_path[-1]:
-                        char_to_draw = "x"
-                        color_attribute = curses.color_pair(self.PATH_COLOR_PAIR)
-                        is_path_tile = True
-                    elif current_coord in ai_path:
-                        char_to_draw = "*"
-                        color_attribute = curses.color_pair(self.PATH_COLOR_PAIR)
-                        is_path_tile = True
+                elif ai_path:  # ai_path is List[Tuple[int, int, int]]
+                    path_segment_on_current_floor = [
+                        (px, py)
+                        for px, py, pf_id in ai_path
+                        if pf_id == current_floor_id
+                    ]
+                    current_coord_xy = (x_tile_idx, y_map_idx)
 
+                    if path_segment_on_current_floor:
+                        if (
+                            current_coord_xy == (ai_path[-1][0], ai_path[-1][1])
+                            and current_floor_id == ai_path[-1][2]
+                        ):
+                            char_to_draw = "x"  # Overall destination on this floor
+                            color_attribute = curses.color_pair(self.PATH_COLOR_PAIR)
+                            is_path_tile = True
+                        elif current_coord_xy in path_segment_on_current_floor:
+                            char_to_draw = "*"  # Part of path on this floor
+                            color_attribute = curses.color_pair(self.PATH_COLOR_PAIR)
+                            is_path_tile = True
                 if (
                     not is_path_tile and not char_to_draw
                 ):  # If not player and not path tile
@@ -305,10 +337,22 @@ class Renderer:
                 )
             except curses.error:
                 pass  # Avoid crash if cannot draw (e.g. terminal too small)
-        # If hp_line_y >= curses_lines, there's no space; it will be skipped.
 
-        # Mode line is one line below HP.
-        mode_line_y = hp_line_y + 1
+        # Floor ID line is one line below HP.
+        floor_line_y = hp_line_y + 1
+        if floor_line_y < curses_lines:  # Ensure there's space
+            try:
+                self.stdscr.addstr(
+                    floor_line_y,
+                    0,
+                    f"Floor: {current_floor_id}",
+                    curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
+                )
+            except curses.error:
+                pass
+
+        # Mode line is one line below Floor ID.
+        mode_line_y = floor_line_y + 1
         if mode_line_y < curses_lines:  # Ensure there's space for Mode line
             try:
                 self.stdscr.addstr(

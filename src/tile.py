@@ -90,9 +90,10 @@ class Tile:
         if self.monster:
             return (ENTITY_SYMBOLS["monster"], "monster")
         elif self.item:
-            # Items should not be on portal tiles, but if they are, they take precedence.
+            # Items should not be on portal tiles, but if they are, they take
+            # precedence.
             return (ENTITY_SYMBOLS["item"], "item")
-        elif self.is_portal: # Check for portal before generic floor/wall
+        elif self.is_portal:  # Check for portal before generic floor/wall
             return (TILE_SYMBOLS["portal"], "portal")
         elif self.type == "wall":
             return (TILE_SYMBOLS["wall"], "wall")

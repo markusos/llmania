@@ -1,11 +1,11 @@
 import random
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from src.map_algorithms.pathfinding import PathFinder
 
 if TYPE_CHECKING:
     from src.message_log import MessageLog
-    from src.monster import Monster  # Corrected import
+    from src.monster import Monster
     from src.player import Player
     from src.world_map import WorldMap
 
@@ -19,85 +19,64 @@ class AILogic:
     def __init__(
         self,
         player: "Player",
-        real_world_map: "WorldMap",  # The actual full map
-        ai_visible_map: "WorldMap",  # The map AI uses for decisions
+        real_world_maps: Dict[int, "WorldMap"],
+        ai_visible_maps: Dict[int, "WorldMap"],
         message_log: "MessageLog",
     ):
-        """
-        Initializes the AILogic system.
-
-        Args:
-            player: The player object that the AI will control.
-            real_world_map: The complete game world map.
-            ai_visible_map: The map representing what the AI can currently see.
-            message_log: The message log for recording actions or observations.
-        """
         self.player = player
-        self.real_world_map = (
-            real_world_map  # Store the real map for updating visibility
-        )
-        self.ai_visible_map = (
-            ai_visible_map  # This is the map AI will use for decisions
-        )
+        self.real_world_maps = real_world_maps
+        self.ai_visible_maps = ai_visible_maps
         self.message_log = message_log
         self.path_finder = PathFinder()
-        # physically_visited_coords tracks tiles the AI has actually stepped on.
-        self.physically_visited_coords: List[Tuple[int, int]] = []
-        self.current_path: Optional[List[Tuple[int, int]]] = None
+        self.physically_visited_coords: List[Tuple[int, int, int]] = []
+        self.current_path: Optional[List[Tuple[int, int, int]]] = None
         self.last_move_command: Optional[Tuple[str, Optional[str]]] = None
 
     def update_visibility(self) -> None:
-        """
-        Updates the AI's visible map based on the player's current position
-        on the real map. Reveals tiles in a 1-tile radius (8 directions + current tile).
-        """
         player_x, player_y = self.player.x, self.player.y
+        current_floor_id = self.player.current_floor_id
+        current_real_map = self.real_world_maps.get(current_floor_id)
+        current_ai_visible_map = self.ai_visible_maps.get(current_floor_id)
 
-        for dy in range(-1, 2):  # -1, 0, 1
-            for dx in range(-1, 2):  # -1, 0, 1
-                # No need to check dx == 0 and dy == 0 if we always update current tile
-                # if dx == 0 and dy == 0:
-                #     continue # Skip the player's current tile, handled separately
-
-                map_x, map_y = player_x + dx, player_y + dy
-
-                real_tile = self.real_world_map.get_tile(map_x, map_y)
+        if not current_real_map or not current_ai_visible_map:
+            msg = (
+                f"AI Error: Cannot update visibility for floor {current_floor_id}. "
+                "Map not found."
+            )
+            self.message_log.add_message(msg)
+            return
+        for dy_offset in range(-1, 2):
+            for dx_offset in range(-1, 2):
+                map_x, map_y = player_x + dx_offset, player_y + dy_offset
+                real_tile = current_real_map.get_tile(map_x, map_y)
                 if real_tile:
-                    # Get the corresponding tile in the AI's visible map
-                    ai_tile = self.ai_visible_map.get_tile(map_x, map_y)
+                    ai_tile = current_ai_visible_map.get_tile(map_x, map_y)
                     if ai_tile:
-                        # Copy data from real tile to AI's visible tile
                         ai_tile.type = real_tile.type
-                        ai_tile.monster = (
-                            real_tile.monster
-                        )  # Monster objects are shared
-                        ai_tile.item = real_tile.item  # Item objects are shared
-                        ai_tile.is_explored = True  # Mark as explored in AI's map
-                        # self.physically_visited_coords is updated in get_next_action
+                        ai_tile.monster = real_tile.monster
+                        ai_tile.item = real_tile.item
+                        ai_tile.is_portal = real_tile.is_portal
+                        ai_tile.portal_to_floor_id = real_tile.portal_to_floor_id
+                        ai_tile.is_explored = True
 
     def _get_adjacent_monsters(self) -> List["Monster"]:
-        """
-        Checks N, S, E, W tiles around the player for monsters using the AI's visible
-        map.
-        """
         adjacent_monsters: List["Monster"] = []
-        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:  # N, S, W, E
+        current_floor_id = self.player.current_floor_id
+        current_ai_map = self.ai_visible_maps.get(current_floor_id)
+        if not current_ai_map:
+            return []
+        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
             check_x, check_y = self.player.x + dx, self.player.y + dy
-            # Use ai_visible_map for decision making
-            tile = self.ai_visible_map.get_tile(check_x, check_y)
+            tile = current_ai_map.get_tile(check_x, check_y)
             if tile and tile.is_explored and tile.monster:
                 adjacent_monsters.append(tile.monster)
         return adjacent_monsters
 
     def _coordinates_to_move_command(
-        self, start_pos: Tuple[int, int], end_pos: Tuple[int, int]
+        self, start_pos_xy: Tuple[int, int], end_pos_xy: Tuple[int, int]
     ) -> Optional[Tuple[str, str]]:
-        """
-        Converts a move from start_pos to an adjacent end_pos into a move command.
-        """
-        dx = end_pos[0] - start_pos[0]
-        dy = end_pos[1] - start_pos[1]
-
+        dx = end_pos_xy[0] - start_pos_xy[0]
+        dy = end_pos_xy[1] - start_pos_xy[1]
         if dx == 0 and dy == -1:
             return ("move", "north")
         if dx == 0 and dy == 1:
@@ -106,303 +85,246 @@ class AILogic:
             return ("move", "west")
         if dx == 1 and dy == 0:
             return ("move", "east")
-        return None  # Should not happen for adjacent tiles
+        return None
 
     def _find_target_and_path(self) -> None:
-        """
-        Finds a target (quest item, other item, monster, unvisited tile) and
-        calculates a path to it. Sets self.current_path.
-        """
         self.current_path = None
-        player_pos = (self.player.x, self.player.y)
+        player_pos_xy = (self.player.x, self.player.y)
+        player_floor_id = self.player.current_floor_id
+        current_ai_map = self.ai_visible_maps.get(player_floor_id)
+        if not current_ai_map:
+            self.message_log.add_message(
+                "AI: Current floor map not available for targeting."
+            )
+            return
 
-        # All checks for items, monsters, and pathing should use self.ai_visible_map
-        # and respect tile.is_explored.
+        found_targets: List[Tuple[int, int, int, str, int]] = []
 
-        target_type_sought = "any"  # For logging
-
-        # 1. Quest Item (must be visible)
-        for y in range(self.ai_visible_map.height):
-            for x in range(self.ai_visible_map.width):
-                tile = self.ai_visible_map.get_tile(x, y)
-                if (
-                    tile
-                    and tile.is_explored  # Must be seen
-                    and tile.item
-                    and tile.item.properties.get("type") == "quest"
-                ):
-                    # Pathfind on the ai_visible_map
-                    path = self.path_finder.find_path_bfs(
-                        self.ai_visible_map, player_pos, (x, y)
-                    )
-                    if path:
-                        self.message_log.add_message(
-                            f"AI: Pathing to (visible) quest item at ({x},{y})."
+        # 1. Quest Items
+        for floor_id, ai_map in self.ai_visible_maps.items():
+            if not ai_map:
+                continue
+            for y_coord in range(ai_map.height):
+                for x_coord in range(ai_map.width):
+                    tile = ai_map.get_tile(x_coord, y_coord)
+                    if (tile and tile.is_explored and tile.item and
+                            tile.item.properties.get("type") == "quest"):
+                        dist_est = (
+                            abs(x_coord - player_pos_xy[0]) +
+                            abs(y_coord - player_pos_xy[1]) +
+                            abs(floor_id - player_floor_id) * 10
                         )
-                        self.current_path = path
-                        return
+                        found_targets.append(
+                            (x_coord, y_coord, floor_id, "quest_item", dist_est)
+                        )
 
-        # 2. Other Items (must be visible)
-        #    - Health Potion if low health (priority)
-        #    - Other items (unless potion and full health)
-
+        # 2. Health Potions (if low health) or Other Items
         low_health_threshold = self.player.max_health * 0.5
         if self.player.health < low_health_threshold:
-            health_potions_coords: List[Tuple[int, int]] = []
-            for y_coord in range(self.ai_visible_map.height):
-                for x_coord in range(self.ai_visible_map.width):
-                    tile = self.ai_visible_map.get_tile(x_coord, y_coord)
-                    if (
-                        tile
-                        and tile.is_explored
-                        and tile.item
-                        and "health potion" in tile.item.name.lower()
-                        and tile.item.properties.get("type") == "heal"
-                    ):
-                        health_potions_coords.append((x_coord, y_coord))
+            for floor_id, ai_map in self.ai_visible_maps.items():
+                if not ai_map:
+                    continue
+                for y_coord in range(ai_map.height):
+                    for x_coord in range(ai_map.width):
+                        tile = ai_map.get_tile(x_coord, y_coord)
+                        if (tile and tile.is_explored and tile.item and
+                                "health potion" in tile.item.name.lower() and
+                                tile.item.properties.get("type") == "heal"):
+                            dist_est = (
+                                abs(x_coord - player_pos_xy[0]) +
+                                abs(y_coord - player_pos_xy[1]) +
+                                abs(floor_id - player_floor_id) * 10
+                            )
+                            found_targets.append(
+                                (x_coord, y_coord, floor_id, "health_potion", dist_est)
+                            )
+        else:  # Not low health, look for other items
+            for floor_id, ai_map in self.ai_visible_maps.items():
+                if not ai_map:
+                    continue
+                for y_coord_item in range(ai_map.height):
+                    for x_coord_item in range(ai_map.width):
+                        tile = ai_map.get_tile(x_coord_item, y_coord_item)
+                        player_at_target = (
+                            x_coord_item == player_pos_xy[0] and
+                            y_coord_item == player_pos_xy[1] and
+                            floor_id == player_floor_id
+                        )
+                        if tile and tile.is_explored and tile.item and not player_at_target:
+                            is_potion_full_health = (
+                                tile.item.properties.get("type") == "heal" and
+                                "health potion" in tile.item.name.lower() and
+                                self.player.health >= self.player.max_health
+                            )
+                            is_quest_item = tile.item.properties.get("type") == "quest"
+                            if is_potion_full_health or is_quest_item:
+                                continue
+                            dist_est = (
+                                abs(x_coord_item - player_pos_xy[0]) +
+                                abs(y_coord_item - player_pos_xy[1]) +
+                                abs(floor_id - player_floor_id) * 10
+                            )
+                            found_targets.append(
+                                (x_coord_item, y_coord_item,
+                                 floor_id, "other_item", dist_est) # E501 manual wrap
+                            )
 
-            if health_potions_coords:
-                paths_to_potions = []
-                for coord in health_potions_coords:
-                    path = self.path_finder.find_path_bfs(
-                        self.ai_visible_map, player_pos, coord
-                    )
-                    if path:
-                        paths_to_potions.append(path)
-                if paths_to_potions:
-                    paths_to_potions.sort(key=len)
-                    self.current_path = paths_to_potions[0]
-                    target_coord = self.current_path[-1]
-                    self.message_log.add_message(
-                        f"AI: Low health, pathing to Health Potion at "
-                        f"({target_coord[0]},{target_coord[1]})."
-                    )
-                    return
+        # 3. Monsters
+        for floor_id, ai_map in self.ai_visible_maps.items():
+            if not ai_map:
+                continue
+            for y_monster in range(ai_map.height):
+                for x_monster in range(ai_map.width):
+                    tile = ai_map.get_tile(x_monster, y_monster)
+                    if tile and tile.is_explored and tile.monster:
+                        is_adjacent = False
+                        if floor_id == player_floor_id:
+                            for dx_adj, dy_adj in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+                                if (player_pos_xy[0] + dx_adj == x_monster and
+                                        player_pos_xy[1] + dy_adj == y_monster):
+                                    is_adjacent = True
+                                    break
+                        if not is_adjacent:
+                            dist_est = (
+                                abs(x_monster - player_pos_xy[0]) +
+                                abs(y_monster - player_pos_xy[1]) +
+                                abs(floor_id - player_floor_id) * 10
+                            )
+                            found_targets.append(
+                                (x_monster, y_monster, floor_id, "monster", dist_est)
+                            )
 
-        other_items_coords: List[Tuple[int, int]] = []
-        for y in range(self.ai_visible_map.height):
-            for x in range(self.ai_visible_map.width):
-                tile = self.ai_visible_map.get_tile(x, y)
-                if tile and tile.is_explored and tile.item and (x, y) != player_pos:
-                    # Skip potions if health is full
-                    if (
-                        tile.item.properties.get("type") == "heal"
-                        and "health potion" in tile.item.name.lower()
-                        and self.player.health >= self.player.max_health
-                    ):
-                        continue
-                    # Skip quest items as they are handled above with higher priority
-                    if tile.item.properties.get("type") == "quest":
-                        continue
-                    other_items_coords.append((x, y))
+        def target_sort_key(target_data):
+            _, _, _, target_type, dist = target_data
+            priority = 5
+            if target_type == "quest_item":
+                priority = 1
+            elif target_type == "health_potion":
+                priority = 2
+            elif target_type == "monster":
+                priority = 3
+            return (priority, dist)
+        found_targets.sort(key=target_sort_key)
 
-        if other_items_coords:
-            paths_to_items = []
-            for coord in other_items_coords:
-                path = self.path_finder.find_path_bfs(
-                    self.ai_visible_map, player_pos, coord
+        for target_x, target_y, target_floor_id, target_type, _ in found_targets:
+            path = self.path_finder.find_path_bfs(
+                self.ai_visible_maps, player_pos_xy, player_floor_id,
+                (target_x, target_y), target_floor_id
+            )
+            if path:
+                log_msg = (
+                    f"AI: Pathing to {target_type} at ({target_x},{target_y}) on "
+                    f"floor {target_floor_id}."
                 )
-                if path:
-                    paths_to_items.append(path)
-
-            if paths_to_items:
-                paths_to_items.sort(key=len)
-                self.current_path = paths_to_items[0]
-                target_coord = self.current_path[-1]
-                item_name = self.ai_visible_map.get_tile(
-                    target_coord[0], target_coord[1]
-                ).item.name
-                self.message_log.add_message(
-                    f"AI: Pathing to (visible) item {item_name} at "
-                    f"({target_coord[0]},{target_coord[1]})."
-                )
-                target_type_sought = "item"
+                self.message_log.add_message(log_msg)
+                self.current_path = path
                 return
 
-        # 3. Monsters (must be visible, not adjacent)
-        monster_coords: List[Tuple[int, int]] = []
-        for y in range(self.ai_visible_map.height):
-            for x in range(self.ai_visible_map.width):
-                tile = self.ai_visible_map.get_tile(x, y)
-                if tile and tile.is_explored and tile.monster:
-                    is_adjacent = False
-                    for dx_adj, dy_adj in [
-                        (0, -1),
-                        (0, 1),
-                        (-1, 0),
-                        (1, 0),
-                    ]:  # N, S, W, E
-                        if player_pos[0] + dx_adj == x and player_pos[1] + dy_adj == y:
-                            is_adjacent = True
-                            break
-                    if not is_adjacent:
-                        monster_coords.append((x, y))
-
-        if monster_coords:
-            paths_to_monsters = []
-            for coord in monster_coords:
-                path = self.path_finder.find_path_bfs(
-                    self.ai_visible_map, player_pos, coord
-                )
-                if path:
-                    paths_to_monsters.append(path)
-
-            if paths_to_monsters:
-                paths_to_monsters.sort(key=len)
-                self.current_path = paths_to_monsters[0]
-                target_coord = self.current_path[-1]
-                monster_name = self.ai_visible_map.get_tile(
-                    target_coord[0], target_coord[1]
-                ).monster.name
-                self.message_log.add_message(
-                    f"AI: Pathing to (visible) monster {monster_name} at "
-                    f"({target_coord[0]},{target_coord[1]})."
-                )
-                target_type_sought = "monster"
-                return
-
-        # 4. Explore Unvisited but Revealed Floor Tiles (tiles that are known floor
-        #    but not yet stepped on) or Explore towards edges of current visibility
-        #    (tiles adjacent to known, but are themselves not explored)
-
-        # First, explore known, walkable, but not physically stepped-on tiles.
-        explorable_physically_unvisited_coords: List[Tuple[int, int]] = []
-        for y in range(self.ai_visible_map.height):
-            for x in range(self.ai_visible_map.width):
-                tile = self.ai_visible_map.get_tile(x, y)
-                if (
-                    tile
-                    and tile.is_explored
-                    and tile.type != "wall"
-                    and (x, y) not in self.physically_visited_coords
-                ):
-                    explorable_physically_unvisited_coords.append((x, y))
-
-        if explorable_physically_unvisited_coords:
+        explorable_physically_unvisited_coords_current_floor: List[Tuple[int, int]] = []
+        if current_ai_map:
+            for y_explore in range(current_ai_map.height):
+                for x_explore in range(current_ai_map.width):
+                    tile = current_ai_map.get_tile(x_explore, y_explore)
+                    condition = (
+                        tile and tile.is_explored and tile.type != "wall" and
+                        (x_explore, y_explore, player_floor_id) not in
+                        self.physically_visited_coords
+                    )
+                    if condition: # E501 manual wrap
+                        explorable_physically_unvisited_coords_current_floor.append(
+                            (x_explore, y_explore)
+                        )
+        if explorable_physically_unvisited_coords_current_floor:
             paths_to_explore_unvisited = []
-            for coord in explorable_physically_unvisited_coords:
+            for coord_xy in explorable_physically_unvisited_coords_current_floor:
                 path = self.path_finder.find_path_bfs(
-                    self.ai_visible_map, player_pos, coord
+                    self.ai_visible_maps, player_pos_xy, player_floor_id,
+                    coord_xy, player_floor_id
                 )
                 if path:
                     paths_to_explore_unvisited.append(path)
-
             if paths_to_explore_unvisited:
                 paths_to_explore_unvisited.sort(key=len)
                 self.current_path = paths_to_explore_unvisited[0]
                 target_coord = self.current_path[-1]
-                self.message_log.add_message(
-                    f"AI: Pathing to explore known but unvisited tile at "
-                    f"({target_coord[0]},{target_coord[1]})."
+                log_msg = (
+                    f"AI: Pathing to explore unvisited tile at ({target_coord[0]},"
+                    f"{target_coord[1]}) on current floor."
                 )
-                target_type_sought = "unvisited known tile"
+                self.message_log.add_message(log_msg)
                 return
 
-        # Secondary: if all known walkable tiles have been physically visited,
-        # try to explore edges of fog.
-        # Find a tile that is_explored and walkable, which is adjacent to a tile
-        # that is !is_explored.
-        edge_exploration_targets: List[
-            Tuple[int, int]
-        ] = []  # Store the known walkable tile to path to
-        for y in range(self.ai_visible_map.height):
-            for x in range(self.ai_visible_map.width):
-                tile = self.ai_visible_map.get_tile(x, y)
-                if (
-                    tile and tile.is_explored and tile.type != "wall"
-                ):  # This is a known walkable tile
-                    # Check its neighbors for an unexplored tile
-                    for dx_adj, dy_adj in [
-                        (0, -1),
-                        (0, 1),
-                        (-1, 0),
-                        (1, 0),
-                    ]:  # Orthogonal N,S,W,E
-                        adj_x, adj_y = x + dx_adj, y + dy_adj
-                        adj_tile = self.ai_visible_map.get_tile(adj_x, adj_y)
-                        if adj_tile and not adj_tile.is_explored:
-                            # (x,y) is a good candidate to path to, to reveal its
-                            # neighbor (adj_x, adj_y)
-                            if (
-                                x,
-                                y,
-                            ) not in edge_exploration_targets:  # Avoid duplicates
-                                edge_exploration_targets.append((x, y))
-                            # Found an unexplored neighbor for this tile, move to
-                            # next tile
-                            break
-
-        if edge_exploration_targets:
+        edge_exploration_targets_current_floor: List[Tuple[int, int]] = []
+        if current_ai_map:
+            for y_edge in range(current_ai_map.height):
+                for x_edge in range(current_ai_map.width):
+                    tile = current_ai_map.get_tile(x_edge,y_edge)
+                    if tile and tile.is_explored and tile.type != "wall":
+                        for dx_adj, dy_adj in [(0,-1),(0,1),(-1,0),(1,0)]:
+                            adj_x, adj_y = x_edge + dx_adj, y_edge + dy_adj
+                            adj_tile = current_ai_map.get_tile(adj_x, adj_y)
+                            if adj_tile and not adj_tile.is_explored:
+                                if (x_edge,y_edge) not in \
+                                   edge_exploration_targets_current_floor: # E501 manual wrap
+                                    edge_exploration_targets_current_floor.append(
+                                        (x_edge,y_edge)
+                                    )
+                                break
+        if edge_exploration_targets_current_floor:
             paths_to_edge_frontiers = []
-            for coord in edge_exploration_targets:
-                # Don't path to current player position if it's an edge frontier
-                if coord == player_pos:
+            for coord_xy in edge_exploration_targets_current_floor:
+                if coord_xy == player_pos_xy:
                     continue
                 path = self.path_finder.find_path_bfs(
-                    self.ai_visible_map, player_pos, coord
+                    self.ai_visible_maps, player_pos_xy, player_floor_id,
+                    coord_xy, player_floor_id
                 )
                 if path:
                     paths_to_edge_frontiers.append(path)
-
             if paths_to_edge_frontiers:
-                paths_to_edge_frontiers.sort(key=len)  # Shortest path to an edge
+                paths_to_edge_frontiers.sort(key=len)
                 self.current_path = paths_to_edge_frontiers[0]
                 target_coord = self.current_path[-1]
-                self.message_log.add_message(
-                    f"AI: Pathing to edge of known area at "
-                    f"({target_coord[0]},{target_coord[1]}) to explore fog."
+                log_msg = (
+                    f"AI: Pathing to edge of known area at ({target_coord[0]},"
+                    f"{target_coord[1]}) on current floor."
                 )
-                target_type_sought = "edge of fog"
+                self.message_log.add_message(log_msg)
                 return
-
         self.message_log.add_message(
-            f"AI: No {target_type_sought} found to explore on visible map."
+            "AI: No path found for any target or exploration."
         )
-        # If current_path is still None here, get_next_action will handle it
-        # (e.g. look around)
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
-        """
-        Determines the next action for the AI-controlled player.
-        Uses self.ai_visible_map for decisions.
-        Prioritizes: winning, healing, attacking, looting, then pathfinding/exploration.
-        """
-        # CRITICAL: Update AI's vision before making any decisions
-        self.update_visibility()  # This ensures ai_visible_map is up-to-date
-
-        current_player_pos = (self.player.x, self.player.y)
-        # Add current position to physically visited coordinates
-        if current_player_pos not in self.physically_visited_coords:
-            self.physically_visited_coords.append(current_player_pos)
-
-        # Decisions should be based on ai_visible_map
-        current_tile_on_visible_map = self.ai_visible_map.get_tile(
-            current_player_pos[0], current_player_pos[1]
+        self.update_visibility()
+        player_pos_xyz = (self.player.x, self.player.y, self.player.current_floor_id)
+        if player_pos_xyz not in self.physically_visited_coords:
+            self.physically_visited_coords.append(player_pos_xyz)
+        current_ai_map = self.ai_visible_maps.get(player_pos_xyz[2])
+        if not current_ai_map:
+            self.message_log.add_message(
+                "AI: Critical error - current AI map not found."
+            )
+            return ("look", None)
+        current_tile_on_visible_map = current_ai_map.get_tile(
+            player_pos_xyz[0], player_pos_xyz[1]
         )
 
-        # 1. Winning Condition (on current tile, based on visible map)
-        if (
-            current_tile_on_visible_map
-            and current_tile_on_visible_map.is_explored
-            and current_tile_on_visible_map.item
-            and current_tile_on_visible_map.item.properties.get("type") == "quest"
-        ):
-            self.message_log.add_message(
-                f"AI: Found quest item {current_tile_on_visible_map.item.name}!"
-            )
+        if current_tile_on_visible_map and \
+           current_tile_on_visible_map.is_explored and \
+           current_tile_on_visible_map.item and \
+           current_tile_on_visible_map.item.properties.get("type") == "quest": # E501 manual wrap
+            item_name = current_tile_on_visible_map.item.name
+            self.message_log.add_message(f"AI: Found quest item {item_name}!")
             self.current_path = None
-            return ("take", current_tile_on_visible_map.item.name)
+            return ("take", item_name)
 
-        # 2. Use Potion if Low Health (from inventory)
         low_health_threshold = self.player.max_health * 0.5
         if self.player.health < low_health_threshold:
             health_potion_inv = next(
-                (
-                    item
-                    for item in self.player.inventory
-                    if "health potion" in item.name.lower()
-                    and item.properties.get("type") == "heal"
-                ),
+                (item for item in self.player.inventory
+                 if "health potion" in item.name.lower() and
+                    item.properties.get("type") == "heal"),
                 None,
             )
             if health_potion_inv:
@@ -411,37 +333,29 @@ class AILogic:
                 )
                 self.current_path = None
                 return ("use", health_potion_inv.name)
-            # If no potion in inventory, _find_target_and_path will prioritize
-            # finding one if visible
 
-        # 3. Take Other Items (non-quest, on current tile, based on visible map)
-        if (
-            current_tile_on_visible_map
-            and current_tile_on_visible_map.is_explored
-            and current_tile_on_visible_map.item
-        ):
-            # Check if it's a health potion and if health is full
+        if current_tile_on_visible_map and \
+           current_tile_on_visible_map.is_explored and \
+           current_tile_on_visible_map.item: # E501 manual wrap
             item_is_potion = (
-                "health potion" in current_tile_on_visible_map.item.name.lower()
-                and current_tile_on_visible_map.item.properties.get("type") == "heal"
-            )
+                "health potion" in current_tile_on_visible_map.item.name.lower() and
+                current_tile_on_visible_map.item.properties.get("type") == "heal"
+            ) # E501 manual wrap
             if item_is_potion and self.player.health >= self.player.max_health:
-                self.message_log.add_message(
+                log_msg = (
                     f"AI: On tile with {current_tile_on_visible_map.item.name}, "
-                    f"but health is full. Skipping."
+                    "but health is full. Skipping."
                 )
+                self.message_log.add_message(log_msg)
             else:
+                item_name = current_tile_on_visible_map.item.name
                 self.message_log.add_message(
-                    f"AI: Found item {current_tile_on_visible_map.item.name} "
-                    f"on current tile, taking it."
+                    f"AI: Found item {item_name} on current tile, taking it."
                 )
                 self.current_path = None
-                return ("take", current_tile_on_visible_map.item.name)
+                return ("take", item_name)
 
-        # 4. Attack Adjacent Monsters (based on visible map)
-        adjacent_monsters = (
-            self._get_adjacent_monsters()
-        )  # This now uses ai_visible_map
+        adjacent_monsters = self._get_adjacent_monsters()
         if adjacent_monsters:
             monster_to_attack = random.choice(adjacent_monsters)
             self.message_log.add_message(
@@ -450,167 +364,151 @@ class AILogic:
             self.current_path = None
             return ("attack", monster_to_attack.name)
 
-        # 5. Follow Current Path or Find New Path (using ai_visible_map)
         if self.current_path:
-            if self.current_path[0] == current_player_pos:
+            current_pos_xyz = (self.player.x, self.player.y, self.player.current_floor_id)
+            if self.current_path[0] == current_pos_xyz:
                 self.current_path.pop(0)
-
             if not self.current_path:
                 self.current_path = None
             else:
-                next_step_pos = self.current_path[0]
-                next_tile_visible = self.ai_visible_map.get_tile(
-                    next_step_pos[0], next_step_pos[1]
-                )
-
-                # Path validation should use ai_visible_map and its is_explored status
-                # A tile is valid to move to if it's explored and not a wall,
-                # and no monster (unless target)
-                can_move_to_next_step = False
-                if next_tile_visible and next_tile_visible.is_explored:
-                    if next_tile_visible.type != "wall":
-                        if next_tile_visible.monster:
-                            # Allow stepping on monster only if it's the final
-                            # destination of the path
-                            if next_step_pos == self.current_path[-1]:
-                                can_move_to_next_step = True
-                            # else: path blocked by unexpected monster
-                        else:
-                            can_move_to_next_step = True
-
-                if not can_move_to_next_step:
+                next_step_xyz = self.current_path[0]
+                next_step_map = self.ai_visible_maps.get(next_step_xyz[2])
+                if not next_step_map:
                     self.message_log.add_message(
-                        "AI: Path blocked on visible map, recalculating."
+                        "AI: Path leads to an unknown floor, recalculating."
                     )
                     self.current_path = None
                 else:
-                    move_command = self._coordinates_to_move_command(
-                        current_player_pos, next_step_pos
+                    next_tile_visible = next_step_map.get_tile(
+                        next_step_xyz[0], next_step_xyz[1]
                     )
-                    if move_command:
-                        self.message_log.add_message(
-                            f"AI: Following path on visible map. Moving "
-                            f"{move_command[1]} to "
-                            f"({next_step_pos[0]},{next_step_pos[1]})."
-                        )
-                        self.last_move_command = move_command
-                        return move_command
-                    else:
-                        self.message_log.add_message(
-                            "AI: Error in path following (visible map), recalculating."
-                        )
-                        self.current_path = None
-
-        if not self.current_path:
-            # This now uses ai_visible_map and new priority
-            self._find_target_and_path()
-            if self.current_path:
-                if (
-                    self.current_path[0] == current_player_pos
-                ):  # Path might start with current
-                    self.current_path.pop(0)
-
-                if not self.current_path:  # Path was just to current location
-                    self.message_log.add_message(
-                        "AI: New path target is current location (visible map). "
-                        "Looking around."
-                    )
-                    self.last_move_command = ("look", None)
-                    return ("look", None)
-
-                next_step_pos = self.current_path[0]
-                move_command = self._coordinates_to_move_command(
-                    current_player_pos, next_step_pos
-                )
-                if move_command:
-                    next_tile_visible = self.ai_visible_map.get_tile(
-                        next_step_pos[0], next_step_pos[1]
-                    )
-                    can_move_to_first_step = False
+                    can_move_to_next_step = False
                     if next_tile_visible and next_tile_visible.is_explored:
                         if next_tile_visible.type != "wall":
                             if next_tile_visible.monster:
-                                if (
-                                    next_step_pos == self.current_path[-1]
-                                ):  # It's the target monster
-                                    can_move_to_first_step = True
-                            else:  # No monster
-                                can_move_to_first_step = True
-
-                    if not can_move_to_first_step:
+                                if next_step_xyz == self.current_path[-1]:
+                                    can_move_to_next_step = True
+                            else:
+                                can_move_to_next_step = True
+                        elif next_tile_visible.is_portal and \
+                             next_step_xyz[2] != current_pos_xyz[2]:
+                             can_move_to_next_step = True
+                    if not can_move_to_next_step:
                         self.message_log.add_message(
-                            "AI: First step of new path blocked (visible map). "
-                            "Looking around."
+                            "AI: Path blocked or invalid on visible map, "
+                            "recalculating."
                         )
                         self.current_path = None
-                        self.last_move_command = ("look", None)
-                        return ("look", None)
-
+                    else:
+                        move_command = self._coordinates_to_move_command(
+                            (current_pos_xyz[0], current_pos_xyz[1]),
+                            (next_step_xyz[0], next_step_xyz[1])
+                        )
+                        if move_command:
+                            log_msg = (
+                                f"AI: Following path. Moving {move_command[1]} to "
+                                f"({next_step_xyz[0]},{next_step_xyz[1]}) on floor "
+                                f"{next_step_xyz[2]}."
+                            )
+                            self.message_log.add_message(log_msg)
+                            self.last_move_command = move_command
+                            return move_command
+                        else:
+                            self.message_log.add_message(
+                                "AI: Error in path following (non-adjacent step), "
+                                "recalculating."
+                            )
+                            self.current_path = None
+        if not self.current_path:
+            self._find_target_and_path()
+            if self.current_path:
+                current_pos_xyz = (self.player.x, self.player.y, self.player.current_floor_id)
+                if self.current_path[0] == current_pos_xyz:
+                    self.current_path.pop(0)
+                if not self.current_path:
                     self.message_log.add_message(
-                        f"AI: Starting new path (visible map). Moving "
-                        f"{move_command[1]} to ({next_step_pos[0]},{next_step_pos[1]})."
+                        "AI: New path target is current location. Looking around."
                     )
+                    self.last_move_command = ("look", None)
+                    return ("look", None)
+                next_step_xyz = self.current_path[0]
+                next_step_map = self.ai_visible_maps.get(next_step_xyz[2])
+                can_move_to_first_step = False
+                if next_step_map:
+                    first_step_tile = next_step_map.get_tile(
+                        next_step_xyz[0], next_step_xyz[1]
+                    )
+                    if first_step_tile and first_step_tile.is_explored:
+                        if first_step_tile.type != "wall":
+                            if first_step_tile.monster:
+                                if next_step_xyz == self.current_path[-1]:
+                                    can_move_to_first_step = True
+                            else:
+                                can_move_to_first_step = True
+                        elif first_step_tile.is_portal and \
+                             next_step_xyz[2] != current_pos_xyz[2]:
+                            can_move_to_first_step = True
+                if not can_move_to_first_step:
+                    self.message_log.add_message(
+                        "AI: First step of new path blocked. Looking around."
+                    )
+                    self.current_path = None
+                    self.last_move_command = ("look", None)
+                    return ("look", None)
+                move_command = self._coordinates_to_move_command(
+                     (current_pos_xyz[0], current_pos_xyz[1]),
+                     (next_step_xyz[0], next_step_xyz[1])
+                )
+                if move_command:
+                    log_msg = (
+                        f"AI: Starting new path. Moving {move_command[1]} to "
+                        f"({next_step_xyz[0]},{next_step_xyz[1]}) on floor "
+                        f"{next_step_xyz[2]}."
+                    )
+                    self.message_log.add_message(log_msg)
                     self.last_move_command = move_command
                     return move_command
                 else:
                     self.message_log.add_message(
-                        "AI: Error in new path step (visible map). Looking around."
+                        "AI: Error in new path step. Looking around."
                     )
                     self.current_path = None
                     self.last_move_command = ("look", None)
                     return ("look", None)
 
-        # Random exploration fallback: try to move in a random valid direction
-        possible_moves = []
-        for direction, (dx, dy) in [
-            ("north", (0, -1)),
-            ("south", (0, 1)),
-            ("west", (-1, 0)),
-            ("east", (1, 0)),
-        ]:
-            check_x, check_y = current_player_pos[0] + dx, current_player_pos[1] + dy
-            if self.ai_visible_map.is_valid_move(check_x, check_y):
-                possible_moves.append(("move", direction))
-
-        if possible_moves:
-            # Check if we should explore unvisited tiles specifically
+        possible_moves_current_floor = []
+        if current_ai_map:
+            player_pos_xy = (player_pos_xyz[0], player_pos_xyz[1])
+            for direction, (dx, dy) in [("north",(0,-1)), ("south",(0,1)),
+                                        ("west",(-1,0)), ("east",(1,0))]:
+                check_x, check_y = player_pos_xy[0] + dx, player_pos_xy[1] + dy
+                if current_ai_map.is_valid_move(check_x, check_y):
+                    possible_moves_current_floor.append(("move", direction))
+        if possible_moves_current_floor:
             unvisited_moves = []
-            for move_cmd, direction in possible_moves:
-                dx, dy = {
-                    "north": (0, -1),
-                    "south": (0, 1),
-                    "west": (-1, 0),
-                    "east": (1, 0),
-                }[direction]
-                check_x, check_y = (
-                    current_player_pos[0] + dx,
-                    current_player_pos[1] + dy,
-                )
-                if (check_x, check_y) not in self.physically_visited_coords:
-                    unvisited_moves.append((move_cmd, direction))
-
+            for move_cmd, direction_str in possible_moves_current_floor:
+                dx_m, dy_m = {"north":(0,-1),"south":(0,1),
+                              "west":(-1,0),"east":(1,0)}[direction_str]
+                check_x_m = player_pos_xyz[0] + dx_m
+                check_y_m = player_pos_xyz[1] + dy_m
+                if (check_x_m, check_y_m, player_pos_xyz[2]) \
+                   not in self.physically_visited_coords: # E501 manual wrap
+                    unvisited_moves.append((move_cmd, direction_str))
             if unvisited_moves:
-                # Explore unvisited tiles (pick first one for deterministic behavior)
                 chosen_move = unvisited_moves[0]
-                self.message_log.add_message(
-                    f"AI: Exploring unvisited. Moving {chosen_move[1]}."
+                self.message_log.add_message( # E501: Wrapped f-string
+                    f"AI: Exploring unvisited on current floor. "
+                    f"Moving {chosen_move[1]}."
                 )
-                # Add current position to visited coords as it will be left
-                if current_player_pos not in self.physically_visited_coords:
-                    self.physically_visited_coords.append(current_player_pos)
                 self.last_move_command = chosen_move
                 return chosen_move
             else:
-                # All nearby tiles visited, explore randomly
-                chosen_move = random.choice(possible_moves)
+                chosen_move = random.choice(possible_moves_current_floor)
                 self.message_log.add_message(
-                    f"AI: All visited nearby. Moving {chosen_move[1]}."
+                    f"AI: All nearby visited on current floor. Moving {chosen_move[1]}."
                 )
                 self.last_move_command = chosen_move
                 return chosen_move
-
-        self.message_log.add_message(
-            "AI: No path found on visible map and no other actions. Looking around."
-        )
+        self.message_log.add_message("AI: No actions available. Looking around.")
         self.last_move_command = ("look", None)
         return ("look", None)

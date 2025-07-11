@@ -64,17 +64,26 @@ class GameEngine:
         # self.world_maps, player_start_full_pos, self.winning_full_pos = \
         #     self.world_generator.generate_world(map_width, map_height, seed=None)
 
-        temp_single_map, temp_player_start_coords, temp_winning_coords = \
-            self.world_generator._generate_single_floor(map_width, map_height, seed=None) # Changed to _generate_single_floor
+        temp_single_map, temp_player_start_coords, temp_winning_coords = (
+            self.world_generator._generate_single_floor(
+                map_width, map_height, seed=None
+            )
+        )  # Changed to _generate_single_floor
 
-        self.world_maps = {0: temp_single_map} # Initialize with one floor
-        player_start_full_pos = (temp_player_start_coords[0], temp_player_start_coords[1], 0)
+        self.world_maps = {0: temp_single_map}  # Initialize with one floor
+        player_start_full_pos = (
+            temp_player_start_coords[0],
+            temp_player_start_coords[1],
+            0,
+        )
         self.winning_full_pos = (temp_winning_coords[0], temp_winning_coords[1], 0)
 
         # Create a visible map for each floor.
         self.visible_maps: dict[int, WorldMap] = {}
         for floor_id, w_map in self.world_maps.items():
-            self.visible_maps[floor_id] = WorldMap(width=w_map.width, height=w_map.height)
+            self.visible_maps[floor_id] = WorldMap(
+                width=w_map.width, height=w_map.height
+            )
 
         # Renderer map dimensions are based on floor 0.
         # Assumes fixed map size for now.
@@ -94,7 +103,7 @@ class GameEngine:
             x=player_start_full_pos[0],
             y=player_start_full_pos[1],
             current_floor_id=player_start_full_pos[2],
-            health=20
+            health=20,
         )
         self.game_over = False
         self.message_log = MessageLog(max_messages=5)
@@ -131,8 +140,10 @@ class GameEngine:
             for dx_offset in range(-1, 2):
                 map_x, map_y = player_x + dx_offset, player_y + dy_offset
 
-                if not (0 <= map_x < current_real_map.width and \
-                        0 <= map_y < current_real_map.height):
+                if not (
+                    0 <= map_x < current_real_map.width
+                    and 0 <= map_y < current_real_map.height
+                ):
                     continue
 
                 real_tile = current_real_map.get_tile(map_x, map_y)
@@ -146,6 +157,7 @@ class GameEngine:
                         visible_tile.is_portal = real_tile.is_portal
                         visible_tile.portal_to_floor_id = real_tile.portal_to_floor_id
                         visible_tile.is_explored = True
+
     # Their responsibilities have been moved to InputHandler, Renderer,
     # and CommandProcessor respectively.
 
@@ -169,7 +181,9 @@ class GameEngine:
             current_ai_path_debug = None
             if self.ai_active and self.ai_logic:
                 current_ai_path_debug = self.ai_logic.current_path
-            current_visible_map_for_render = self.visible_maps.get(self.player.current_floor_id)
+            current_visible_map_for_render = self.visible_maps.get(
+                self.player.current_floor_id
+            )
             if not current_visible_map_for_render:
                 # Fallback to floor 0 or handle error more gracefully.
                 current_visible_map_for_render = self.visible_maps.get(
@@ -186,7 +200,7 @@ class GameEngine:
                 message_log=self.message_log,
                 debug_render_to_list=True,
                 ai_path=current_ai_path_debug,
-                current_floor_id=self.player.current_floor_id # Pass current floor ID
+                current_floor_id=self.player.current_floor_id,  # Pass current floor ID
             )
             return
 
@@ -203,7 +217,8 @@ class GameEngine:
                 )
 
             self.renderer.render_all(
-                player_x=self.player.x, player_y=self.player.y,
+                player_x=self.player.x,
+                player_y=self.player.y,
                 player_health=self.player.health,
                 world_map_to_render=initial_visible_map,
                 input_mode=self.input_handler.get_input_mode(),
@@ -211,7 +226,7 @@ class GameEngine:
                 message_log=self.message_log,
                 debug_render_to_list=self.debug_mode,
                 ai_path=current_ai_path_initial,
-                current_floor_id=self.player.current_floor_id
+                current_floor_id=self.player.current_floor_id,
             )
 
             while not self.game_over:
@@ -222,28 +237,40 @@ class GameEngine:
                         time.sleep(self.ai_sleep_duration)
                     parsed_command_output = self.ai_logic.get_next_action()
                 else:
-                    parsed_command_output = self.input_handler.handle_input_and_get_command()
+                    parsed_command_output = (
+                        self.input_handler.handle_input_and_get_command()
+                    )
 
                 if parsed_command_output:
-                    if self.game_over: # Should not process if already over
+                    if self.game_over:  # Should not process if already over
                         self.message_log.add_message("The game is over.")
                     else:
                         results = self.command_processor.process_command(
-                            parsed_command_output, self.player, self.world_maps,
-                            self.message_log, self.winning_full_pos, game_engine=self
+                            parsed_command_output,
+                            self.player,
+                            self.world_maps,
+                            self.message_log,
+                            self.winning_full_pos,
+                            game_engine=self,
                         )
                         self.game_over = results.get("game_over", False)
                         if not self.game_over:
-                            self._update_fog_of_war_visibility() # Crucial after floor change
+                            # Crucial after floor change
+                            self._update_fog_of_war_visibility()
 
-                current_ai_path_loop = self.ai_logic.current_path if self.ai_active and self.ai_logic else None
+                current_ai_path_loop = (
+                    self.ai_logic.current_path
+                    if self.ai_active and self.ai_logic
+                    else None
+                )
                 loop_visible_map = self.visible_maps.get(self.player.current_floor_id)
                 if not loop_visible_map:
-                   loop_visible_map = self.visible_maps.get(
-                       0, WorldMap(self.renderer.map_width, self.renderer.map_height)
-                   )
+                    loop_visible_map = self.visible_maps.get(
+                        0, WorldMap(self.renderer.map_width, self.renderer.map_height)
+                    )
                 self.renderer.render_all(
-                    player_x=self.player.x, player_y=self.player.y,
+                    player_x=self.player.x,
+                    player_y=self.player.y,
                     player_health=self.player.health,
                     world_map_to_render=loop_visible_map,
                     input_mode=self.input_handler.get_input_mode(),
@@ -251,19 +278,22 @@ class GameEngine:
                     message_log=self.message_log,
                     debug_render_to_list=self.debug_mode,
                     ai_path=current_ai_path_loop,
-                    current_floor_id=self.player.current_floor_id
+                    current_floor_id=self.player.current_floor_id,
                 )
 
             # Final render after game over
             self._update_fog_of_war_visibility()
-            current_ai_path_final = self.ai_logic.current_path if self.ai_active and self.ai_logic else None
+            current_ai_path_final = (
+                self.ai_logic.current_path if self.ai_active and self.ai_logic else None
+            )
             final_visible_map = self.visible_maps.get(self.player.current_floor_id)
             if not final_visible_map:
                 final_visible_map = self.visible_maps.get(
                     0, WorldMap(self.renderer.map_width, self.renderer.map_height)
                 )
             self.renderer.render_all(
-                player_x=self.player.x, player_y=self.player.y,
+                player_x=self.player.x,
+                player_y=self.player.y,
                 player_health=self.player.health,
                 world_map_to_render=final_visible_map,
                 input_mode=self.input_handler.get_input_mode(),
@@ -271,7 +301,7 @@ class GameEngine:
                 message_log=self.message_log,
                 debug_render_to_list=self.debug_mode,
                 ai_path=current_ai_path_final,
-                current_floor_id=self.player.current_floor_id
+                current_floor_id=self.player.current_floor_id,
             )
             if self.game_over and not self.debug_mode:
                 curses.napms(2000)  # Pause for 2 seconds.

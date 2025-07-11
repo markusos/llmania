@@ -21,16 +21,18 @@ class Command(ABC):
         message_log: "MessageLog",
         winning_position: tuple[int, int, int],  # Now (x, y, floor_id)
         argument: Optional[str] = None,
-        world_maps: Optional[Dict[int, "WorldMap"]] = None, # All floor maps
-        game_engine: Optional["GameEngine"] = None # Reference to game engine
+        world_maps: Optional[Dict[int, "WorldMap"]] = None,  # All floor maps
+        game_engine: Optional["GameEngine"] = None,  # Reference to game engine
     ):
         self.player = player
-        self.world_map = world_map # Current floor's map
+        self.world_map = world_map  # Current floor's map
         self.message_log = message_log
-        self.winning_position = winning_position # (x,y,floor_id)
+        self.winning_position = winning_position  # (x,y,floor_id)
         self.argument = argument
-        self.world_maps = world_maps # All maps, needed for cross-floor actions
-        self.game_engine = game_engine # For complex state changes like floor transition
+        self.world_maps = world_maps  # All maps, needed for cross-floor actions
+        self.game_engine = (
+            game_engine  # For complex state changes like floor transition
+        )
 
     @abstractmethod
     def execute(self) -> Dict[str, Any]:
