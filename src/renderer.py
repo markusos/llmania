@@ -1,4 +1,5 @@
 import curses
+from typing import List, Optional, Tuple  # Added Optional, List, Tuple
 
 from src.message_log import MessageLog
 from src.tile import TILE_SYMBOLS
@@ -43,6 +44,7 @@ class Renderer:
             self.MONSTER_COLOR_PAIR = 0
             self.ITEM_COLOR_PAIR = 0
             self.DEFAULT_TEXT_COLOR_PAIR = 0
+            self.PATH_COLOR_PAIR = 0  # Placeholder for debug mode
         else:
             # Initialize curses for terminal-based rendering.
             self.stdscr = curses.initscr()  # Initialize the curses library.
@@ -75,6 +77,8 @@ class Renderer:
                 6, curses.COLOR_WHITE, curses.COLOR_BLACK
             )  # Default text (e.g., for UI)
             self.DEFAULT_TEXT_COLOR_PAIR = 6
+            curses.init_pair(7, curses.COLOR_BLUE, curses.COLOR_GREEN)  # Path
+            self.PATH_COLOR_PAIR = 7
 
     def render_all(
         self,
@@ -86,6 +90,7 @@ class Renderer:
         current_command_buffer: str,
         message_log: MessageLog,
         debug_render_to_list: bool = False,
+        ai_path: Optional[List[Tuple[int, int]]] = None,
         # ai_mode_active: bool = False,  # Parameter removed, fog is always
         # active based on visible_map
     ) -> list[str] | None:
@@ -129,20 +134,24 @@ class Renderer:
                 row_str = ""
                 for x_map in range(world_map_to_render.width):
                     char_to_draw = ""
+                    is_path_tile = False
                     if x_map == player_x and y_map == player_y:
                         char_to_draw = self.player_symbol
-                    else:
+                    elif ai_path:
+                        current_coord = (x_map, y_map)
+                        if current_coord == ai_path[-1]:  # Destination
+                            char_to_draw = "x"
+                            is_path_tile = True
+                        elif current_coord in ai_path:
+                            char_to_draw = "*"
+                            is_path_tile = True
+
+                    if not char_to_draw:  # If not player or path, draw tile content
                         tile = world_map_to_render.get_tile(x_map, y_map)
                         if tile:
-                            # Fog is now always active, controlled by
-                            # tile.is_explored in visible_map
-                            symbol, _ = tile.get_display_info(
-                                apply_fog=True
-                            )  # Parameter will be renamed
+                            symbol, _ = tile.get_display_info(apply_fog=True)
                             char_to_draw = symbol
                         else:
-                            # This case should ideally not happen if map is consistent
-                            # If no tile, render as fog (empty space)
                             char_to_draw = TILE_SYMBOLS.get("fog", " ")
                     row_str += char_to_draw
                 output_buffer.append(row_str)
@@ -205,21 +214,31 @@ class Renderer:
 
                 char_to_draw = ""
                 color_attribute = curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR)
+                is_path_tile = False
 
                 if x_tile_idx == player_x and y_map_idx == player_y:
                     char_to_draw = self.player_symbol
                     color_attribute = curses.color_pair(self.PLAYER_COLOR_PAIR)
-                else:
-                    tile = world_map_to_render.get_tile(
-                        x_tile_idx, y_map_idx
-                    )  # Use world_map_to_render (which is the visible_map)
+                elif ai_path:
+                    current_coord = (x_tile_idx, y_map_idx)
+                    # Check destination first
+                    if current_coord == ai_path[-1]:
+                        char_to_draw = "x"
+                        color_attribute = curses.color_pair(self.PATH_COLOR_PAIR)
+                        is_path_tile = True
+                    elif current_coord in ai_path:
+                        char_to_draw = "*"
+                        color_attribute = curses.color_pair(self.PATH_COLOR_PAIR)
+                        is_path_tile = True
+
+                if (
+                    not is_path_tile and not char_to_draw
+                ):  # If not player and not path tile
+                    tile = world_map_to_render.get_tile(x_tile_idx, y_map_idx)
                     if tile:
-                        # Fog is always active, based on tile.is_explored in visible_map
-                        # The parameter to get_display_info will be renamed to apply_fog
                         char_to_draw, display_type = tile.get_display_info(
                             apply_fog=True
                         )
-
                         if display_type == "monster":
                             color_attribute = curses.color_pair(self.MONSTER_COLOR_PAIR)
                         elif display_type == "item":
@@ -229,26 +248,37 @@ class Renderer:
                         elif display_type == "floor":
                             color_attribute = curses.color_pair(self.FLOOR_COLOR_PAIR)
                         elif display_type == "fog":
-                            # Assuming fog is black on black or similar default.
-                            # Or, define a specific FOG_COLOR_PAIR if needed.
                             color_attribute = curses.color_pair(
                                 self.DEFAULT_TEXT_COLOR_PAIR
-                            )  # Example: White on Black for fog char if it's not ' '
-                            if char_to_draw == " ":  # If fog is just empty space
-                                color_attribute = curses.color_pair(
-                                    0
-                                )  # Default terminal background color
+                            )
+                            if char_to_draw == " ":
+                                color_attribute = curses.color_pair(0)
                         # else: default color for "unknown"
                     else:
-                        # Tile outside map bounds or None. Render as fog.
                         char_to_draw = TILE_SYMBOLS.get("fog", " ")
                         color_attribute = (
-                            curses.color_pair(
-                                0
-                            )  # Default terminal background for space
+                            curses.color_pair(0)
                             if char_to_draw == " "
                             else curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR)
                         )
+
+                # Ensure char_to_draw is not empty if a path tile was identified
+                # but char_to_draw wasn't set (e.g. player on path, and player
+                # symbol logic might change or have an issue). This is a fallback.
+                if is_path_tile and not char_to_draw:
+                    # This situation implies that the player symbol should have been
+                    # drawn, or there's an unexpected state.
+                    # If player isn't at (x_tile_idx, y_map_idx), then path char.
+                    if not (x_tile_idx == player_x and y_map_idx == player_y):
+                        if (x_tile_idx, y_map_idx) == ai_path[-1]:
+                            char_to_draw = "x"  # Destination
+                        else:
+                            char_to_draw = "*"  # Path segment
+                        color_attribute = curses.color_pair(self.PATH_COLOR_PAIR)
+                    # If player is here, char_to_draw should already be player_symbol.
+                    # If it's not, then the initial player check failed, which is
+                    # a deeper issue. This fallback doesn't try to fix that,
+                    # it just ensures path tiles get *a* path symbol if not player.
 
                 try:
                     # Add the character to the screen at (y_map_idx, current_screen_x)
