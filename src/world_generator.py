@@ -38,8 +38,8 @@ class WorldGenerator:
     # would remain or be moved to a common utility module.
     # For now, we assume they are fully encapsulated within the builders.
 
-    # The _print_debug_map can be kept if direct debugging from WorldGenerator is needed,
-    # or moved to a utility if it's generally useful.
+    # The _print_debug_map can be kept if direct debugging from WorldGenerator
+    # is needed, or moved to a utility if it's generally useful.
     def _print_debug_map(
         self,
         world_map: WorldMap,

@@ -70,12 +70,13 @@ def test_adjust_density_increase_floor_tiles(setup_world):
     final_floor_count = _count_floor_tiles(world_map)
 
     assert final_floor_count >= initial_floor_count, "Floor count should not decrease."
-    # Allow for some deviation due to connectivity constraints and discrete nature of tiles
+    # Allow for deviation due to connectivity constraints and discrete tiles
     assert (
         abs(final_floor_count - expected_floor_tiles) <= total_inner_tiles * 0.1
         or final_floor_count >= expected_floor_tiles
     ), (
-        f"Final floor count {final_floor_count} not close enough to target {expected_floor_tiles}. Initial was {initial_floor_count}"
+        f"Final floor count {final_floor_count} not close to target "
+        f"{expected_floor_tiles}. Initial: {initial_floor_count}"
     )
 
 
@@ -107,9 +108,9 @@ def test_adjust_density_decrease_floor_tiles(setup_world):
     # Allow some flexibility due to connectivity preservation
     assert final_floor_count >= expected_floor_tiles - (
         total_inner_tiles * 0.05
-    ) and final_floor_count <= expected_floor_tiles + (total_inner_tiles * 0.15), (
-        f"Final floor count {final_floor_count} not close enough to target {expected_floor_tiles}. Initial was {initial_floor_count}"
-    )
+    ) and final_floor_count <= expected_floor_tiles + (
+        total_inner_tiles * 0.15
+    ), f"Final {final_floor_count} not close to target {expected_floor_tiles}"
 
 
 def test_adjust_density_with_protected_coords(setup_world):
@@ -161,12 +162,13 @@ def test_density_adjustment_respects_minimal_connectivity(setup_world):
     for x, y in path_coords:
         tile = small_map.get_tile(x, y)
         assert tile is not None and tile.type == "floor", (
-            f"Path tile ({x},{y}) was changed from floor to {tile.type if tile else 'None'}."
+            f"Path tile ({x},{y}) was changed to {tile.type if tile else 'None'}."
         )  # type: ignore
 
     final_floors = _count_floor_tiles(small_map)
-    # It should keep at least the path tiles, plus player_s and win_s if not in path_coords (they are here)
-    # The algorithm might keep slightly more to ensure connectivity or due to how it picks tiles.
+    # It should keep at least the path tiles, plus player_s and win_s if not in
+    # path_coords (they are here)
+    # The algorithm might keep slightly more to ensure connectivity.
     assert final_floors >= len(path_coords), (
-        f"Final floor count {final_floors} is less than the minimal path length {len(path_coords)}."
+        f"Final floor count {final_floors} is less than min path {len(path_coords)}."
     )

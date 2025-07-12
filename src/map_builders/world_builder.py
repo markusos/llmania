@@ -104,9 +104,7 @@ class WorldBuilder:
                         coord_found = True
                         break
             if not coord_found:
-                print(
-                    f"Warning: Could not find a unique portal location for {f1_id}-{f2_id}"
-                )
+                print(f"Warning: No unique portal location for {f1_id}-{f2_id}")
 
         # Ensure full connectivity
         num_components = sum(1 for i in range(self.num_floors) if parent[i] == i)
@@ -173,7 +171,7 @@ class WorldBuilder:
         ]
 
         if not amulet_floor_tiles:
-            # Fallback: place amulet on player's start floor if amulet floor is solid rock
+            # Fallback: if amulet floor is solid rock, use player's start floor
             amulet_floor_id = player_start_floor
             amulet_map = self.world_maps[amulet_floor_id]
             amulet_floor_tiles = [
