@@ -10,14 +10,14 @@ class WorldGenerator:
         # floor_portion is now handled by SingleFloorBuilder,
         # but we keep it here if WorldGenerator needs to pass it down.
         self.floor_portion = floor_portion
+        self.seed = None
 
     def generate_world(
         self, width: int, height: int, seed: Optional[int] = None
     ) -> Tuple[
         dict[int, WorldMap], Tuple[int, int, int], Tuple[int, int, int], List[dict]
     ]:
-        if seed is not None:
-            random.seed(seed)
+        self.seed = seed
 
         # Determine the number of floors for the world
         # This could be a fixed number, a range, or passed as a parameter

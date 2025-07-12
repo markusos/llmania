@@ -160,36 +160,7 @@ class GameEngine:
         Starts and manages the main game loop.
         """
         if self.debug_mode:
-            # In debug mode, we run the AI loop directly.
-            start_time = time.time()
-            timeout_seconds = 30
-            self._update_fog_of_war_visibility()
-            while not self.game_over:
-                if time.time() - start_time > timeout_seconds:
-                    print("--- Debug Mode Timeout ---")
-                    self.game_over = True
-                    break
-                if self.ai_active and self.ai_logic:
-                    # Update visibility before AI action
-                    self._update_fog_of_war_visibility()
-                    parsed_command_output = self.ai_logic.get_next_action()
-                    if parsed_command_output:
-                        floor_before_command = self.player.current_floor_id
-                        results = self.command_processor.process_command(
-                            parsed_command_output,
-                            self.player,
-                            self.world_maps,
-                            self.message_log,
-                            self.winning_full_pos,
-                            game_engine=self,
-                        )
-                        self.game_over = results.get("game_over", False)
-                        floor_after_command = self.player.current_floor_id
-                        if floor_before_command != floor_after_command:
-                            self.ai_logic.current_path = None
-                else:
-                    # If not AI, we need a way to end the loop in debug.
-                    self.game_over = True
+            self.run_debug_mode()
             return
 
         try:
@@ -306,3 +277,113 @@ class GameEngine:
         finally:
             if not self.debug_mode:
                 self.renderer.cleanup_curses()
+
+    def run_debug_mode(self):
+        """
+        Runs the game in a debug mode without the curses interface.
+        This allows for printing game state and messages directly to the console,
+        which is useful for testing game logic and content generation.
+        """
+        print("--- Starting Game in Debug Mode ---")
+
+        print("\n--- Initial Player and Map State ---")
+        print(f"Player initial position: ({self.player.x}, {self.player.y})")
+        print(f"Player initial health: {self.player.health}")
+        print(f"Winning position: {self.winning_full_pos}")
+        print(f"Seed used: {self.world_generator.seed if hasattr(self.world_generator, 'seed') else 'default'}")
+        self._print_full_map_debug()
+
+        # Run the game loop until the game is over
+        start_time = time.time()
+        timeout_seconds = 30
+        self._update_fog_of_war_visibility()
+        while not self.game_over:
+            if time.time() - start_time > timeout_seconds:
+                print("--- Debug Mode Timeout ---")
+                self.game_over = True
+                break
+            if self.ai_active and self.ai_logic:
+                # Update visibility before AI action
+                self._update_fog_of_war_visibility()
+                parsed_command_output = self.ai_logic.get_next_action()
+                if parsed_command_output:
+                    floor_before_command = self.player.current_floor_id
+                    results = self.command_processor.process_command(
+                        parsed_command_output,
+                        self.player,
+                        self.world_maps,
+                        self.message_log,
+                        self.winning_full_pos,
+                        game_engine=self,
+                    )
+                    self.game_over = results.get("game_over", False)
+                    floor_after_command = self.player.current_floor_id
+                    if floor_before_command != floor_after_command:
+                        self.ai_logic.current_path = None
+            else:
+                # If not AI, we need a way to end the loop in debug.
+                self.game_over = True
+
+        print("\n--- Game Over ---")
+        # Final state output
+        final_map = self.renderer.render_all(
+            player_x=self.player.x,
+            player_y=self.player.y,
+            player_health=self.player.health,
+            world_map_to_render=self.visible_maps.get(
+                self.player.current_floor_id, self.world_maps[0]
+            ),
+            input_mode=self.input_handler.get_input_mode(),
+            current_command_buffer=self.input_handler.get_command_buffer(),
+            message_log=self.message_log,
+            debug_render_to_list=True,
+            ai_path=self.ai_logic.current_path if self.ai_logic else None,
+            current_floor_id=self.player.current_floor_id,
+        )
+        if final_map:
+            for row in final_map:
+                print(row)
+
+        print("\n--- Final Messages ---")
+        for msg in self.message_log.messages:
+            print(msg)
+
+        print("\n--- Debug Mode Finished ---")
+
+    def _print_full_map_debug(self):
+        """
+        Prints the full map layout for each floor, including portal connections.
+        """
+        print("\n--- World Map Layout ---")
+        for floor_id, world_map in sorted(self.world_maps.items()):
+            print(f"\n--- Floor {floor_id} ---")
+            portal_info = []
+            for y in range(world_map.height):
+                for x in range(world_map.width):
+                    tile = world_map.get_tile(x, y)
+                    if tile and tile.is_portal:
+                        portal_info.append(
+                            f"Portal at ({x}, {y}) -> Floor {tile.portal_to_floor_id}"
+                        )
+
+            # Render the map to a list of strings
+            map_render = self.renderer.render_all(
+                player_x=-1,  # No player shown
+                player_y=-1,
+                player_health=0,
+                world_map_to_render=world_map,
+                input_mode="",
+                current_command_buffer="",
+                message_log=self.message_log,  # Empty for this purpose
+                debug_render_to_list=True,
+                current_floor_id=floor_id,
+                apply_fog=False,  # Render the whole map regardless of exploration
+            )
+            if map_render:
+                for row in map_render:
+                    print(row)
+
+            if portal_info:
+                print("Portals:")
+                for info in portal_info:
+                    print(f"- {info}")
