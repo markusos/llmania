@@ -85,8 +85,10 @@ class Tile:
                   "fog").
         """
         if apply_fog and not self.is_explored:
-            return (TILE_SYMBOLS["fog"], "fog")
+            return TILE_SYMBOLS["fog"], "fog"
 
+        # If fog is not applied, we show everything regardless of exploration.
+        # The display priority is: Monster > Item > Tile Type.
         if self.monster:
             return (ENTITY_SYMBOLS["monster"], "monster")
         elif self.item:

@@ -560,8 +560,8 @@ class TestAILogic(unittest.TestCase):
         self.ai.current_path = None  # This would be cleared by the GameEngine
 
         # Now on floor 1, AI should re-evaluate
-        # Make the AI aware of the item
-        self.ai.update_visibility()
+        # The GameEngine would call _update_fog_of_war_visibility, which updates
+        # the AI's visible map. We don't need to call anything on the AI directly.
 
         # Get next action, which should now be taking the rock
         action = self.ai.get_next_action()

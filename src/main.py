@@ -161,9 +161,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.debug:
-        main_debug(
-            seed=args.seed if args.seed is not None else 12345, verbose=args.verbose
-        )
+        main_debug(seed=args.seed, verbose=args.verbose)
     else:
         # Initialize and run the game with the curses interface.
         # Larger map for the actual game.

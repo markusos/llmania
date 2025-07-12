@@ -34,33 +34,6 @@ class AILogic:
         self.current_path: Optional[List[Tuple[int, int, int]]] = None
         self.last_move_command: Optional[Tuple[str, Optional[str]]] = None
 
-    def update_visibility(self) -> None:
-        player_x, player_y = self.player.x, self.player.y
-        current_floor_id = self.player.current_floor_id
-        current_real_map = self.real_world_maps.get(current_floor_id)
-        current_ai_visible_map = self.ai_visible_maps.get(current_floor_id)
-
-        if not current_real_map or not current_ai_visible_map:
-            msg = (
-                f"AI Error: Cannot update visibility for floor {current_floor_id}. "
-                "Map not found."
-            )
-            self.message_log.add_message(msg)
-            return
-        for dy_offset in range(-1, 2):
-            for dx_offset in range(-1, 2):
-                map_x, map_y = player_x + dx_offset, player_y + dy_offset
-                real_tile = current_real_map.get_tile(map_x, map_y)
-                if real_tile:
-                    ai_tile = current_ai_visible_map.get_tile(map_x, map_y)
-                    if ai_tile:
-                        ai_tile.type = real_tile.type
-                        ai_tile.monster = real_tile.monster
-                        ai_tile.item = real_tile.item
-                        ai_tile.is_portal = real_tile.is_portal
-                        ai_tile.portal_to_floor_id = real_tile.portal_to_floor_id
-                        ai_tile.is_explored = True
-
     def _get_adjacent_monsters(self) -> List["Monster"]:
         adjacent_monsters: List["Monster"] = []
         current_floor_id = self.player.current_floor_id
@@ -425,7 +398,6 @@ class AILogic:
 
     def _get_next_action_logic(self) -> Optional[Tuple[str, Optional[str]]]:
         player_floor_before_action = self.player.current_floor_id
-        self.update_visibility()
         player_pos_xyz = (self.player.x, self.player.y, self.player.current_floor_id)
         if player_pos_xyz not in self.physically_visited_coords:
             self.physically_visited_coords.append(player_pos_xyz)
@@ -579,6 +551,38 @@ class AILogic:
                     )
                     self.last_move_command = ("look", None)
                     return ("look", None)
+                next_step_xyz = self.current_path[0]
+
+                # If the next step is on a different floor, we need to find a portal
+                if next_step_xyz[2] != player_floor_before_action:
+                    portal_found = False
+                    current_map = self.ai_visible_maps.get(player_floor_before_action)
+                    if current_map:
+                        for y, x in current_map.iter_coords():
+                            tile = current_map.get_tile(x, y)
+                            if (
+                                tile
+                                and tile.is_portal
+                                and tile.portal_to_floor_id == next_step_xyz[2]
+                            ):
+                                portal_path = self.path_finder.find_path_bfs(
+                                    self.ai_visible_maps,
+                                    (current_pos_xyz[0], current_pos_xyz[1]),
+                                    player_floor_before_action,
+                                    (x, y),
+                                    player_floor_before_action,
+                                )
+                                if portal_path:
+                                    self.current_path = portal_path
+                                    portal_found = True
+                                    break
+                    if not portal_found:
+                        self.message_log.add_message(
+                            "AI: Could not find a path to a portal to the next floor."
+                        )
+                        self.current_path = None
+                        return ("look", None)
+
                 next_step_xyz = self.current_path[0]
                 next_step_map = self.ai_visible_maps.get(next_step_xyz[2])
                 can_move_to_first_step = False
