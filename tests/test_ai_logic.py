@@ -94,6 +94,9 @@ class TestAILogic(unittest.TestCase):
                 elif char.isdigit():
                     tile_type = "portal"
                     portal_to_floor_id = int(char)
+                elif char == "R":
+                    tile_type = "floor"
+                    item = Item(name="Rock", description="A plain rock", properties={})
 
                 tile = Tile(
                     tile_type=tile_type,
@@ -535,6 +538,38 @@ class TestAILogic(unittest.TestCase):
             self.assertEqual(self.ai.current_path[-1], (2, 0, 0))
         self.message_log.add_message.assert_any_call(
             "AI: Pathing to portal_to_unexplored at (2,0) on floor 0."
+        )
+
+    def test_ai_resets_path_after_portal_travel(self):
+        # Setup maps: Floor 0 with a portal to Floor 1
+        self._create_floor_layout(0, 3, 1, ["S.1"], is_ai_map=True)
+        self._create_floor_layout(1, 3, 1, ["..R"], is_ai_map=True)  # R for Rock
+        self.mock_player.x = 0
+        self.mock_player.y = 0
+        self.mock_player.current_floor_id = 0
+
+        # AI finds a path to the portal
+        self.ai.get_next_action()
+        self.assertIsNotNone(self.ai.current_path)
+        self.assertEqual(self.ai.current_path[-1], (2, 0, 0))
+
+        # Simulate moving through the portal
+        self.mock_player.x = 2
+        self.mock_player.y = 0
+        self.mock_player.current_floor_id = 1
+        self.ai.current_path = None  # This would be cleared by the GameEngine
+
+        # Now on floor 1, AI should re-evaluate
+        # Make the AI aware of the item
+        self.ai.update_visibility()
+
+        # Get next action, which should now be taking the rock
+        action = self.ai.get_next_action()
+
+        self.assertEqual(action, ("take", "Rock"))
+        self.assertIsNone(self.ai.current_path)
+        self.message_log.add_message.assert_any_call(
+            "AI: Found item Rock on current tile, taking it."
         )
 
 
