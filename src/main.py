@@ -38,124 +38,55 @@ from src.game_engine import GameEngine  # noqa: E402 (ignore import not at top o
 # it can be imported here, but typically it's encapsulated.
 
 
-def main_debug():
+def main_debug(seed=None):
     """
     Runs the game in a debug mode without the curses interface.
     This allows for printing game state and messages directly to the console,
     which is useful for testing game logic and content generation.
     """
     print("--- Starting Game in Debug Mode ---")
-    # Initialize game engine in debug mode.
-    # Smaller map for easier console output.
-    game = GameEngine(map_width=20, map_height=10, debug_mode=True)
+    # Initialize game engine in debug mode with AI enabled.
+    game = GameEngine(
+        map_width=20,
+        map_height=10,
+        debug_mode=True,
+        ai_active=True,
+        ai_sleep_duration=0,
+        seed=seed,
+    )
 
-    # --- Initial State Output ---
     print("\n--- Initial Player and Map State ---")
     print(f"Player initial position: ({game.player.x}, {game.player.y})")
     print(f"Player initial health: {game.player.health}")
-    print(f"Winning position: {game.winning_position}")
+    print(f"Winning position: {game.winning_full_pos}")
+    print(f"Seed used: {seed if seed else 'default'}")
 
-    # Initial render to list (debug_render_to_list=True is handled by GameEngine)
-    map_representation = game.renderer.render_all(
+    # Run the game loop until the game is over
+    game.run()
+
+    print("\n--- Game Over ---")
+    # Final state output
+    final_map = game.renderer.render_all(
         player_x=game.player.x,
         player_y=game.player.y,
         player_health=game.player.health,
-        world_map_to_render=game.world_map,
-        input_mode=game.input_handler.get_input_mode(),
-        current_command_buffer=game.input_handler.get_command_buffer(),
-        message_log=game.message_log,
-        debug_render_to_list=True,  # Explicitly true for clarity in main_debug
-    )
-    if map_representation:
-        print("\n--- Initial Map Display (as list of strings) ---")
-        for row in map_representation:
-            print(row)
-    else:
-        print("Error: Failed to render map for debugging.")
-
-    # --- Simulate and Test Basic Interactions ---
-    # Note: In debug mode, GameEngine.run() might not loop.
-    # We directly call CommandProcessor methods to simulate turns.
-
-    print("\n--- Simulating 'look' command ---")
-    game.message_log.clear()  # Clear previous messages
-    game.command_processor.process_command(
-        parsed_command_tuple=("look", None),
-        player=game.player,
-        world_map=game.world_map,
-        message_log=game.message_log,
-        winning_position=game.winning_position,
-    )
-    # Render and display output after 'look'
-    output_after_look = game.renderer.render_all(
-        player_x=game.player.x,
-        player_y=game.player.y,
-        player_health=game.player.health,
-        world_map_to_render=game.world_map,
+        world_map_to_render=game.visible_maps.get(
+            game.player.current_floor_id, game.world_maps[0]
+        ),
         input_mode=game.input_handler.get_input_mode(),
         current_command_buffer=game.input_handler.get_command_buffer(),
         message_log=game.message_log,
         debug_render_to_list=True,
+        ai_path=game.ai_logic.current_path if game.ai_logic else None,
+        current_floor_id=game.player.current_floor_id,
     )
-    if output_after_look:
-        print("--- Output after 'look' ---")
-        for row in output_after_look:  # Display full output for context
+    if final_map:
+        for row in final_map:
             print(row)
-    else:
-        print("Error: Failed to render after 'look'.")
 
-    print("\n--- Simulating 'move east' command ---")
-    game.message_log.clear()
-    game.command_processor.process_command(
-        parsed_command_tuple=("move", "east"),
-        player=game.player,
-        world_map=game.world_map,
-        message_log=game.message_log,
-        winning_position=game.winning_position,
-    )
-    output_after_move = game.renderer.render_all(
-        player_x=game.player.x,
-        player_y=game.player.y,
-        player_health=game.player.health,
-        world_map_to_render=game.world_map,
-        input_mode=game.input_handler.get_input_mode(),
-        current_command_buffer=game.input_handler.get_command_buffer(),
-        message_log=game.message_log,
-        debug_render_to_list=True,
-    )
-    if output_after_move:
-        print("--- Output after 'move east' ---")
-        for row in output_after_move:
-            print(row)
-    else:
-        print("Error: Failed to render after 'move east'.")
-
-    print("\n--- Simulating 'take' command (expecting 'nothing to take') ---")
-    game.message_log.clear()
-    # Assuming player moved to an empty spot.
-    game.command_processor.process_command(
-        parsed_command_tuple=("take", None),  # Or specify a non-existent item
-        player=game.player,
-        world_map=game.world_map,
-        message_log=game.message_log,
-        winning_position=game.winning_position,
-    )
-    output_after_take = game.renderer.render_all(
-        player_x=game.player.x,
-        player_y=game.player.y,
-        player_health=game.player.health,
-        world_map_to_render=game.world_map,
-        input_mode=game.input_handler.get_input_mode(),
-        current_command_buffer=game.input_handler.get_command_buffer(),
-        message_log=game.message_log,
-        debug_render_to_list=True,
-    )
-    if output_after_take:
-        print("--- Output after 'take' attempt ---")
-        for row in output_after_take:
-            print(row)
-    else:
-        print("Error: Failed to render after 'take' attempt.")
+    print("\n--- Final Messages ---")
+    for msg in game.message_log.messages:
+        print(msg)
 
     print("\n--- Debug Mode Finished ---")
 
@@ -174,10 +105,16 @@ if __name__ == "__main__":
         default=0.5,
         help="Delay in seconds between AI actions.",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Seed for the random number generator.",
+    )
     args = parser.parse_args()
 
     if args.debug:
-        main_debug()
+        main_debug(seed=args.seed if args.seed is not None else 12345)
     else:
         # Initialize and run the game with the curses interface.
         # Larger map for the actual game.

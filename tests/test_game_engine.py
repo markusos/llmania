@@ -259,11 +259,6 @@ class TestGameEngine(unittest.TestCase):
             self.assertTrue(debug_engine.game_over)
             debug_engine.renderer.cleanup_curses.assert_not_called()
 
-            debug_engine.renderer.render_all.assert_called()
-            last_call_args = debug_engine.renderer.render_all.call_args
-            self.assertTrue(last_call_args.kwargs.get("debug_render_to_list"))
-            self.assertEqual(last_call_args.kwargs.get("current_floor_id"), 0)
-
     def test_run_loop_handles_no_command_from_input(self):
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
             None,

@@ -30,6 +30,7 @@ class GameEngine:
         debug_mode: bool = False,
         ai_active: bool = False,
         ai_sleep_duration: float = 0.5,
+        seed: int | None = None,
     ):
         """
         Initializes the game engine and its components.
@@ -41,6 +42,8 @@ class GameEngine:
                         (e.g., without curses screen initialization).
             ai_active: If True, AI controls the player.
             ai_sleep_duration: Time in seconds AI waits between actions.
+            seed: Optional seed for random number generation to ensure
+                  reproducibility.
         """
         self.world_generator = WorldGenerator()
         self.parser = Parser()
@@ -63,7 +66,7 @@ class GameEngine:
             player_start_full_pos,
             self.winning_full_pos,
             _floor_details_list,
-        ) = self.world_generator.generate_world(map_width, map_height, seed=None)
+        ) = self.world_generator.generate_world(map_width, map_height, seed=seed)
 
         # Create a visible map for each floor.
         for floor_id, w_map in self.world_maps.items():
@@ -153,69 +156,29 @@ class GameEngine:
         Starts and manages the main game loop.
         """
         if self.debug_mode:
-            print(
-                "Error: GameEngine.run() called in debug_mode. "
-                "Use main_debug() in main.py for testing."
-            )
-            self.game_over = True
+            # In debug mode, we run the AI loop directly.
             self._update_fog_of_war_visibility()
-            current_ai_path_debug = None
-            if self.ai_active and self.ai_logic:
-                current_ai_path_debug = self.ai_logic.current_path
-            current_visible_map_for_render = self.visible_maps.get(
-                self.player.current_floor_id
-            )
-            if not current_visible_map_for_render:
-                current_visible_map_for_render = self.visible_maps.get(
-                    0, WorldMap(self.renderer.map_width, self.renderer.map_height)
-                )
-            if self.debug_mode:
-                print("--- Game Engine Debug Start ---")
-                for floor_id_to_print in sorted(self.world_maps.keys())[:3]:
-                    f_map = self.world_maps[floor_id_to_print]
-                    print(f"Floor ID: {floor_id_to_print}")
-                    portals_on_floor = []
-                    for r_idx in range(f_map.height):
-                        row_str = ""
-                        for c_idx in range(f_map.width):
-                            tile = f_map.get_tile(c_idx, r_idx)
-                            if tile:
-                                if tile.is_portal:
-                                    row_str += "▢"
-                                    portals_on_floor.append(
-                                        ((c_idx, r_idx), tile.portal_to_floor_id)
-                                    )
-                                elif tile.type == "wall":
-                                    row_str += "#"
-                                elif tile.type == "floor":
-                                    row_str += "."
-                                else:
-                                    row_str += "?"
-                            else:
-                                row_str += " "
-                        print(row_str)
-                    print(f"Portals on floor {floor_id_to_print}: {portals_on_floor}")
-                    if self.player.current_floor_id == floor_id_to_print:
-                        player_loc_msg = (
-                            f"Player on this floor at: ({self.player.x}, "
-                            f"{self.player.y})"
+            while not self.game_over:
+                self._update_fog_of_war_visibility()
+                if self.ai_active and self.ai_logic:
+                    parsed_command_output = self.ai_logic.get_next_action()
+                    if parsed_command_output:
+                        floor_before_command = self.player.current_floor_id
+                        results = self.command_processor.process_command(
+                            parsed_command_output,
+                            self.player,
+                            self.world_maps,
+                            self.message_log,
+                            self.winning_full_pos,
+                            game_engine=self,
                         )
-                        print(player_loc_msg)
-                print(f"Winning position: {self.winning_full_pos}")
-                print("--- Game Engine Debug End ---")
-
-            self.renderer.render_all(
-                player_x=self.player.x,
-                player_y=self.player.y,
-                player_health=self.player.health,
-                world_map_to_render=current_visible_map_for_render,
-                input_mode=self.input_handler.get_input_mode(),
-                current_command_buffer=self.input_handler.get_command_buffer(),
-                message_log=self.message_log,
-                debug_render_to_list=True,
-                ai_path=current_ai_path_debug,
-                current_floor_id=self.player.current_floor_id,
-            )
+                        self.game_over = results.get("game_over", False)
+                        floor_after_command = self.player.current_floor_id
+                        if floor_before_command != floor_after_command:
+                            self.ai_logic.current_path = None
+                else:
+                    # If not AI, we need a way to end the loop in debug.
+                    self.game_over = True
             return
 
         try:
