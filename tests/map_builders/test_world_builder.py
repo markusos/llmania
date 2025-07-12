@@ -125,3 +125,28 @@ def test_all_floors_connected():
                 q.append(v_neighbor)
 
     assert len(visited) == num_floors, f"Not all floors connected: {visited}"
+
+
+def test_world_builder_with_seed_is_deterministic():
+    width, height, num_floors, seed = 20, 20, 3, 123
+    builder1 = WorldBuilder(width, height, num_floors=num_floors, seed=seed)
+    world_maps1, player_start1, amulet_pos1, _ = builder1.build()
+
+    builder2 = WorldBuilder(width, height, num_floors=num_floors, seed=seed)
+    world_maps2, player_start2, amulet_pos2, _ = builder2.build()
+
+    assert player_start1 == player_start2
+    assert amulet_pos1 == amulet_pos2
+    assert len(world_maps1) == len(world_maps2)
+
+    for floor_id in world_maps1:
+        assert floor_id in world_maps2
+        map1 = world_maps1[floor_id]
+        map2 = world_maps2[floor_id]
+        for y in range(height):
+            for x in range(width):
+                tile1 = map1.get_tile(x, y)
+                tile2 = map2.get_tile(x, y)
+                assert tile1.type == tile2.type
+                assert tile1.is_portal == tile2.is_portal
+                assert tile1.portal_to_floor_id == tile2.portal_to_floor_id

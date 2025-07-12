@@ -171,6 +171,7 @@ if __name__ == "__main__":
             debug_mode=False,
             ai_active=args.ai,
             ai_sleep_duration=args.ai_sleep,
+            seed=args.seed,
         )
         try:
             game.run()

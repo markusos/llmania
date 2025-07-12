@@ -298,5 +298,37 @@ class TestGameEngine(unittest.TestCase):
         self.assertGreaterEqual(self.mock_renderer_instance.render_all.call_count, 2)
 
 
+    @patch("src.game_engine.curses")
+    def test_game_engine_with_seed_is_deterministic(self, mock_curses):
+        # First game engine
+        game1 = GameEngine(map_width=20, map_height=10, seed=12345, debug_mode=True)
+
+        # Second game engine with the same seed
+        game2 = GameEngine(map_width=20, map_height=10, seed=12345, debug_mode=True)
+
+        # Compare player start positions
+        self.assertEqual(game1.player.x, game2.player.x)
+        self.assertEqual(game1.player.y, game2.player.y)
+        self.assertEqual(game1.player.current_floor_id, game2.player.current_floor_id)
+
+        # Compare winning positions
+        self.assertEqual(game1.winning_full_pos, game2.winning_full_pos)
+
+        # Compare number of floors
+        self.assertEqual(len(game1.world_maps), len(game2.world_maps))
+
+        # Compare map layouts tile by tile
+        for floor_id in game1.world_maps:
+            map1 = game1.world_maps[floor_id]
+            map2 = game2.world_maps[floor_id]
+            for y in range(map1.height):
+                for x in range(map1.width):
+                    tile1 = map1.get_tile(x, y)
+                    tile2 = map2.get_tile(x, y)
+                    self.assertEqual(tile1.type, tile2.type)
+                    self.assertEqual(tile1.is_portal, tile2.is_portal)
+                    self.assertEqual(tile1.portal_to_floor_id, tile2.portal_to_floor_id)
+
+
 if __name__ == "__main__":
     unittest.main()
