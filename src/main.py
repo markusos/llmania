@@ -38,7 +38,7 @@ from src.game_engine import GameEngine  # noqa: E402 (ignore import not at top o
 # it can be imported here, but typically it's encapsulated.
 
 
-def main_debug(seed=None):
+def main_debug(seed=None, verbose=0):
     """
     Runs the game in a debug mode without the curses interface.
     This allows for printing game state and messages directly to the console,
@@ -53,6 +53,7 @@ def main_debug(seed=None):
         ai_active=True,
         ai_sleep_duration=0,
         seed=seed,
+        verbose=verbose,
     )
 
     print("\n--- Initial Player and Map State ---")
@@ -60,6 +61,7 @@ def main_debug(seed=None):
     print(f"Player initial health: {game.player.health}")
     print(f"Winning position: {game.winning_full_pos}")
     print(f"Seed used: {seed if seed else 'default'}")
+    print_full_map_debug(game)
 
     # Run the game loop until the game is over
     game.run()
@@ -91,6 +93,44 @@ def main_debug(seed=None):
     print("\n--- Debug Mode Finished ---")
 
 
+def print_full_map_debug(game):
+    """
+    Prints the full map layout for each floor, including portal connections.
+    """
+    print("\n--- World Map Layout ---")
+    for floor_id, world_map in sorted(game.world_maps.items()):
+        print(f"\n--- Floor {floor_id} ---")
+        portal_info = []
+        for y in range(world_map.height):
+            for x in range(world_map.width):
+                tile = world_map.get_tile(x, y)
+                if tile and tile.is_portal:
+                    portal_info.append(
+                        f"Portal at ({x}, {y}) -> Floor {tile.portal_to_floor_id}"
+                    )
+
+        # Render the map to a list of strings
+        map_render = game.renderer.render_all(
+            player_x=-1,  # No player shown
+            player_y=-1,
+            player_health=0,
+            world_map_to_render=world_map,
+            input_mode="",
+            current_command_buffer="",
+            message_log=game.message_log,  # Empty for this purpose
+            debug_render_to_list=True,
+            current_floor_id=floor_id,
+        )
+        if map_render:
+            for row in map_render:
+                print(row)
+
+        if portal_info:
+            print("Portals:")
+            for info in portal_info:
+                print(f"- {info}")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the text-based adventure game.")
     parser.add_argument(
@@ -111,10 +151,19 @@ if __name__ == "__main__":
         default=None,
         help="Seed for the random number generator.",
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="Increase verbosity of debug output.",
+    )
     args = parser.parse_args()
 
     if args.debug:
-        main_debug(seed=args.seed if args.seed is not None else 12345)
+        main_debug(
+            seed=args.seed if args.seed is not None else 12345, verbose=args.verbose
+        )
     else:
         # Initialize and run the game with the curses interface.
         # Larger map for the actual game.

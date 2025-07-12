@@ -31,6 +31,7 @@ class GameEngine:
         ai_active: bool = False,
         ai_sleep_duration: float = 0.5,
         seed: int | None = None,
+        verbose: int = 0,
     ):
         """
         Initializes the game engine and its components.
@@ -44,6 +45,7 @@ class GameEngine:
             ai_sleep_duration: Time in seconds AI waits between actions.
             seed: Optional seed for random number generation to ensure
                   reproducibility.
+            verbose: Verbosity level for debug output.
         """
         self.world_generator = WorldGenerator()
         self.parser = Parser()
@@ -51,6 +53,7 @@ class GameEngine:
         self.ai_active = ai_active
         self.ai_sleep_duration = ai_sleep_duration
         self.ai_logic = None
+        self.verbose = verbose
 
         # world_map and visible_map will be dictionaries: floor_id -> WorldMap
         self.world_maps: dict[int, WorldMap] = {}
@@ -109,6 +112,7 @@ class GameEngine:
                 real_world_maps=self.world_maps,
                 ai_visible_maps=self.visible_maps,
                 message_log=self.message_log,
+                verbose=self.verbose,
             )
 
         self._update_fog_of_war_visibility()
@@ -157,8 +161,14 @@ class GameEngine:
         """
         if self.debug_mode:
             # In debug mode, we run the AI loop directly.
+            start_time = time.time()
+            timeout_seconds = 30
             self._update_fog_of_war_visibility()
             while not self.game_over:
+                if time.time() - start_time > timeout_seconds:
+                    print("--- Debug Mode Timeout ---")
+                    self.game_over = True
+                    break
                 self._update_fog_of_war_visibility()
                 if self.ai_active and self.ai_logic:
                     parsed_command_output = self.ai_logic.get_next_action()
