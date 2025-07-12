@@ -1,135 +1,100 @@
-# LLMania
+# LLMania: Adventures in AI-Generated Chaos
 
-A Python project to test what happens when you let an AI Agent write a roguelike game from scratch.
+Welcome to LLMania, a glorious, and occasionally terrifying, experiment in AI-powered game development! This isn't just a Python project; it's a journey into the mind of a machine learning model that's been given the keys to the coding kingdom.
 
-This repo is used to test out the capabilities of [Jules](https://jules.google/) an AI agent from Google, and to see how well it can write a game from scratch. The game is a simple roguelike game, where the player can move around a map, pick up items, and fight monsters.
+Our brave (or perhaps foolish) endeavor involves unleashing [Jules](https://jules.google/), an AI agent from Google, to craft a roguelike game from the digital ether. The mission? To see if an AI can actually build a coherent game. The result? A surprisingly playable, sometimes bizarre, and thoroughly entertaining text-based adventure where you, the player, can wander, loot, and probably get comically defeated by a procedurally generated newt.
 
-## Setup
+## What is this Madness?
 
-1. **Install uv**: If you don't have `uv` installed, follow the official installation instructions at [https://docs.astral.sh/uv/getting-started/installation/](https://docs.astral.sh/uv/getting-started/installation/). These instructions cover various platforms and methods.
-2. **Create a virtual environment**: Navigate to your project directory and run:
-   ```bash
-   uv venv
-   ```
-3. **Activate the environment**:
-   - On macOS and Linux: `source .venv/bin/activate`
-   - On Windows: `.venv\Scripts\activate`
-4. **Install dependencies**: Use `uv sync` to install all dependencies defined in `pyproject.toml`. To include development dependencies like `ruff`, run:
-   ```bash
-   uv sync --dev
-   ```
-   Or, for only production dependencies:
-   ```bash
-   uv sync
-   ```
-   The necessary `curses` library (or `windows-curses` for Windows users) will be automatically installed based on your operating system as defined in `pyproject.toml`.
+Welcome to LLMania, a glorious experiment in AI-powered game development! This project is what happens when you give an AI agent, [Jules](https://jules.google/), a keyboard and a vague idea for a roguelike game. The result? A surprisingly playable, occasionally bizarre, and thoroughly entertaining text-based adventure.
 
-## Usage
+Think of it as a digital archaeological dig. You're exploring the ruins of a game built by a non-human intelligence. Will you find treasure? Bugs? Existential dread? Yes.
 
-To run the game, execute the following command in your terminal:
+So, dive in, explore the code, and for the love of all that is holy, don't take it too seriously. After all, it was written by a machine that's still trying to figure out what a "door" is.
+
+## Summoning the Game: Setup Instructions
+
+Ready to dive into the madness? First, you'll need to get your digital hands dirty with a bit of setup. Don't worry, it's less painful than explaining recursion to a badger.
+
+1.  **Get `uv` (the Cool Kind of UV, Not the Sunburn Kind)**: If `uv` isn't already part of your coding arsenal, head over to the [official `uv` installation guide](https://docs.astral.sh/uv/getting-started/installation/) and grab it. It's like a Swiss Army knife for Python projects, but shinier.
+2.  **Craft Your Digital Sandbox (aka Virtual Environment)**: Open your terminal, navigate to the LLMania project directory (you know, where all the magical files live), and type:
+    ```bash
+    uv venv
+    ```
+    This creates a cozy little isolated space for our game, so it doesn't throw a tantrum and mess with your other Python projects.
+3.  **Activate the Portal (Your Virtual Environment, That Is)**:
+    *   On macOS and Linux, chant: `source .venv/bin/activate`
+    *   On Windows, incant: `.venv\Scripts\activate`
+    If your prompt changes, congratulations! You've successfully entered the Matrix... or, well, activated the environment.
+4.  **Install the Arcane Tomes (Dependencies, We Mean Dependencies)**: With your environment active, it's time to install all the necessary bits and bobs. `uv` makes this a breeze:
+    *   For the full experience, including developer tools (like `ruff`, our trusty code linter/formatter):
+        ```bash
+        uv sync --dev
+        ```
+    *   If you're just here to play and don't care about the messy behind-the-scenes stuff (production dependencies only):
+        ```bash
+        uv sync
+        ```
+    Our mystical `pyproject.toml` file will guide `uv` to fetch everything needed, including the `curses` library (or `windows-curses` for our Windows-using friends) that paints the game on your terminal.
+
+## Let the LLMania Begin! (How to Run & Play)
+
+Alright, setup complete? Virtual environment humming? Excellent. It's time to unleash the beast!
+
+To start your grand adventure (or misadventure, results may vary), fire up your terminal and run:
 
 ```bash
 uv run python src/main.py
 ```
 
-### Gameplay
+And just like that, you're in! Welcome to a world rendered entirely in the glorious, retro-chic medium of text.
 
-The game is a terminal-based roguelike adventure.
+### Navigating Your Textual Doom (Gameplay Basics)
 
-- **Movement:** Use the arrow keys (Up, Down, Left, Right) or W, A, S, D keys to move your character.
-- **Command Mode:**
-    - Press Tilde (`~`) to switch to command mode. The input prompt will change to `> `.
-    - In command mode, type commands and press Enter.
-    - Press Tilde (`~`) or `Escape` while in command mode to return to movement mode.
+This is a terminal-based roguelike, which means your imagination is half the graphics card.
 
-### Available Commands (in Command Mode)
+*   **Stretching Your Legs (Movement):**
+    *   Use the **arrow keys** (Up, Down, Left, Right) to explore.
+    *   Alternatively, if you're a cool WASD kid, those work too!
+*   **Talking to the Game (Command Mode):** Sometimes, pointing and grunting (with arrow keys) isn't enough. You need to *tell* the game what you want.
+    *   Press the **Tilde (`~`) key** to enter Command Mode. Your prompt will change to a sophisticated `> `, eagerly awaiting your instructions.
+    *   Type your desired command (see the list below for your options) and hit **Enter**.
+    *   Want to go back to just moving around? Press **Tilde (`~`)** again, or the **Escape** key. Freedom!
 
-- `look` or `l`: Describe your current location and any visible items or monsters.
-- `take <item name>` or `get <item name>`: Pick up an item from the ground. (e.g., `take Health Potion`)
-- `drop <item name>`: Drop an item from your inventory.
-- `use <item name>`: Use an item from your inventory. (e.g., `use Health Potion`)
-- `inventory` or `i`: Display your current inventory.
-- `attack <monster name>`: Attack a monster in your current tile. (e.g., `attack Goblin`)
-- `quit` or `q` (while in command mode): Quit the game.
+### Developer's Corner: Special Launch Options
 
-## Overall Architecture
+Feeling adventurous? Try these command-line arguments for a different kind of fun:
 
-This project is a classic terminal-based roguelike game implemented in Python.
+*   **Debug Mode (`--debug`)**: Want to see the Matrix? Run the game with the `--debug` flag to get a simplified, non-interactive view of the game state. It's perfect for testing and seeing what the AI is *really* thinking.
+    ```bash
+    uv run python src/main.py --debug
+    ```
+*   **AI Mode (`--ai`)**: Feeling lazy? Let the AI play the game for you! Use the `--ai` flag to watch the AI try to win its own game. It's like a screensaver, but with more existential dread.
+    ```bash
+    uv run python src/main.py --ai
+    ```
+    You can even control the AI's "thinking" speed with the `--ai_sleep` argument (e.g., `--ai_sleep 0.2` for a speed demon AI).
 
-The main components are:
+### Your Lexicon of Power (Available Commands)
 
--   **`src/main.py`**: The entry point of the application. It initializes and runs the game engine.
--   **`src/game_engine.py`**: The central orchestrator of the game. It manages the main game loop, player input, rendering (using the `curses` library), and game state updates. It coordinates interactions between the player, monsters, items, and the game map.
--   **`src/world_generator.py`**: Responsible for creating the game map. It generates the layout of walls and floors, places the player, the goal item (Amulet of Yendor), and distributes other items and monsters.
--   **`src/world_map.py`**: Defines the `WorldMap` class, which represents the game world as a grid of tiles. It provides methods for accessing and modifying tiles, and for managing the placement of items and monsters.
--   **`src/tile.py`**: Defines the `Tile` class, representing a single cell in the world map. Each tile has a type (e.g., wall, floor) and can contain items or monsters.
--   **`src/player.py`**: Defines the `Player` class, including attributes like health, inventory, and attack power, and methods for actions like moving, using items, and attacking.
--   **`src/monster.py`**: Defines the `Monster` class, with attributes for health and attack power, and methods for combat.
--   **`src/item.py`**: Defines the `Item` class, representing objects that the player can find and use. Items have properties that determine their effects.
--   **`src/parser.py`**: Handles parsing of player's text commands into actions that the game engine can understand.
+Once in Command Mode (`~`), here's how you can interact with the world (or at least, try to):
 
-The game operates on a main loop within the `GameEngine`:
-1.  The current state of the game (map, player status, messages) is rendered to the terminal.
-2.  The engine waits for player input (either direct key presses for movement or text commands).
-3.  Input is processed:
-    *   Movement keys directly update the player's position.
-    *   Text commands are parsed by the `Parser` module.
-4.  The game state is updated based on the player's action (e.g., moving the player, initiating combat, using an item).
-5.  The loop repeats until a game-ending condition is met (player defeat, victory, or quit).
+*   `look` (or `l` for the laconic): "Computer, enhance!" This describes your current surroundings, including any shiny loot or grumpy monsters.
+*   `take <item name>` (or `get <item name>`): See something you like? "Yoink!" it off the floor. Example: `take Health Potion` (because you *will* need it).
+*   `drop <item name>`: Feeling encumbered? Unburden yourself. Example: `drop Slightly Chewed Rock`.
+*   `use <item name>`: Time to unleash the power of that... thing you picked up. Example: `use Health Potion` (hopefully before it's too late).
+*   `inventory` (or `i`): "What's in my pocketses?" Displays your hard-earned (or questionably acquired) treasures.
+*   `attack <monster name>`: Engage in glorious combat! Or, more accurately, tell the game you want to whack that `Goblin` (or whatever else is looking at you funny). Example: `attack Grumpy Goblin`.
+*   `quit` (or `q`): "I've seen enough!" Makes a graceful (or rage-filled) exit from the game. Only works in command mode, naturally.
 
-## How to Continue Development
+## Peeking Under the Hood: The Architecture
 
-This project uses `ruff` for linting and code formatting.
+Curious about how this digital Frankenstein was assembled? For a detailed look at the game's components and how they interact (or occasionally collide), check out the [Architecture Document](./docs/architecture.md).
 
--   **Check for linting issues:** `ruff check .`
--   **Format code:** `ruff format .`
+## Wielding the Code Hammer: Contributing to LLMania
 
-When adding new features or fixing bugs:
+Feeling brave enough to dive into the code? Whether you want to fix a bug, add a feature, or just poke around, our [Contributing Guide](./docs/contributing.md) has tips on how to get started, run tests, and generally not break everything (too much).
 
--   **Game Logic:** Modifications to game mechanics, new commands, or player/monster interactions will likely involve changes in:
-    -   `src/game_engine.py`: For core game loop changes, new action processing.
-    -   `src/parser.py`: To add new commands or modify existing command structures.
-    -   `src/player.py`, `src/monster.py`, `src/item.py`: For new abilities, attributes, or types of entities.
-    -   `src/world_generator.py`: To incorporate new items, monsters, or map features into the world generation process.
--   **New Entities:** New types of items or monsters can be created by adding new classes or by extending existing ones in `src/item.py` and `src/monster.py`. Remember to update `world_generator.py` if you want them to appear in the game.
--   **Map Generation:** Changes to how the world is built are done in `src/world_generator.py`.
--   **Testing:** The project includes a `tests/` directory. It is highly recommended to add new tests for any new functionality or bug fixes. You can run tests using your preferred Python test runner (e.g., `pytest` or the standard `unittest` module). You might need to install `pytest` first: `uv pip install pytest`. Then run `pytest tests/`.
+## The Crystal Ball: Future Features & Wild Ideas
 
-## Future Features and Improvements
-
-This project provides a basic framework for a roguelike game. Here are some ideas for future enhancements:
-
--   **Advanced Monster AI:**
-    -   Pathfinding for monsters to chase the player.
-    -   Monsters with ranged attacks or special abilities (e.g., healing, summoning).
-    -   Different monster behaviors (e.g., some flee when low on health, some guard specific areas).
--   **Expanded Item System:**
-    -   Armor and shields for damage reduction.
-    -   Ranged weapons (bows, wands).
-    -   Scrolls with various effects (e.g., teleportation, identify item, map reveal).
-    -   Potions with diverse effects (e.g., invisibility, temporary stat boosts).
--   **More Monster Variety:**
-    -   New monster types with unique stats, abilities, and appearances.
-    -   Boss monsters with challenging mechanics.
--   **Game Persistence:**
-    -   Saving and loading game progress.
-    -   A high score list.
--   **Sophisticated Map Generation:**
-    -   Generation of distinct rooms and corridors.
-    -   Different dungeon themes or biomes with unique features, items, and monsters.
-    -   Traps and hidden doors.
--   **Player Development:**
-    -   Player classes (e.g., warrior, mage, rogue) with different starting stats or abilities.
-    -   Experience points and leveling up.
-    -   A skill tree or attribute improvement system.
--   **Status Effects:**
-    -   Positive and negative status effects like poison, confusion, haste, slow, regeneration.
--   **Enhanced Combat Mechanics:**
-    -   Critical hits, dodging, blocking.
-    -   Turn-based tactical combat with more options than just direct attack.
--   **User Interface Enhancements:**
-    -   A more graphical display (perhaps using a library that builds on top of `curses` or a different TUI library).
-    -   Better visual feedback for actions and events.
--   **Story and Quests:**
-    -   More elaborate quests beyond finding a single item.
-    -   NPCs (Non-Player Characters) with dialogue and quests.
+What does the future hold for LLMania? More chaos? More features? Sentient teapots? Explore the possibilities in our [Future Features Document](./docs/future_features.md).
