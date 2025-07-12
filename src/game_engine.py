@@ -169,8 +169,9 @@ class GameEngine:
                     print("--- Debug Mode Timeout ---")
                     self.game_over = True
                     break
-                self._update_fog_of_war_visibility()
                 if self.ai_active and self.ai_logic:
+                    # Update visibility before AI action
+                    self._update_fog_of_war_visibility()
                     parsed_command_output = self.ai_logic.get_next_action()
                     if parsed_command_output:
                         floor_before_command = self.player.current_floor_id
