@@ -31,12 +31,13 @@ class FloorDensityAdjuster:
         # This is a direct way to ensure this path is not broken by density adjustments.
         # This might make the density adjustment less "natural" if this path is long
         # and the target density is very low, but it ensures critical connectivity.
-        path_finder = PathFinder() # PathFinder should be available or passed
-        critical_path = path_finder.a_star_search(world_map, player_start_pos, original_win_pos, width, height)
+        path_finder = PathFinder()  # PathFinder should be available or passed
+        critical_path = path_finder.a_star_search(
+            world_map, player_start_pos, original_win_pos, width, height
+        )
         if critical_path:
             for path_node in critical_path:
                 effective_protected_coords.add(path_node)
-
 
         total_placeable_tiles = (width - 2) * (height - 2)
         if total_placeable_tiles <= 0:
@@ -95,7 +96,7 @@ class FloorDensityAdjuster:
                                 walls_to_add.append(coord)
 
                 if not walls_to_add:
-                    break # No more walls can be converted
+                    break  # No more walls can be converted
 
                 random.shuffle(walls_to_add)
 
@@ -108,7 +109,7 @@ class FloorDensityAdjuster:
                     converted_in_pass += 1
 
                 if converted_in_pass == 0:
-                    break # No progress made
+                    break  # No progress made
         if num_current_floor > target_floor_tiles:
             # effective_protected_coords already includes player_start_pos
             # and original_win_pos.
@@ -135,14 +136,17 @@ class FloorDensityAdjuster:
                 if not self.connectivity_manager.path_exists_between(
                     world_map, player_start_pos, original_win_pos, width, height
                 ):
-                    world_map.set_tile_type(c_x, c_y, original_type) # type: ignore
+                    world_map.set_tile_type(c_x, c_y, original_type)  # type: ignore
                     continue
 
                 all_portals_still_reachable = True
                 portals_on_this_floor = [
-                    pc for pc in effective_protected_coords
-                    if pc != player_start_pos and pc != original_win_pos and
-                    (tile := world_map.get_tile(pc[0], pc[1])) and tile.is_portal
+                    pc
+                    for pc in effective_protected_coords
+                    if pc != player_start_pos
+                    and pc != original_win_pos
+                    and (tile := world_map.get_tile(pc[0], pc[1]))
+                    and tile.is_portal
                 ]
                 if portals_on_this_floor:
                     for portal_coord in portals_on_this_floor:
@@ -155,4 +159,4 @@ class FloorDensityAdjuster:
                 if all_portals_still_reachable:
                     converted_count += 1
                 else:
-                    world_map.set_tile_type(c_x, c_y, original_type) # type: ignore
+                    world_map.set_tile_type(c_x, c_y, original_type)  # type: ignore

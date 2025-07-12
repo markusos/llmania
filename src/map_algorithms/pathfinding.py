@@ -13,17 +13,17 @@ class PathFinder:
 
     def a_star_search(
         self,
-        world_map: WorldMap, # Single map for single-floor A*
+        world_map: WorldMap,  # Single map for single-floor A*
         start_pos_xy: Tuple[int, int],
         goal_pos_xy: Tuple[int, int],
-        map_width: int, # Width of the single map
-        map_height: int, # Height of the single map
-    ) -> Optional[List[Tuple[int, int]]]: # Path is List[(x,y)]
+        map_width: int,  # Width of the single map
+        map_height: int,  # Height of the single map
+    ) -> Optional[List[Tuple[int, int]]]:  # Path is List[(x,y)]
         """
         Performs A* pathfinding from start to goal on a single floor.
         Returns a list of (x,y) tuples or None.
         """
-        import heapq # Local import if not already at top level
+        import heapq  # Local import if not already at top level
 
         open_set: List[Tuple[float, Tuple[int, int]]] = []
         heapq.heappush(open_set, (0, start_pos_xy))
@@ -34,7 +34,9 @@ class PathFinder:
 
         # Heuristic function (Manhattan distance)
         heuristic = lambda a, b: abs(a[0] - b[0]) + abs(a[1] - b[1])
-        f_score: Dict[Tuple[int, int], float] = {start_pos_xy: heuristic(start_pos_xy, goal_pos_xy)}
+        f_score: Dict[Tuple[int, int], float] = {
+            start_pos_xy: heuristic(start_pos_xy, goal_pos_xy)
+        }
 
         while open_set:
             _, current_xy = heapq.heappop(open_set)
@@ -51,29 +53,33 @@ class PathFinder:
             for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
                 neighbor_xy = (current_xy[0] + dx, current_xy[1] + dy)
 
-                if not (0 <= neighbor_xy[0] < map_width and 0 <= neighbor_xy[1] < map_height):
+                if not (
+                    0 <= neighbor_xy[0] < map_width and 0 <= neighbor_xy[1] < map_height
+                ):
                     continue
 
                 tile = world_map.get_tile(neighbor_xy[0], neighbor_xy[1])
-                if not tile or tile.type == "wall": # Treat None or wall as unwalkable
+                if not tile or tile.type == "wall":  # Treat None or wall as unwalkable
                     # Allow pathing to monster only if it's the goal node
                     if tile and tile.monster and neighbor_xy != goal_pos_xy:
                         continue
-                    elif not (tile and tile.monster and neighbor_xy == goal_pos_xy) : # if not monster at goal
-                         if not tile or tile.type == "wall": # and simple wall or None
+                    elif not (
+                        tile and tile.monster and neighbor_xy == goal_pos_xy
+                    ):  # if not monster at goal
+                        if not tile or tile.type == "wall":  # and simple wall or None
                             continue
 
+                tentative_g_score = g_score.get(current_xy, float("inf")) + 1
 
-                tentative_g_score = g_score.get(current_xy, float('inf')) + 1
-
-                if tentative_g_score < g_score.get(neighbor_xy, float('inf')):
+                if tentative_g_score < g_score.get(neighbor_xy, float("inf")):
                     came_from[neighbor_xy] = current_xy
                     g_score[neighbor_xy] = tentative_g_score
-                    f_score[neighbor_xy] = tentative_g_score + heuristic(neighbor_xy, goal_pos_xy)
+                    f_score[neighbor_xy] = tentative_g_score + heuristic(
+                        neighbor_xy, goal_pos_xy
+                    )
                     if neighbor_xy not in [item[1] for item in open_set]:
                         heapq.heappush(open_set, (f_score[neighbor_xy], neighbor_xy))
-        return None # No path found
-
+        return None  # No path found
 
     def find_path_bfs(
         self,
