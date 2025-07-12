@@ -357,7 +357,8 @@ class TestAILogic(unittest.TestCase):
                     f"AI: Pathing to explore unvisited tile at "
                     f"({self.ai.current_path[-1][0]},{self.ai.current_path[-1][1]}) "
                     f"on current floor."
-                ) in str(call_args)
+                )
+                in str(call_args)
                 for call_args in self.message_log.add_message.call_args_list
             ),
             "Log message for exploring unvisited tile not found or incorrect.",

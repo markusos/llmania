@@ -107,12 +107,16 @@ class AILogic:
             for y_coord in range(ai_map.height):
                 for x_coord in range(ai_map.width):
                     tile = ai_map.get_tile(x_coord, y_coord)
-                    if (tile and tile.is_explored and tile.item and
-                            tile.item.properties.get("type") == "quest"):
+                    if (
+                        tile
+                        and tile.is_explored
+                        and tile.item
+                        and tile.item.properties.get("type") == "quest"
+                    ):
                         dist_est = (
-                            abs(x_coord - player_pos_xy[0]) +
-                            abs(y_coord - player_pos_xy[1]) +
-                            abs(floor_id - player_floor_id) * 10
+                            abs(x_coord - player_pos_xy[0])
+                            + abs(y_coord - player_pos_xy[1])
+                            + abs(floor_id - player_floor_id) * 10
                         )
                         found_targets.append(
                             (x_coord, y_coord, floor_id, "quest_item", dist_est)
@@ -127,13 +131,17 @@ class AILogic:
                 for y_coord in range(ai_map.height):
                     for x_coord in range(ai_map.width):
                         tile = ai_map.get_tile(x_coord, y_coord)
-                        if (tile and tile.is_explored and tile.item and
-                                "health potion" in tile.item.name.lower() and
-                                tile.item.properties.get("type") == "heal"):
+                        if (
+                            tile
+                            and tile.is_explored
+                            and tile.item
+                            and "health potion" in tile.item.name.lower()
+                            and tile.item.properties.get("type") == "heal"
+                        ):
                             dist_est = (
-                                abs(x_coord - player_pos_xy[0]) +
-                                abs(y_coord - player_pos_xy[1]) +
-                                abs(floor_id - player_floor_id) * 10
+                                abs(x_coord - player_pos_xy[0])
+                                + abs(y_coord - player_pos_xy[1])
+                                + abs(floor_id - player_floor_id) * 10
                             )
                             found_targets.append(
                                 (x_coord, y_coord, floor_id, "health_potion", dist_est)
@@ -146,28 +154,37 @@ class AILogic:
                     for x_coord_item in range(ai_map.width):
                         tile = ai_map.get_tile(x_coord_item, y_coord_item)
                         player_at_target = (
-                            x_coord_item == player_pos_xy[0] and
-                            y_coord_item == player_pos_xy[1] and
-                            floor_id == player_floor_id
+                            x_coord_item == player_pos_xy[0]
+                            and y_coord_item == player_pos_xy[1]
+                            and floor_id == player_floor_id
                         )
-                        if tile and tile.is_explored and tile.item and \
-                           not player_at_target:
+                        if (
+                            tile
+                            and tile.is_explored
+                            and tile.item
+                            and not player_at_target
+                        ):
                             is_potion_full_health = (
-                                tile.item.properties.get("type") == "heal" and
-                                "health potion" in tile.item.name.lower() and
-                                self.player.health >= self.player.max_health
+                                tile.item.properties.get("type") == "heal"
+                                and "health potion" in tile.item.name.lower()
+                                and self.player.health >= self.player.max_health
                             )
                             is_quest_item = tile.item.properties.get("type") == "quest"
                             if is_potion_full_health or is_quest_item:
                                 continue
                             dist_est = (
-                                abs(x_coord_item - player_pos_xy[0]) +
-                                abs(y_coord_item - player_pos_xy[1]) +
-                                abs(floor_id - player_floor_id) * 10
+                                abs(x_coord_item - player_pos_xy[0])
+                                + abs(y_coord_item - player_pos_xy[1])
+                                + abs(floor_id - player_floor_id) * 10
                             )
                             found_targets.append(
-                                (x_coord_item, y_coord_item, floor_id,
-                                 "other_item", dist_est)
+                                (
+                                    x_coord_item,
+                                    y_coord_item,
+                                    floor_id,
+                                    "other_item",
+                                    dist_est,
+                                )
                             )
 
         # 3. Monsters
@@ -181,15 +198,17 @@ class AILogic:
                         is_adjacent = False
                         if floor_id == player_floor_id:
                             for dx_adj, dy_adj in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
-                                if (player_pos_xy[0] + dx_adj == x_monster and
-                                        player_pos_xy[1] + dy_adj == y_monster):
+                                if (
+                                    player_pos_xy[0] + dx_adj == x_monster
+                                    and player_pos_xy[1] + dy_adj == y_monster
+                                ):
                                     is_adjacent = True
                                     break
                         if not is_adjacent:
                             dist_est = (
-                                abs(x_monster - player_pos_xy[0]) +
-                                abs(y_monster - player_pos_xy[1]) +
-                                abs(floor_id - player_floor_id) * 10
+                                abs(x_monster - player_pos_xy[0])
+                                + abs(y_monster - player_pos_xy[1])
+                                + abs(floor_id - player_floor_id) * 10
                             )
                             found_targets.append(
                                 (x_monster, y_monster, floor_id, "monster", dist_est)
@@ -205,12 +224,16 @@ class AILogic:
             elif target_type == "monster":
                 priority = 3
             return (priority, dist)
+
         found_targets.sort(key=target_sort_key)
 
         for target_x, target_y, target_floor_id, target_type, _ in found_targets:
             path = self.path_finder.find_path_bfs(
-                self.ai_visible_maps, player_pos_xy, player_floor_id,
-                (target_x, target_y), target_floor_id
+                self.ai_visible_maps,
+                player_pos_xy,
+                player_floor_id,
+                (target_x, target_y),
+                target_floor_id,
             )
             if path:
                 log_msg = (
@@ -227,8 +250,10 @@ class AILogic:
                 for x_explore in range(current_ai_map.width):
                     tile = current_ai_map.get_tile(x_explore, y_explore)
                     condition = (
-                        tile and tile.is_explored and tile.type != "wall" and
-                        (x_explore, y_explore, player_floor_id)
+                        tile
+                        and tile.is_explored
+                        and tile.type != "wall"
+                        and (x_explore, y_explore, player_floor_id)
                         not in self.physically_visited_coords
                     )
                     if condition:
@@ -239,8 +264,11 @@ class AILogic:
             paths_to_explore_unvisited = []
             for coord_xy in explorable_physically_unvisited_coords_current_floor:
                 path = self.path_finder.find_path_bfs(
-                    self.ai_visible_maps, player_pos_xy, player_floor_id,
-                    coord_xy, player_floor_id
+                    self.ai_visible_maps,
+                    player_pos_xy,
+                    player_floor_id,
+                    coord_xy,
+                    player_floor_id,
                 )
                 if path:
                     paths_to_explore_unvisited.append(path)
@@ -259,14 +287,16 @@ class AILogic:
         if current_ai_map:
             for y_edge in range(current_ai_map.height):
                 for x_edge in range(current_ai_map.width):
-                    tile = current_ai_map.get_tile(x_edge,y_edge)
+                    tile = current_ai_map.get_tile(x_edge, y_edge)
                     if tile and tile.is_explored and tile.type != "wall":
-                        for dx_adj, dy_adj in [(0,-1),(0,1),(-1,0),(1,0)]:
+                        for dx_adj, dy_adj in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
                             adj_x, adj_y = x_edge + dx_adj, y_edge + dy_adj
                             adj_tile = current_ai_map.get_tile(adj_x, adj_y)
                             if adj_tile and not adj_tile.is_explored:
-                                if (x_edge, y_edge) not in \
-                                   edge_exploration_targets_current_floor:
+                                if (
+                                    x_edge,
+                                    y_edge,
+                                ) not in edge_exploration_targets_current_floor:
                                     edge_exploration_targets_current_floor.append(
                                         (x_edge, y_edge)
                                     )
@@ -277,8 +307,11 @@ class AILogic:
                 if coord_xy == player_pos_xy:
                     continue
                 path = self.path_finder.find_path_bfs(
-                    self.ai_visible_maps, player_pos_xy, player_floor_id,
-                    coord_xy, player_floor_id
+                    self.ai_visible_maps,
+                    player_pos_xy,
+                    player_floor_id,
+                    coord_xy,
+                    player_floor_id,
                 )
                 if path:
                     paths_to_edge_frontiers.append(path)
@@ -292,9 +325,7 @@ class AILogic:
                 )
                 self.message_log.add_message(log_msg)
                 return
-        self.message_log.add_message(
-            "AI: No path found for any target or exploration."
-        )
+        self.message_log.add_message("AI: No path found for any target or exploration.")
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
         self.update_visibility()
@@ -311,10 +342,12 @@ class AILogic:
             player_pos_xyz[0], player_pos_xyz[1]
         )
 
-        if (current_tile_on_visible_map and
-            current_tile_on_visible_map.is_explored and
-            current_tile_on_visible_map.item and
-            current_tile_on_visible_map.item.properties.get("type") == "quest"):
+        if (
+            current_tile_on_visible_map
+            and current_tile_on_visible_map.is_explored
+            and current_tile_on_visible_map.item
+            and current_tile_on_visible_map.item.properties.get("type") == "quest"
+        ):
             item_name = current_tile_on_visible_map.item.name
             self.message_log.add_message(f"AI: Found quest item {item_name}!")
             self.current_path = None
@@ -323,9 +356,12 @@ class AILogic:
         low_health_threshold = self.player.max_health * 0.5
         if self.player.health < low_health_threshold:
             health_potion_inv = next(
-                (item for item in self.player.inventory
-                 if "health potion" in item.name.lower() and
-                    item.properties.get("type") == "heal"),
+                (
+                    item
+                    for item in self.player.inventory
+                    if "health potion" in item.name.lower()
+                    and item.properties.get("type") == "heal"
+                ),
                 None,
             )
             if health_potion_inv:
@@ -335,12 +371,14 @@ class AILogic:
                 self.current_path = None
                 return ("use", health_potion_inv.name)
 
-        if (current_tile_on_visible_map and
-            current_tile_on_visible_map.is_explored and
-            current_tile_on_visible_map.item):
+        if (
+            current_tile_on_visible_map
+            and current_tile_on_visible_map.is_explored
+            and current_tile_on_visible_map.item
+        ):
             item_is_potion = (
-                "health potion" in current_tile_on_visible_map.item.name.lower() and
-                current_tile_on_visible_map.item.properties.get("type") == "heal"
+                "health potion" in current_tile_on_visible_map.item.name.lower()
+                and current_tile_on_visible_map.item.properties.get("type") == "heal"
             )
             if item_is_potion and self.player.health >= self.player.max_health:
                 log_msg = (
@@ -367,7 +405,9 @@ class AILogic:
 
         if self.current_path:
             current_pos_xyz = (
-                self.player.x, self.player.y, self.player.current_floor_id
+                self.player.x,
+                self.player.y,
+                self.player.current_floor_id,
             )
             if self.current_path[0] == current_pos_xyz:
                 self.current_path.pop(0)
@@ -393,19 +433,20 @@ class AILogic:
                                     can_move_to_next_step = True
                             else:
                                 can_move_to_next_step = True
-                        elif next_tile_visible.is_portal and \
-                             next_step_xyz[2] != current_pos_xyz[2]:
-                             can_move_to_next_step = True
+                        elif (
+                            next_tile_visible.is_portal
+                            and next_step_xyz[2] != current_pos_xyz[2]
+                        ):
+                            can_move_to_next_step = True
                     if not can_move_to_next_step:
                         self.message_log.add_message(
-                            "AI: Path blocked or invalid on visible map, "
-                            "recalculating."
+                            "AI: Path blocked or invalid on visible map, recalculating."
                         )
                         self.current_path = None
                     else:
                         move_command = self._coordinates_to_move_command(
                             (current_pos_xyz[0], current_pos_xyz[1]),
-                            (next_step_xyz[0], next_step_xyz[1])
+                            (next_step_xyz[0], next_step_xyz[1]),
                         )
                         if move_command:
                             log_msg = (
@@ -426,7 +467,9 @@ class AILogic:
             self._find_target_and_path()
             if self.current_path:
                 current_pos_xyz = (
-                    self.player.x, self.player.y, self.player.current_floor_id
+                    self.player.x,
+                    self.player.y,
+                    self.player.current_floor_id,
                 )
                 if self.current_path[0] == current_pos_xyz:
                     self.current_path.pop(0)
@@ -450,8 +493,10 @@ class AILogic:
                                     can_move_to_first_step = True
                             else:
                                 can_move_to_first_step = True
-                        elif first_step_tile.is_portal and \
-                             next_step_xyz[2] != current_pos_xyz[2]:
+                        elif (
+                            first_step_tile.is_portal
+                            and next_step_xyz[2] != current_pos_xyz[2]
+                        ):
                             can_move_to_first_step = True
                 if not can_move_to_first_step:
                     self.message_log.add_message(
@@ -461,8 +506,8 @@ class AILogic:
                     self.last_move_command = ("look", None)
                     return ("look", None)
                 move_command = self._coordinates_to_move_command(
-                     (current_pos_xyz[0], current_pos_xyz[1]),
-                     (next_step_xyz[0], next_step_xyz[1])
+                    (current_pos_xyz[0], current_pos_xyz[1]),
+                    (next_step_xyz[0], next_step_xyz[1]),
                 )
                 if move_command:
                     log_msg = (
@@ -484,24 +529,35 @@ class AILogic:
         possible_moves_current_floor = []
         if current_ai_map:
             player_pos_xy = (player_pos_xyz[0], player_pos_xyz[1])
-            for direction, (dx, dy) in [("north",(0,-1)), ("south",(0,1)),
-                                        ("west",(-1,0)), ("east",(1,0))]:
+            for direction, (dx, dy) in [
+                ("north", (0, -1)),
+                ("south", (0, 1)),
+                ("west", (-1, 0)),
+                ("east", (1, 0)),
+            ]:
                 check_x, check_y = player_pos_xy[0] + dx, player_pos_xy[1] + dy
                 if current_ai_map.is_valid_move(check_x, check_y):
                     possible_moves_current_floor.append(("move", direction))
         if possible_moves_current_floor:
             unvisited_moves = []
             for move_cmd, direction_str in possible_moves_current_floor:
-                dx_m, dy_m = {"north":(0,-1),"south":(0,1),
-                              "west":(-1,0),"east":(1,0)}[direction_str]
+                dx_m, dy_m = {
+                    "north": (0, -1),
+                    "south": (0, 1),
+                    "west": (-1, 0),
+                    "east": (1, 0),
+                }[direction_str]
                 check_x_m = player_pos_xyz[0] + dx_m
                 check_y_m = player_pos_xyz[1] + dy_m
-                if ((check_x_m, check_y_m, player_pos_xyz[2])
-                        not in self.physically_visited_coords):
+                if (
+                    check_x_m,
+                    check_y_m,
+                    player_pos_xyz[2],
+                ) not in self.physically_visited_coords:
                     unvisited_moves.append((move_cmd, direction_str))
             if unvisited_moves:
                 chosen_move = unvisited_moves[0]
-                self.message_log.add_message( # E501: Wrapped f-string
+                self.message_log.add_message(  # E501: Wrapped f-string
                     f"AI: Exploring unvisited on current floor. "
                     f"Moving {chosen_move[1]}."
                 )
