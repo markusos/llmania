@@ -343,7 +343,7 @@ class TestAILogic(unittest.TestCase):
         self.mock_player.y = 0
         self.ai.physically_visited_coords = [(0, 0, 0), (0, 1, 0)]
 
-        self.ai.get_next_action()  # F841: Removed assignment to 'action'
+        self.ai.get_next_action()
         self.assertIsNotNone(self.ai.current_path)
         if self.ai.current_path:
             self.assertEqual(
@@ -374,7 +374,6 @@ class TestAILogic(unittest.TestCase):
         self.ai_visible_maps[0] = self._create_floor_layout(
             0, 3, 3, ["...", ".S.", "..."], is_ai_map=True
         )
-        # F841: Removed real_map_f0 assignment
         self._create_floor_layout(0, 3, 3, ["...", ".S.", "..."], is_ai_map=False)
         self.mock_player.x = 1
         self.mock_player.y = 1
@@ -454,8 +453,8 @@ class TestAILogic(unittest.TestCase):
 
         self.ai.path_finder.find_path_bfs = MagicMock(return_value=None)
 
-        action = self.ai.get_next_action()
-        self.assertEqual(action, ("look", None))
+        self.ai.get_next_action()
+        self.assertEqual(self.ai.last_move_command, ("look", None))
         self.message_log.add_message.assert_any_call(
             "AI: No actions available. Looking around."
         )
@@ -502,7 +501,7 @@ class TestAILogic(unittest.TestCase):
         monster = Monster(name="Goblin", health=10, attack_power=2, x=4, y=0)
         self._setup_tile_at(0, 4, 0, monster=monster)
 
-        action = self.ai.get_next_action()
+        self.ai.get_next_action()
 
         self.assertIsNotNone(self.ai.current_path)
         if self.ai.current_path:
@@ -528,7 +527,7 @@ class TestAILogic(unittest.TestCase):
         monster = Monster(name="Goblin", health=10, attack_power=2, x=4, y=0)
         self._setup_tile_at(0, 4, 0, monster=monster)
 
-        action = self.ai.get_next_action()
+        self.ai.get_next_action()
 
         self.assertIsNotNone(self.ai.current_path)
         if self.ai.current_path:
