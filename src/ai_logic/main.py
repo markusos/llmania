@@ -44,6 +44,8 @@ class AILogic:
         self.target_finder = TargetFinder(self.player, self.ai_visible_maps)
         self.explorer = Explorer(self.player, self.ai_visible_maps)
         self.state: "AIState" = ExploringState(self)
+        self.last_player_floor_id = player.current_floor_id
+        self.last_player_pos = (player.x, player.y)
 
     def _get_adjacent_monsters(self) -> List["Monster"]:
         adjacent_monsters: List["Monster"] = []
@@ -83,6 +85,28 @@ class AILogic:
         return action
 
     def _get_next_action_logic(self) -> Optional[Tuple[str, Optional[str]]]:
+        if self.player.current_floor_id != self.last_player_floor_id:
+            prev_map = self.ai_visible_maps.get(self.last_player_floor_id)
+            if prev_map:
+                prev_tile = prev_map.get_tile(
+                    self.last_player_pos[0], self.last_player_pos[1]
+                )
+                if prev_tile and prev_tile.is_portal:
+                    self.explorer.mark_portal_as_visited(
+                        self.last_player_pos[0],
+                        self.last_player_pos[1],
+                        self.last_player_floor_id,
+                    )
+                    if self.verbose > 0:
+                        print(
+                            "AI: Portal at "
+                            f"({self.last_player_pos[0]},{self.last_player_pos[1]}) "
+                            f"on floor {self.last_player_floor_id} marked as visited."
+                        )
+
+        self.last_player_floor_id = self.player.current_floor_id
+        self.last_player_pos = (self.player.x, self.player.y)
+
         # Update state based on observations
         self._update_state()
 

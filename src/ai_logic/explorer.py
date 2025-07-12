@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from src.map_algorithms.pathfinding import PathFinder
 
@@ -16,6 +16,10 @@ class Explorer:
         self.player = player
         self.ai_visible_maps = ai_visible_maps
         self.path_finder = PathFinder()
+        self.visited_portals: Set[Tuple[int, int, int]] = set()
+
+    def mark_portal_as_visited(self, x: int, y: int, floor_id: int):
+        self.visited_portals.add((x, y, floor_id))
 
     def find_unvisited_portals(
         self, player_pos_xy: Tuple[int, int], player_floor_id: int
@@ -26,7 +30,12 @@ class Explorer:
                 continue
             for y, x in ai_map.iter_coords():
                 tile = ai_map.get_tile(x, y)
-                if tile and tile.is_explored and tile.is_portal:
+                if (
+                    tile
+                    and tile.is_explored
+                    and tile.is_portal
+                    and (x, y, floor_id) not in self.visited_portals
+                ):
                     dist = (
                         abs(x - player_pos_xy[0])
                         + abs(y - player_pos_xy[1])
