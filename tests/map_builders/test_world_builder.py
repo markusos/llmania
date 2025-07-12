@@ -92,9 +92,7 @@ def test_minimum_floor_size():
 
 
 def test_portal_uniqueness_on_floor():
-    builder = WorldBuilder(
-        20, 20, num_floors=3, random_generator=random.Random(12345)
-    )
+    builder = WorldBuilder(20, 20, num_floors=3, random_generator=random.Random(12345))
     world_maps, _, _, _ = builder.build()
 
     for floor_id, current_map in world_maps.items():

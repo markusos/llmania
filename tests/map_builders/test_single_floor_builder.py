@@ -188,9 +188,7 @@ def test_single_floor_floor_portion_respected(single_floor_builder_factory):
     for width, height in sizes:
         total_inner_tiles = (width - 2) * (height - 2)
         for portion in portions_to_test:
-            builder = single_floor_builder_factory(
-                width, height, floor_portion=portion
-            )
+            builder = single_floor_builder_factory(width, height, floor_portion=portion)
             world_map, _, _ = builder.build()
 
             num_floor_tiles = 0

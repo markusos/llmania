@@ -297,7 +297,6 @@ class TestGameEngine(unittest.TestCase):
             self.mock_renderer_instance.cleanup_curses.assert_not_called()
         self.assertGreaterEqual(self.mock_renderer_instance.render_all.call_count, 2)
 
-
     @patch("src.game_engine.curses")
     def test_game_engine_with_seed_is_deterministic(self, mock_curses):
         # First game engine

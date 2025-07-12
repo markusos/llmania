@@ -111,9 +111,9 @@ def test_adjust_density_decrease_floor_tiles(setup_world):
     # Allow some flexibility due to connectivity preservation
     assert final_floor_count >= expected_floor_tiles - (
         total_inner_tiles * 0.05
-    ) and final_floor_count <= expected_floor_tiles + (
-        total_inner_tiles * 0.15
-    ), f"Final {final_floor_count} not close to target {expected_floor_tiles}"
+    ) and final_floor_count <= expected_floor_tiles + (total_inner_tiles * 0.15), (
+        f"Final {final_floor_count} not close to target {expected_floor_tiles}"
+    )
 
 
 def test_adjust_density_with_protected_coords(setup_world):

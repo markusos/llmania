@@ -28,9 +28,7 @@ class SingleFloorBuilder(BuilderBase):
         self.floor_portion = (
             floor_portion if floor_portion is not None else self.DEFAULT_FLOOR_PORTION
         )
-        self.connectivity_manager = MapConnectivityManager(
-            random_generator=self.random
-        )
+        self.connectivity_manager = MapConnectivityManager(random_generator=self.random)
         self.density_adjuster = FloorDensityAdjuster(
             self.connectivity_manager, random_generator=self.random
         )
@@ -99,8 +97,9 @@ class SingleFloorBuilder(BuilderBase):
         for _ in range(max_attempts):
             if max_x < min_x or max_y < min_y:  # type: ignore
                 return None
-            rand_x, rand_y = self.random.randint(min_x, max_x), self.random.randint(
-                min_y, max_y
+            rand_x, rand_y = (
+                self.random.randint(min_x, max_x),
+                self.random.randint(min_y, max_y),
             )
             if (
                 tile := self.world_map.get_tile(rand_x, rand_y)

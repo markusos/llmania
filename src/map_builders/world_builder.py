@@ -123,8 +123,9 @@ class WorldBuilder:
             comp2_floors = [i for i in range(self.num_floors) if find_set(i) == r2_root]
             if not comp1_floors or not comp2_floors:
                 continue
-            f1_rand, f2_rand = self.random.choice(comp1_floors), self.random.choice(
-                comp2_floors
+            f1_rand, f2_rand = (
+                self.random.choice(comp1_floors),
+                self.random.choice(comp2_floors),
             )
 
             coord_found_for_extra_link = False
