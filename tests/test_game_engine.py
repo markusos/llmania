@@ -232,7 +232,9 @@ class TestGameEngine(unittest.TestCase):
                 {0: mock_wm_inst_debug},  # world_maps
                 (0, 0, 0),  # player_start_full_pos
                 (1, 1, 0),  # winning_full_pos
-                [{"id": 0, "map": mock_wm_inst_debug, "start": (0,0), "poi": (1,1)}]  # floor_details
+                [
+                    {"id": 0, "map": mock_wm_inst_debug, "start": (0, 0), "poi": (1, 1)}
+                ],  # floor_details
             )
 
             mock_player_inst_debug = MockPlayer_debug.return_value

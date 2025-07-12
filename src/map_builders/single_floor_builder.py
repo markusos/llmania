@@ -93,7 +93,7 @@ class SingleFloorBuilder(BuilderBase):
         if min_x > max_x or min_y > max_y:
             return None
         for _ in range(max_attempts):
-            if max_x < min_x or max_y < min_y: # type: ignore
+            if max_x < min_x or max_y < min_y:  # type: ignore
                 return None
             rand_x, rand_y = random.randint(min_x, max_x), random.randint(min_y, max_y)
             if (
@@ -211,9 +211,7 @@ class SingleFloorBuilder(BuilderBase):
             ]
 
             end_node_choices = (
-                non_portal_floor_tiles
-                if non_portal_floor_tiles
-                else all_floor_tiles
+                non_portal_floor_tiles if non_portal_floor_tiles else all_floor_tiles
             )
             if not end_node_choices:
                 end_node_choices = [player_start_pos]
@@ -341,9 +339,7 @@ class SingleFloorBuilder(BuilderBase):
         av_t = [
             t
             for t in floor_tiles
-            if t != player_start_pos
-            and t != poi_pos
-            and t not in self.portals_on_floor
+            if t != player_start_pos and t != poi_pos and t not in self.portals_on_floor
         ]
         random.shuffle(av_t)
         for _ in range(npt):
@@ -410,9 +406,13 @@ class SingleFloorBuilder(BuilderBase):
                 "is_portal": start_tile.is_portal,
                 "portal_to_floor_id": start_tile.portal_to_floor_id,
             }
-            self.world_map.set_tile_type(floor_start_pos[0], floor_start_pos[1], "floor")
+            self.world_map.set_tile_type(
+                floor_start_pos[0], floor_start_pos[1], "floor"
+            )
         elif not start_tile or start_tile.type != "floor":
-            self.world_map.set_tile_type(floor_start_pos[0], floor_start_pos[1], "floor")
+            self.world_map.set_tile_type(
+                floor_start_pos[0], floor_start_pos[1], "floor"
+            )
 
         all_current_floor_tiles = self._collect_floor_tiles()
 
@@ -457,10 +457,11 @@ class SingleFloorBuilder(BuilderBase):
                 ]
 
     def build(self) -> Tuple[WorldMap, Tuple[int, int], Tuple[int, int]]:
-        if (self.width < 3 or self.height < 4) and (
-            self.width < 4 or self.height < 3
-        ):
-            raise ValueError("Map too small for gen single floor")
+        if self.width < 10 or self.height < 10:
+            raise ValueError(
+                f"Map too small for single floor generation. Minimum size is 10x10, "
+                f"got {self.width}x{self.height}"
+            )
 
         for r_idx in range(1, self.height - 1):
             for c_idx in range(1, self.width - 1):
@@ -468,13 +469,11 @@ class SingleFloorBuilder(BuilderBase):
                     self.portals_on_floor.append((c_idx, r_idx))
                     self.portal_destinations[(c_idx, r_idx)] = tile.portal_to_floor_id
 
-        floor_start, floor_poi = (
-            self._select_start_and_win_positions_avoiding_portals()
-        )
+        floor_start, floor_poi = self._select_start_and_win_positions_avoiding_portals()
 
-        if not (
-            st_tile := self.world_map.get_tile(floor_start[0], floor_start[1])
-        ) or (st_tile.type != "floor" and not st_tile.is_portal):
+        if not (st_tile := self.world_map.get_tile(floor_start[0], floor_start[1])) or (
+            st_tile.type != "floor" and not st_tile.is_portal
+        ):
             self.world_map.set_tile_type(floor_start[0], floor_start[1], "floor")
 
         points_to_connect_to_start = [floor_poi] + self.portals_on_floor
@@ -484,7 +483,7 @@ class SingleFloorBuilder(BuilderBase):
             original_dest_if_portal = (
                 self.portal_destinations.get(point) if is_target_portal else None
             )
-            current_target_type = target_tile.type if target_tile else "wall" # type: ignore
+            current_target_type = target_tile.type if target_tile else "wall"  # type: ignore
 
             if current_target_type != "floor":
                 self.world_map.set_tile_type(point[0], point[1], "floor")
@@ -506,15 +505,18 @@ class SingleFloorBuilder(BuilderBase):
                     restored_tile.portal_to_floor_id = original_dest_if_portal
             elif current_target_type != "floor":
                 tile_at_point = self.world_map.get_tile(point[0], point[1])
-                if tile_at_point.type == "floor" and current_target_type != "potential_floor": # type: ignore
+                if (
+                    tile_at_point.type == "floor"
+                    and current_target_type != "potential_floor"
+                ):  # type: ignore
                     pass
                 else:
                     if not (tile_at_point and tile_at_point.is_portal):
                         self.world_map.set_tile_type(
                             point[0],
                             point[1],
-                            current_target_type # type: ignore
-                            if current_target_type != "potential_floor" # type: ignore
+                            current_target_type  # type: ignore
+                            if current_target_type != "potential_floor"  # type: ignore
                             else "wall",
                         )
 

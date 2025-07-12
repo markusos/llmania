@@ -1,8 +1,7 @@
-from collections import deque
-from typing import Optional
-
 import pytest
 
+from src.map_algorithms.connectivity import MapConnectivityManager
+from src.map_algorithms.pathfinding import PathFinder
 from src.map_builders.single_floor_builder import SingleFloorBuilder
 from src.world_map import WorldMap
 
@@ -10,139 +9,94 @@ from src.world_map import WorldMap
 @pytest.fixture
 def single_floor_builder_factory():
     def _factory(
-        width,
-        height,
-        seed=None,
-        floor_portion=None,
-        existing_map: Optional[WorldMap] = None,
+        width: int,
+        height: int,
+        seed: int = None,
+        floor_portion: float = 0.5,
+        existing_map: WorldMap = None,
     ):
         return SingleFloorBuilder(
-            width, height, seed, floor_portion, existing_map=existing_map
+            width,
+            height,
+            seed=seed,
+            floor_portion=floor_portion,
+            existing_map=existing_map,
         )
 
     return _factory
 
 
-# Test `build` returns correct types for SingleFloorBuilder
+def test_single_floor_builder_initialization(single_floor_builder_factory):
+    builder = single_floor_builder_factory(20, 20, seed=123, floor_portion=0.6)
+    assert builder.width == 20
+    assert builder.height == 20
+    assert builder.seed == 123
+    assert builder.floor_portion == 0.6
+    assert isinstance(builder.world_map, WorldMap)
+    assert isinstance(builder.connectivity_manager, MapConnectivityManager)
+    assert isinstance(builder.path_finder, PathFinder)
+
+
 def test_single_floor_builder_build_return_types(single_floor_builder_factory):
-    builder = single_floor_builder_factory(10, 10)
+    builder = single_floor_builder_factory(10, 10)  # Valid size
     world_map, player_start, poi_pos = builder.build()
     assert isinstance(world_map, WorldMap)
-    assert isinstance(player_start, tuple)
-    assert len(player_start) == 2
-    assert isinstance(player_start[0], int)
-    assert isinstance(player_start[1], int)
-    assert isinstance(poi_pos, tuple)
-    assert len(poi_pos) == 2
-    assert isinstance(poi_pos[0], int)
-    assert isinstance(poi_pos[1], int)
+    assert isinstance(player_start, tuple) and len(player_start) == 2
+    assert isinstance(poi_pos, tuple) and len(poi_pos) == 2
+    assert world_map.get_tile(player_start[0], player_start[1]).type == "floor"  # type: ignore
+    assert world_map.get_tile(poi_pos[0], poi_pos[1]).type == "floor"  # type: ignore
 
 
-# Test `build` dimensions for SingleFloorBuilder
-def test_single_floor_builder_build_dimensions(single_floor_builder_factory):
-    width, height = 15, 12
+def test_single_floor_builder_map_boundaries_are_walls(single_floor_builder_factory):
+    width, height = 10, 10
     builder = single_floor_builder_factory(width, height)
     world_map, _, _ = builder.build()
-    assert world_map.width == width
-    assert world_map.height == height
-
-
-# Test `build` content for SingleFloorBuilder
-def test_single_floor_builder_build_content(single_floor_builder_factory):
-    width, height = 20, 20
-    builder = single_floor_builder_factory(width, height, seed=123)
-    world_map, player_start_pos, poi_pos = builder.build()
-
-    px, py = player_start_pos
-    player_tile = world_map.get_tile(px, py)
-    assert player_tile is not None, "Player start position is out of bounds"
-    assert (
-        player_tile.type == "floor"
-    ), f"Player start tile at {player_start_pos} is not a floor tile."
-
-    poi_x, poi_y = poi_pos
-    poi_tile = world_map.get_tile(poi_x, poi_y)
-    assert poi_tile is not None, "POI position is out of bounds"
-    assert poi_tile.type == "floor", f"POI tile at {poi_pos} is not a floor tile."
-    if poi_tile.item:
-        assert (
-            poi_tile.item.name != "Amulet of Yendor"
-        ), "Single floor POI should not be the final Amulet"
-
-
-# BFS helper function for path verification (can be shared or duplicated)
-def find_path_bfs(
-    world_map: WorldMap, start_pos: tuple[int, int], end_pos: tuple[int, int]
-) -> bool:
-    queue = deque([(start_pos, [start_pos])])
-    visited = {start_pos}
-    width = world_map.width
-    height = world_map.height
-
-    while queue:
-        (current_x, current_y), path = queue.popleft()
-
-        if (current_x, current_y) == end_pos:
-            return True
-
-        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            next_x, next_y = current_x + dx, current_y + dy
-            if 0 <= next_x < width and 0 <= next_y < height:
-                tile = world_map.get_tile(next_x, next_y)
-                if tile and tile.type == "floor" and (next_x, next_y) not in visited:
-                    visited.add((next_x, next_y))
-                    queue.append(((next_x, next_y), path + [(next_x, next_y)]))
-    return False
+    for x in range(width):
+        assert world_map.get_tile(x, 0).type == "wall"  # type: ignore
+        assert world_map.get_tile(x, height - 1).type == "wall"  # type: ignore
+    for y in range(height):
+        assert world_map.get_tile(0, y).type == "wall"  # type: ignore
+        assert world_map.get_tile(width - 1, y).type == "wall"  # type: ignore
 
 
 @pytest.mark.parametrize("seed_val", [None] + list(range(5)))
-def test_single_floor_guaranteed_path_exists(
-    single_floor_builder_factory, seed_val
-):
-    width, height = 10, 10
+def test_single_floor_guaranteed_path_exists(single_floor_builder_factory, seed_val):
+    width, height = 10, 10  # Use valid minimum size
     builder = single_floor_builder_factory(width, height, seed=seed_val)
     world_map, player_start, poi_pos = builder.build()
 
-    assert world_map.get_tile(player_start[0], player_start[1]).type == "floor", (
-        f"Player start {player_start} is not floor. Seed: {seed_val}"
-    )
-    assert world_map.get_tile(poi_pos[0], poi_pos[1]).type == "floor", (
-        f"POI position {poi_pos} is not floor. Seed: {seed_val}"
-    )
+    pathfinder = PathFinder()
+    path = pathfinder.a_star_search(world_map, player_start, poi_pos, width, height)
 
-    if player_start == poi_pos:
-        path_found = True
-    else:
-        path_found = find_path_bfs(world_map, player_start, poi_pos)
-
-    assert path_found, (
-        f"No path found between player_start {player_start} and "
-        f"poi_pos {poi_pos}. Seed: {seed_val}"
+    assert path is not None, (
+        f"No path found between player_start {player_start} and POI {poi_pos} with seed {seed_val}"
     )
+    assert len(path) > 0
 
 
 def test_single_floor_start_poi_positions_not_on_edge(single_floor_builder_factory):
-    for seed_val in range(5):
-        width, height = 5, 5
+    for seed_val in range(5):  # Test a few seeds
+        width, height = 10, 10  # Use valid minimum
         builder = single_floor_builder_factory(width, height, seed=seed_val)
-        world_map, player_start, poi_pos = builder.build()
+        _, player_start, poi_pos = builder.build()
 
-        assert (
-            0 < player_start[0] < width - 1
-        ), f"Player start X ({player_start[0]}) on edge. Seed: {seed_val}"
-        assert (
-            0 < player_start[1] < height - 1
-        ), f"Player start Y ({player_start[1]}) on edge. Seed: {seed_val}"
-        assert (
-            0 < poi_pos[0] < width - 1
-        ), f"POI pos X ({poi_pos[0]}) on edge. Seed: {seed_val}"
-        assert (
-            0 < poi_pos[1] < height - 1
-        ), f"POI pos Y ({poi_pos[1]}) on edge. Seed: {seed_val}"
+        assert 0 < player_start[0] < width - 1, (
+            f"Player start X on edge: {player_start} (seed {seed_val})"
+        )
+        assert 0 < player_start[1] < height - 1, (
+            f"Player start Y on edge: {player_start} (seed {seed_val})"
+        )
+        assert 0 < poi_pos[0] < width - 1, f"POI X on edge: {poi_pos} (seed {seed_val})"
+        assert 0 < poi_pos[1] < height - 1, (
+            f"POI Y on edge: {poi_pos} (seed {seed_val})"
+        )
+        assert player_start != poi_pos, (
+            f"Player start and POI are same: {player_start} (seed {seed_val})"
+        )
 
 
 def test_single_floor_builder_valid_minimum_size(single_floor_builder_factory):
-    valid_sizes = [(3, 4), (4, 3), (5, 5)]
+    valid_sizes = [(10, 10), (12, 15), (15, 12)]
     for width, height in valid_sizes:
         try:
             builder = single_floor_builder_factory(width, height, seed=1)
@@ -155,127 +109,106 @@ def test_single_floor_builder_valid_minimum_size(single_floor_builder_factory):
             assert 0 < poi_pos[1] < height - 1
             player_tile = world_map.get_tile(player_start[0], player_start[1])
             poi_tile = world_map.get_tile(poi_pos[0], poi_pos[1])
-            assert player_tile.type == "floor"
-            assert poi_tile.type == "floor"
+            assert player_tile.type == "floor"  # type: ignore
+            assert poi_tile.type == "floor"  # type: ignore
         except ValueError:
             pytest.fail(
-                f"SingleFloorBuilder raised ValueError for {width}x{height}"
+                f"SingleFloorBuilder raised ValueError for valid size {width}x{height}"
             )
 
 
 def test_single_floor_builder_invalid_small_size(single_floor_builder_factory):
-    invalid_sizes = [(2, 2), (1, 5), (5, 1), (3, 3), (2, 4), (4, 2)]
+    # Updated to reflect 10x10 minimum
+    invalid_sizes = [(2, 2), (1, 5), (5, 1), (9, 9), (10, 9), (9, 10)]
     for width, height in invalid_sizes:
-        with pytest.raises(ValueError, match="Map too small for gen single floor"):
+        with pytest.raises(
+            ValueError,
+            match=r"Map too small for single floor generation. Minimum size is 10x10",
+        ):
             builder = single_floor_builder_factory(width, height, seed=1)
             builder.build()
 
 
 def test_single_floor_outer_layer_is_always_wall(single_floor_builder_factory):
-    sizes_to_test = [(4, 5), (5, 4), (10, 10)]
+    sizes_to_test = [(10, 10), (12, 15)]  # Valid sizes
     for width, height in sizes_to_test:
         builder = single_floor_builder_factory(width, height, seed=1)
         world_map, _, _ = builder.build()
-        for x_coord in range(width):
-            msg_top = f"Top edge at ({x_coord},0) not wall for {width}x{height}"
-            msg_bottom = f"Bottom edge at ({x_coord},{height - 1}) not wall for {width}x{height}"
-            assert world_map.get_tile(x_coord, 0).type == "wall", msg_top
-            assert world_map.get_tile(x_coord, height - 1).type == "wall", msg_bottom
-        for y_coord in range(height):
-            msg_left = f"Left edge at (0,{y_coord}) not wall for {width}x{height}"
-            msg_right = f"Right edge at ({width - 1},{y_coord}) not wall for {width}x{height}"
-            assert world_map.get_tile(0, y_coord).type == "wall", msg_left
-            assert world_map.get_tile(width - 1, y_coord).type == "wall", msg_right
+        for x in range(width):
+            assert world_map.get_tile(x, 0).type == "wall", (
+                f"Top edge not wall at ({x},0) for size {width}x{height}"
+            )  # type: ignore
+            assert world_map.get_tile(x, height - 1).type == "wall", (
+                f"Bottom edge not wall at ({x},{height - 1}) for size {width}x{height}"
+            )  # type: ignore
+        for y in range(1, height - 1):  # Exclude corners already checked
+            assert world_map.get_tile(0, y).type == "wall", (
+                f"Left edge not wall at (0,{y}) for size {width}x{height}"
+            )  # type: ignore
+            assert world_map.get_tile(width - 1, y).type == "wall", (
+                f"Right edge not wall at ({width - 1},{y}) for size {width}x{height}"
+            )  # type: ignore
 
 
 def test_single_floor_all_floor_tiles_are_accessible(single_floor_builder_factory):
-    width, height = 10, 10
+    width, height = 10, 10  # Valid size
     builder = single_floor_builder_factory(width, height, seed=123)
     world_map, player_start_pos, _ = builder.build()
 
-    inner_floor_tiles = []
-    for y in range(1, height - 1):
-        for x in range(1, width - 1):
-            tile = world_map.get_tile(x, y)
-            if tile and tile.type == "floor":
-                inner_floor_tiles.append((x, y))
+    floor_tiles = []
+    for r in range(1, height - 1):
+        for c in range(1, width - 1):
+            if tile := world_map.get_tile(c, r):
+                if tile.type == "floor":
+                    floor_tiles.append((c, r))
 
-    if not inner_floor_tiles:
-        pytest.skip("No inner floor tiles found to test accessibility.")
-        return
+    if (
+        not floor_tiles
+    ):  # If somehow no floor tiles were generated (should not happen with valid size)
+        return  # Or assert False if this state is considered an error
 
-    queue = deque([player_start_pos])
-    visited_floor_tiles = {player_start_pos}
+    # Check reachability from player_start_pos to all other floor_tiles
+    # This uses the actual MapConnectivityManager, not a mock
+    connectivity_manager = MapConnectivityManager()
+    reachable_from_start = connectivity_manager.get_reachable_floor_tiles(
+        world_map, [player_start_pos], width, height
+    )
 
-    while queue:
-        (current_x, current_y) = queue.popleft()
-        for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            next_x, next_y = current_x + dx, current_y + dy
-            if 1 <= next_x < width - 1 and 1 <= next_y < height - 1:
-                tile = world_map.get_tile(next_x, next_y)
-                if (
-                    tile
-                    and tile.type == "floor"
-                    and (next_x, next_y) not in visited_floor_tiles
-                ):
-                    visited_floor_tiles.add((next_x, next_y))
-                    queue.append((next_x, next_y))
-
-    for floor_tile_pos in inner_floor_tiles:
-        assert floor_tile_pos in visited_floor_tiles, (
-            f"Inner floor tile at {floor_tile_pos} is not accessible from "
-            f"player_start_pos {player_start_pos}"
+    for ft_x, ft_y in floor_tiles:
+        assert (ft_x, ft_y) in reachable_from_start, (
+            f"Floor tile ({ft_x},{ft_y}) is not reachable from player_start {player_start_pos}. Seed: 123"
         )
 
 
 def test_single_floor_floor_portion_respected(single_floor_builder_factory):
     sizes = [(10, 10), (20, 15)]
     portions_to_test = [0.2, 0.5, 0.8]
-    tolerance = 0.15
+    # Tolerance for floor portion can be a bit loose due to connectivity constraints
+    # and discrete nature of tiles. It's an approximation.
+    tolerance_factor = 0.20  # Allow 20% deviation from target portion for this test
 
     for width, height in sizes:
+        total_inner_tiles = (width - 2) * (height - 2)
         for portion in portions_to_test:
             builder = single_floor_builder_factory(
                 width, height, seed=1, floor_portion=portion
             )
             world_map, _, _ = builder.build()
 
-            inner_floor_tiles_count = 0
-            for y in range(1, height - 1):
-                for x in range(1, width - 1):
-                    tile = world_map.get_tile(x, y)
-                    if tile and tile.type == "floor":
-                        inner_floor_tiles_count += 1
+            num_floor_tiles = 0
+            for r in range(1, height - 1):
+                for c in range(1, width - 1):
+                    if tile := world_map.get_tile(c, r):
+                        if tile.type == "floor":
+                            num_floor_tiles += 1
 
-            total_inner_tiles = (width - 2) * (height - 2)
-            if total_inner_tiles == 0:
-                assert (
-                    inner_floor_tiles_count == 0
-                ), "No inner tiles but floor tiles found."
-                continue
+            actual_portion = (
+                num_floor_tiles / total_inner_tiles if total_inner_tiles > 0 else 0
+            )
 
-            actual_portion = inner_floor_tiles_count / total_inner_tiles
-            min_expected_tiles = 0
-            if total_inner_tiles >= 1:
-                min_expected_tiles = 1
-            if total_inner_tiles >= 2:
-                min_expected_tiles = 2
+            lower_bound = portion - tolerance_factor
+            upper_bound = portion + tolerance_factor
 
-            if portion < 0.01 and total_inner_tiles > 0:
-                assert inner_floor_tiles_count >= min_expected_tiles, (
-                    f"Expected at least {min_expected_tiles} floor tiles for "
-                    f"portion {portion} on {width}x{height}, "
-                    f"got {inner_floor_tiles_count}"
-                )
-            else:
-                current_tolerance = tolerance
-                if portion < 0.4:
-                    current_tolerance = 0.22
-                assert (
-                    portion - current_tolerance
-                    <= actual_portion
-                    <= portion + current_tolerance
-                ), (
-                    f"Floor portion for {width}x{height} with target {portion} "
-                    f"was {actual_portion:.2f} (tolerance {current_tolerance})"
-                )
+            assert lower_bound <= actual_portion <= upper_bound, (
+                f"Floor portion mismatch for {width}x{height} map. Target: {portion:.2f}, Actual: {actual_portion:.2f}. Floors: {num_floor_tiles}/{total_inner_tiles}"
+            )

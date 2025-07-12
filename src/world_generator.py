@@ -23,9 +23,7 @@ class WorldGenerator:
         # This could be a fixed number, a range, or passed as a parameter
         num_floors = random.randint(2, 5)  # Example: 2 to 5 floors
 
-        world_builder = WorldBuilder(
-            width, height, seed=seed, num_floors=num_floors
-        )
+        world_builder = WorldBuilder(width, height, seed=seed, num_floors=num_floors)
         # The WorldBuilder's build method now handles the entire world generation
         world_maps, player_start_full_pos, amulet_full_pos, floor_details = (
             world_builder.build()
@@ -64,7 +62,9 @@ class WorldGenerator:
                         char = "#"
                     elif tile.type == "floor":
                         char = "."
-                    elif tile.type == "potential_floor": # Should ideally not be present
+                    elif (
+                        tile.type == "potential_floor"
+                    ):  # Should ideally not be present
                         char = "~"
                 row_str += char + " "
             print(row_str)

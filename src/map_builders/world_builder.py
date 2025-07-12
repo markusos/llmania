@@ -42,17 +42,19 @@ class WorldBuilder:
         for floor_id in range(self.num_floors):
             builder = SingleFloorBuilder(self.width, self.height)
             self.world_maps[floor_id] = builder.world_map
-            self.floor_details.append({"id": floor_id, "map": self.world_maps[floor_id]})
+            self.floor_details.append(
+                {"id": floor_id, "map": self.world_maps[floor_id]}
+            )
 
         self._ensure_portal_connectivity(common_portal_coords)
 
-    def _ensure_portal_connectivity(
-        self, common_portal_coords: List[tuple[int, int]]
-    ):
+    def _ensure_portal_connectivity(self, common_portal_coords: List[tuple[int, int]]):
         if self.num_floors <= 1 or not common_portal_coords:
             return
 
-        taken_portal_coords_globally: set[tuple[int, int]] = set()
+        portal_coords_per_floor: dict[int, set[tuple[int, int]]] = {
+            i: set() for i in range(self.num_floors)
+        }
         parent = list(range(self.num_floors))
 
         def find_set(i):
@@ -62,71 +64,95 @@ class WorldBuilder:
             return parent[i]
 
         def unite_sets(i, j):
-            r_i, r_j = find_set(i), find_set(j)
-            if r_i != r_j:
-                parent[r_i] = r_j
+            i_id, j_id = find_set(i), find_set(j)
+            if i_id != j_id:
+                parent[i_id] = j_id
                 return True
             return False
 
-        available_common_coords = list(common_portal_coords)
-        random.shuffle(available_common_coords)
+        shuffled_coords = list(common_portal_coords)
+        random.shuffle(shuffled_coords)
 
+        # Create a ring of portals
         for i in range(self.num_floors):
             f1_id, f2_id = i, (i + 1) % self.num_floors
             if find_set(f1_id) == find_set(f2_id) and self.num_floors > 2:
                 continue
-            if not available_common_coords:
-                break
-            p_x, p_y = available_common_coords.pop(0)
-            t1 = self.world_maps[f1_id].get_tile(p_x, p_y)
-            t2 = self.world_maps[f2_id].get_tile(p_x, p_y)
-            if t1 and t2:
-                t1.type, t1.is_portal, t1.portal_to_floor_id = "portal", True, f2_id
-                t2.type, t2.is_portal, t2.portal_to_floor_id = "portal", True, f1_id
-                unite_sets(f1_id, f2_id)
-                taken_portal_coords_globally.add((p_x, p_y))
-            else:
-                available_common_coords.append((p_x, p_y))
 
-        num_c = sum(1 for i in range(self.num_floors) if parent[i] == i)
-        attempts = 0
-        max_attempts = self.num_floors * 2
-        while num_c > 1 and attempts < max_attempts:
-            attempts += 1
-            if not available_common_coords:
-                break
-            roots = [r for r in range(self.num_floors) if parent[r] == r]
+            coord_found = False
+            for p_x, p_y in shuffled_coords:
+                if (p_x, p_y) not in portal_coords_per_floor[f1_id] and (
+                    p_x,
+                    p_y,
+                ) not in portal_coords_per_floor[f2_id]:
+                    t1 = self.world_maps[f1_id].get_tile(p_x, p_y)
+                    t2 = self.world_maps[f2_id].get_tile(p_x, p_y)
+                    if t1 and t2:
+                        t1.type, t1.is_portal, t1.portal_to_floor_id = (
+                            "portal",
+                            True,
+                            f2_id,
+                        )
+                        t2.type, t2.is_portal, t2.portal_to_floor_id = (
+                            "portal",
+                            True,
+                            f1_id,
+                        )
+                        portal_coords_per_floor[f1_id].add((p_x, p_y))
+                        portal_coords_per_floor[f2_id].add((p_x, p_y))
+                        unite_sets(f1_id, f2_id)
+                        coord_found = True
+                        break
+            if not coord_found:
+                print(
+                    f"Warning: Could not find a unique portal location for {f1_id}-{f2_id}"
+                )
+
+        # Ensure full connectivity
+        num_components = sum(1 for i in range(self.num_floors) if parent[i] == i)
+        while num_components > 1:
+            roots = [i for i in range(self.num_floors) if parent[i] == i]
             if len(roots) < 2:
                 break
-            r1c, r2c = random.sample(roots, 2)
-            comp1_f = [fid for fid in range(self.num_floors) if find_set(fid) == r1c]
-            comp2_f = [fid for fid in range(self.num_floors) if find_set(fid) == r2c]
-            if not comp1_f or not comp2_f:
+            r1_root, r2_root = random.sample(roots, 2)
+            comp1_floors = [i for i in range(self.num_floors) if find_set(i) == r1_root]
+            comp2_floors = [i for i in range(self.num_floors) if find_set(i) == r2_root]
+            if not comp1_floors or not comp2_floors:
                 continue
-            f1l, f2l = random.choice(comp1_f), random.choice(comp2_f)
-            if not available_common_coords:
-                break
-            px2, py2 = available_common_coords.pop(0)
-            t1n, t2n = (
-                self.world_maps[f1l].get_tile(px2, py2),
-                self.world_maps[f2l].get_tile(px2, py2),
-            )
-            if t1n and t2n:
-                t1n.type, t1n.is_portal, t1n.portal_to_floor_id = "portal", True, f2l
-                t2n.type, t2n.is_portal, t2n.portal_to_floor_id = "portal", True, f1l
-                unite_sets(f1l, f2l)
-                taken_portal_coords_globally.add((px2, py2))
-                num_c = sum(
-                    1 for i_comp in range(self.num_floors) if parent[i_comp] == i_comp
-                )
-            else:
-                available_common_coords.append((px2, py2))
-        if sum(1 for i_loop in range(self.num_floors) if parent[i_loop] == i_loop) > 1:
-            print("Warning: WG could not connect all floors using common coords.")
+            f1_rand, f2_rand = random.choice(comp1_floors), random.choice(comp2_floors)
 
-    def _place_amulet_of_yendor(
-        self, player_start_floor: int
-    ) -> Tuple[int, int, int]:
+            coord_found_for_extra_link = False
+            for p_x, p_y in shuffled_coords:
+                if (p_x, p_y) not in portal_coords_per_floor[f1_rand] and (
+                    p_x,
+                    p_y,
+                ) not in portal_coords_per_floor[f2_rand]:
+                    t1 = self.world_maps[f1_rand].get_tile(p_x, p_y)
+                    t2 = self.world_maps[f2_rand].get_tile(p_x, p_y)
+                    if t1 and t2:
+                        t1.type, t1.is_portal, t1.portal_to_floor_id = (
+                            "portal",
+                            True,
+                            f2_rand,
+                        )
+                        t2.type, t2.is_portal, t2.portal_to_floor_id = (
+                            "portal",
+                            True,
+                            f1_rand,
+                        )
+                        portal_coords_per_floor[f1_rand].add((p_x, p_y))
+                        portal_coords_per_floor[f2_rand].add((p_x, p_y))
+                        unite_sets(f1_rand, f2_rand)
+                        num_components = sum(
+                            1 for i in range(self.num_floors) if parent[i] == i
+                        )
+                        coord_found_for_extra_link = True
+                        break
+            if not coord_found_for_extra_link:
+                print("Warning: Could not connect all map components.")
+                break
+
+    def _place_amulet_of_yendor(self, player_start_floor: int) -> Tuple[int, int, int]:
         amulet_floor_id = player_start_floor
         if self.num_floors > 1:
             possible_amulet_floors = [
@@ -159,9 +185,7 @@ class WorldBuilder:
             ]
             if not amulet_floor_tiles:
                 # If player's floor is also solid, place it somewhere, anywhere
-                amulet_map.set_tile_type(
-                    self.width // 2, self.height // 2, "floor"
-                )
+                amulet_map.set_tile_type(self.width // 2, self.height // 2, "floor")
                 amulet_floor_tiles.append((self.width // 2, self.height // 2))
 
         amulet_pos = random.choice(amulet_floor_tiles)
