@@ -1,6 +1,6 @@
 import random
 from collections import deque
-from typing import Set, Optional, List # Added Optional, List
+from typing import List, Optional, Set  # Added Optional, List
 
 from src.map_algorithms.pathfinding import (
     PathFinder,  # For carve_bresenham_line
