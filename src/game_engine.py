@@ -58,28 +58,20 @@ class GameEngine:
         # Generate the game world: multiple floors, player start (x,y,floor_id),
         # and win position (x,y,floor_id).
         # This will use the new generate_world method.
-        # Generate the game world: multiple floors, player start (x,y,floor_id),
-        # and win position (x,y,floor_id).
         (
             self.world_maps,
             player_start_full_pos,
             self.winning_full_pos,
-            # _floor_details_list is not used by GameEngine yet
             _floor_details_list,
         ) = self.world_generator.generate_world(map_width, map_height, seed=None)
 
         # Create a visible map for each floor.
-        self.visible_maps: dict[int, WorldMap] = {}
         for floor_id, w_map in self.world_maps.items():
             self.visible_maps[floor_id] = WorldMap(
                 width=w_map.width, height=w_map.height
             )
 
-        # Renderer map dimensions are based on the first generated floor.
-        # Assumes all floors have same dimensions as map_width, map_height.
-        # A failure in generate_world might lead to empty world_maps.
         first_floor_id = min(self.world_maps.keys()) if self.world_maps else 0
-        # Fallback dimensions if no maps; indicates a deeper problem.
         render_map_width = (
             self.world_maps[first_floor_id].width if self.world_maps else map_width
         )
@@ -111,7 +103,6 @@ class GameEngine:
         if self.ai_active:
             self.ai_logic = AILogic(
                 player=self.player,
-                # Pass the dictionaries of maps to AI
                 real_world_maps=self.world_maps,
                 ai_visible_maps=self.visible_maps,
                 message_log=self.message_log,
@@ -150,7 +141,6 @@ class GameEngine:
                 if real_tile:
                     visible_tile = current_visible_map.get_tile(map_x, map_y)
                     if visible_tile:
-                        # Copy relevant attributes from real tile to visible tile
                         visible_tile.type = real_tile.type
                         visible_tile.monster = real_tile.monster
                         visible_tile.item = real_tile.item
@@ -158,25 +148,16 @@ class GameEngine:
                         visible_tile.portal_to_floor_id = real_tile.portal_to_floor_id
                         visible_tile.is_explored = True
 
-    # Their responsibilities have been moved to InputHandler, Renderer,
-    # and CommandProcessor respectively.
-
     def run(self):
         """
         Starts and manages the main game loop.
-        Handles input, processes commands, and renders the game state
-        until the game is over.
         """
         if self.debug_mode:
-            # Special handling for debug mode to prevent curses initialization
-            # and allow for simpler testing via main_debug().
             print(
                 "Error: GameEngine.run() called in debug_mode. "
                 "Use main_debug() in main.py for testing."
             )
-            self.game_over = True  # Set game_over for test conditions.
-            # Perform a single render to list for debug inspection, as per some tests.
-            # Update visibility before rendering, even in debug mode.
+            self.game_over = True
             self._update_fog_of_war_visibility()
             current_ai_path_debug = None
             if self.ai_active and self.ai_logic:
@@ -185,15 +166,11 @@ class GameEngine:
                 self.player.current_floor_id
             )
             if not current_visible_map_for_render:
-                # Fallback to floor 0 or handle error more gracefully.
                 current_visible_map_for_render = self.visible_maps.get(
                     0, WorldMap(self.renderer.map_width, self.renderer.map_height)
                 )
-
-            # Debug: Print map for the first few floors
             if self.debug_mode:
                 print("--- Game Engine Debug Start ---")
-                # Print first 3 floors or fewer if less than 3 exist
                 for floor_id_to_print in sorted(self.world_maps.keys())[:3]:
                     f_map = self.world_maps[floor_id_to_print]
                     print(f"Floor ID: {floor_id_to_print}")
@@ -215,7 +192,6 @@ class GameEngine:
                                 else:
                                     row_str += "?"
                             else:
-                                # Should not happen with initialized maps
                                 row_str += " "
                         print(row_str)
                     print(f"Portals on floor {floor_id_to_print}: {portals_on_floor}")
@@ -228,7 +204,6 @@ class GameEngine:
                 print(f"Winning position: {self.winning_full_pos}")
                 print("--- Game Engine Debug End ---")
 
-
             self.renderer.render_all(
                 player_x=self.player.x,
                 player_y=self.player.y,
@@ -239,7 +214,7 @@ class GameEngine:
                 message_log=self.message_log,
                 debug_render_to_list=True,
                 ai_path=current_ai_path_debug,
-                current_floor_id=self.player.current_floor_id,  # Pass current floor ID
+                current_floor_id=self.player.current_floor_id,
             )
             return
 
@@ -281,7 +256,7 @@ class GameEngine:
                     )
 
                 if parsed_command_output:
-                    if self.game_over:  # Should not process if already over
+                    if self.game_over:
                         self.message_log.add_message("The game is over.")
                     else:
                         results = self.command_processor.process_command(
@@ -294,7 +269,6 @@ class GameEngine:
                         )
                         self.game_over = results.get("game_over", False)
                         if not self.game_over:
-                            # Crucial after floor change
                             self._update_fog_of_war_visibility()
 
                 current_ai_path_loop = (
@@ -320,7 +294,6 @@ class GameEngine:
                     current_floor_id=self.player.current_floor_id,
                 )
 
-            # Final render after game over
             self._update_fog_of_war_visibility()
             current_ai_path_final = (
                 self.ai_logic.current_path if self.ai_active and self.ai_logic else None
@@ -343,8 +316,7 @@ class GameEngine:
                 current_floor_id=self.player.current_floor_id,
             )
             if self.game_over and not self.debug_mode:
-                curses.napms(2000)  # Pause for 2 seconds.
+                curses.napms(2000)
         finally:
-            # Ensure curses is cleaned up properly, but only if not in debug mode.
             if not self.debug_mode:
                 self.renderer.cleanup_curses()
