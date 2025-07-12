@@ -35,6 +35,7 @@ class Explorer:
                     and tile.is_explored
                     and tile.is_portal
                     and (x, y, floor_id) not in self.visited_portals
+                    and (x, y) != player_pos_xy
                 ):
                     dist = (
                         abs(x - player_pos_xy[0])
