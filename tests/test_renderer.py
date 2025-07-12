@@ -151,9 +151,7 @@ def test_render_fog_of_war(setup_renderer):
         assert output[1][1] == " "
 
 
-@pytest.mark.skip(
-    reason="Curses rendering in a simulated small terminal is difficult to test reliably without a real terminal."
-)
+@pytest.mark.skip(reason="Curses rendering in a simulated terminal is hard to test.")
 @patch("curses.initscr")
 @patch("curses.start_color")
 @patch("curses.noecho")

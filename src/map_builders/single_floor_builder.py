@@ -367,10 +367,10 @@ class SingleFloorBuilder(BuilderBase):
                 ):
                     potential_spots.append((fx, fy))
             if len(potential_spots) < 2:
+                error_msg = f"Cannot select start/POI. Map: {self.width}x{self.height}"
                 raise ValueError(
-                    f"Cannot select distinct start/POI. Map size {self.width}x{self.height}, "
-                    f"{len(self.portals_on_floor)} portals, only {len(potential_spots)} "
-                    f"non-portal spots."
+                    f"{error_msg}, {len(self.portals_on_floor)} portals, "
+                    f"{len(potential_spots)} spots."
                 )
 
         player_start_pos = random.choice(potential_spots)

@@ -355,7 +355,8 @@ class TestAILogic(unittest.TestCase):
             any(
                 (
                     f"AI: Pathing to explore at ({self.ai.current_path[-1][0]},"
-                    f"{self.ai.current_path[-1][1]}) on floor {self.ai.current_path[-1][2]}."
+                    f"{self.ai.current_path[-1][1]}) on floor "
+                    f"{self.ai.current_path[-1][2]}."
                 )
                 in str(call_args)
                 for call_args in self.message_log.add_message.call_args_list

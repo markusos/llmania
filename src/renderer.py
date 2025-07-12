@@ -146,7 +146,7 @@ class Renderer:
                     ]
                     current_xy = (x_tile_idx, y_map_idx)
                     if current_xy in path_segment:
-                        # If current_xy is the last point of ai_path AND on current floor
+                        # If current_xy is the last point of ai_path on current floor
                         if (
                             current_xy == (ai_path[-1][0], ai_path[-1][1])
                             and current_floor_id == ai_path[-1][2]

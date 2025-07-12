@@ -247,7 +247,7 @@ class PathFinder:
         """
         Carves a path of "floor" tiles between start_pos and end_pos using a
         Bresenham-like line algorithm. Ensures the path stays within map bounds.
-        If protected_coords are provided, tiles at these coordinates will not be changed.
+        If protected_coords are given, tiles at these coordinates will not be changed.
         This method was formerly _carve_path in WorldGenerator.
         """
         path_points = []

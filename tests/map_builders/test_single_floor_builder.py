@@ -68,9 +68,7 @@ def test_single_floor_guaranteed_path_exists(single_floor_builder_factory, seed_
     pathfinder = PathFinder()
     path = pathfinder.a_star_search(world_map, player_start, poi_pos, width, height)
 
-    assert path is not None, (
-        f"No path found between player_start {player_start} and POI {poi_pos} with seed {seed_val}"
-    )
+    assert path is not None, f"No path found for seed {seed_val}"
     assert len(path) > 0
 
 
@@ -176,7 +174,7 @@ def test_single_floor_all_floor_tiles_are_accessible(single_floor_builder_factor
 
     for ft_x, ft_y in floor_tiles:
         assert (ft_x, ft_y) in reachable_from_start, (
-            f"Floor tile ({ft_x},{ft_y}) is not reachable from player_start {player_start_pos}. Seed: 123"
+            f"Unreachable floor tile at ({ft_x},{ft_y}) from {player_start_pos}."
         )
 
 
@@ -210,5 +208,6 @@ def test_single_floor_floor_portion_respected(single_floor_builder_factory):
             upper_bound = portion + tolerance_factor
 
             assert lower_bound <= actual_portion <= upper_bound, (
-                f"Floor portion mismatch for {width}x{height} map. Target: {portion:.2f}, Actual: {actual_portion:.2f}. Floors: {num_floor_tiles}/{total_inner_tiles}"
+                f"Floor portion mismatch for {width}x{height} map. "
+                f"Target: {portion:.2f}, Actual: {actual_portion:.2f}."
             )
