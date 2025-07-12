@@ -64,7 +64,12 @@ class Explorer:
                 continue
             for y, x in ai_map.iter_coords():
                 tile = ai_map.get_tile(x, y)
-                if tile and tile.is_explored and tile.is_portal:
+                if (
+                    tile
+                    and tile.is_explored
+                    and tile.is_portal
+                    and not (x == player_pos_xy[0] and y == player_pos_xy[1])
+                ):
                     portal_dest_floor_id = tile.portal_to_floor_id
                     if portal_dest_floor_id is not None:
                         if not self.is_floor_fully_explored(portal_dest_floor_id):
