@@ -80,9 +80,7 @@ class Explorer:
                             + abs(y - player_pos_xy[1])
                             + abs(floor_id - player_floor_id) * 10
                         )
-                        targets.append(
-                            (x, y, floor_id, "portal_to_unexplored", dist)
-                        )
+                        targets.append((x, y, floor_id, "portal_to_unexplored", dist))
         return targets
 
     def find_exploration_targets(

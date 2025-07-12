@@ -224,15 +224,19 @@ class TestAILogic(unittest.TestCase):
             1,
             0,
         )
-        self._create_floor_layout(0, 5, 5, [".....", ".S.1.", ".....", ".....", "....."])
+        self._create_floor_layout(
+            0, 5, 5, [".....", ".S.1.", ".....", ".....", "....."]
+        )
         self.ai.explorer.find_exploration_targets.return_value = [
             (1, 2, 0),
             (1, 1, 0),
         ]
-        self.ai.explorer.find_unvisited_portals.return_value = [(3, 1, 0, "unvisited_portal", 2)]
+        self.ai.explorer.find_unvisited_portals.return_value = [
+            (3, 1, 0, "unvisited_portal", 2)
+        ]
 
         # Action should be to explore, not use the portal
-        action = self.ai.get_next_action()
+        self.ai.get_next_action()
         self.assertIsNotNone(self.ai.current_path)
         # Verify that the target is an exploration target, not the portal
         self.assertNotEqual(self.ai.current_path[-1], (3, 1, 0))
