@@ -1,8 +1,10 @@
-import random
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from src.map_builders.world_builder import WorldBuilder
 from src.world_map import WorldMap
+
+if TYPE_CHECKING:
+    from random import Random
 
 
 class WorldGenerator:
@@ -10,20 +12,19 @@ class WorldGenerator:
         # floor_portion is now handled by SingleFloorBuilder,
         # but we keep it here if WorldGenerator needs to pass it down.
         self.floor_portion = floor_portion
-        self.seed = None
 
     def generate_world(
-        self, width: int, height: int, seed: Optional[int] = None
+        self, width: int, height: int, random_generator: "Random"
     ) -> Tuple[
         dict[int, WorldMap], Tuple[int, int, int], Tuple[int, int, int], List[dict]
     ]:
-        self.seed = seed
-
         # Determine the number of floors for the world
         # This could be a fixed number, a range, or passed as a parameter
-        num_floors = random.randint(2, 5)  # Example: 2 to 5 floors
+        num_floors = random_generator.randint(2, 5)  # Example: 2 to 5 floors
 
-        world_builder = WorldBuilder(width, height, seed=seed, num_floors=num_floors)
+        world_builder = WorldBuilder(
+            width, height, random_generator=random_generator, num_floors=num_floors
+        )
         # The WorldBuilder's build method now handles the entire world generation
         world_maps, player_start_full_pos, amulet_full_pos, floor_details = (
             world_builder.build()

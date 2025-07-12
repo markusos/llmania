@@ -1,12 +1,17 @@
-import random
 from collections import deque
-from typing import List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
 from src.map_algorithms.pathfinding import PathFinder
 from src.world_map import WorldMap
 
+if TYPE_CHECKING:
+    from random import Random
+
 
 class MapConnectivityManager:
+    def __init__(self, random_generator: "Random"):
+        self.random = random_generator
+
     def _bfs_collect_component(
         self,
         world_map: WorldMap,
@@ -64,7 +69,7 @@ class MapConnectivityManager:
                 tile = world_map.get_tile(x_coord, y_coord)
                 if tile and tile.type == "floor":
                     all_floor_tiles_coords.append((x_coord, y_coord))
-        random.shuffle(all_floor_tiles_coords)
+        self.random.shuffle(all_floor_tiles_coords)
 
         for x_coord, y_coord in all_floor_tiles_coords:
             if (x_coord, y_coord) not in main_component_nodes:
@@ -90,8 +95,8 @@ class MapConnectivityManager:
                             protected_coords=protected_coords,
                         )
                 elif new_component_nodes:
-                    node_from_new = random.choice(list(new_component_nodes))
-                    node_from_main = random.choice(list(main_component_nodes))
+                    node_from_new = self.random.choice(list(new_component_nodes))
+                    node_from_main = self.random.choice(list(main_component_nodes))
                     path_finder.carve_bresenham_line(
                         world_map,
                         node_from_new,

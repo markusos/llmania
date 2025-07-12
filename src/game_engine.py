@@ -1,4 +1,5 @@
 import curses
+import random
 import time
 
 from src.ai_logic import AILogic
@@ -54,6 +55,7 @@ class GameEngine:
         self.ai_sleep_duration = ai_sleep_duration
         self.ai_logic = None
         self.verbose = verbose
+        self.random = random.Random(seed)
 
         # world_map and visible_map will be dictionaries: floor_id -> WorldMap
         self.world_maps: dict[int, WorldMap] = {}
@@ -69,7 +71,9 @@ class GameEngine:
             player_start_full_pos,
             self.winning_full_pos,
             _floor_details_list,
-        ) = self.world_generator.generate_world(map_width, map_height, seed=seed)
+        ) = self.world_generator.generate_world(
+            map_width, map_height, random_generator=self.random
+        )
 
         # Create a visible map for each floor.
         for floor_id, w_map in self.world_maps.items():
@@ -112,6 +116,7 @@ class GameEngine:
                 real_world_maps=self.world_maps,
                 ai_visible_maps=self.visible_maps,
                 message_log=self.message_log,
+                random_generator=self.random,
                 verbose=self.verbose,
             )
 
@@ -290,7 +295,6 @@ class GameEngine:
         print(f"Player initial position: ({self.player.x}, {self.player.y})")
         print(f"Player initial health: {self.player.health}")
         print(f"Winning position: {self.winning_full_pos}")
-        print(f"Seed used: {self.world_generator.seed if hasattr(self.world_generator, 'seed') else 'default'}")
         self._print_full_map_debug()
 
         # Run the game loop until the game is over

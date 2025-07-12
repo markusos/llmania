@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from src.map_builders.world_builder import WorldBuilder
@@ -6,7 +8,9 @@ from src.world_map import WorldMap
 
 def test_world_generation_multiple_floors():
     width, height, num_floors = 20, 20, 3
-    builder = WorldBuilder(width, height, num_floors=num_floors, seed=123)
+    builder = WorldBuilder(
+        width, height, num_floors=num_floors, random_generator=random.Random(123)
+    )
     world_maps, player_start, amulet_pos, floor_details = builder.build()
 
     assert len(world_maps) == num_floors
@@ -29,7 +33,9 @@ def test_world_generation_multiple_floors():
 
 def test_portal_connectivity_and_bidirectionality():
     width, height, num_floors = 15, 15, 4
-    builder = WorldBuilder(width, height, num_floors=num_floors, seed=42)
+    builder = WorldBuilder(
+        width, height, num_floors=num_floors, random_generator=random.Random(42)
+    )
     world_maps, _, _, _ = builder.build()
 
     portals_found = 0
@@ -53,7 +59,7 @@ def test_portal_connectivity_and_bidirectionality():
 
 
 def test_no_items_or_monsters_on_portal_tiles():
-    builder = WorldBuilder(12, 12, num_floors=2, seed=777)
+    builder = WorldBuilder(12, 12, num_floors=2, random_generator=random.Random(777))
     world_maps, _, _, _ = builder.build()
 
     for floor_id, current_map in world_maps.items():
@@ -66,7 +72,7 @@ def test_no_items_or_monsters_on_portal_tiles():
 
 
 def test_amulet_placement():
-    builder = WorldBuilder(10, 10, num_floors=1, seed=1)
+    builder = WorldBuilder(10, 10, num_floors=1, random_generator=random.Random(1))
     world_maps, _, amulet_pos, _ = builder.build()
     amulet_map = world_maps[amulet_pos[2]]
     amulet_tile = amulet_map.get_tile(amulet_pos[0], amulet_pos[1])
@@ -76,17 +82,19 @@ def test_amulet_placement():
 
 def test_minimum_floor_size():
     with pytest.raises(ValueError, match="Map too small"):
-        WorldBuilder(5, 5, num_floors=1, seed=1).build()
+        WorldBuilder(5, 5, num_floors=1, random_generator=random.Random(1)).build()
     with pytest.raises(ValueError, match="Map too small"):
-        WorldBuilder(10, 5, num_floors=1, seed=2).build()
+        WorldBuilder(10, 5, num_floors=1, random_generator=random.Random(2)).build()
     try:
-        WorldBuilder(10, 10, num_floors=1, seed=4).build()
+        WorldBuilder(10, 10, num_floors=1, random_generator=random.Random(4)).build()
     except ValueError:
         pytest.fail("WorldBuilder failed with valid dimensions.")
 
 
 def test_portal_uniqueness_on_floor():
-    builder = WorldBuilder(20, 20, num_floors=3, seed=12345)
+    builder = WorldBuilder(
+        20, 20, num_floors=3, random_generator=random.Random(12345)
+    )
     world_maps, _, _, _ = builder.build()
 
     for floor_id, current_map in world_maps.items():
@@ -102,7 +110,9 @@ def test_portal_uniqueness_on_floor():
 
 def test_all_floors_connected():
     num_floors = 5
-    builder = WorldBuilder(20, 20, num_floors=num_floors, seed=67890)
+    builder = WorldBuilder(
+        20, 20, num_floors=num_floors, random_generator=random.Random(67890)
+    )
     world_maps, _, _, _ = builder.build()
 
     adj = {i: [] for i in range(num_floors)}
@@ -129,10 +139,14 @@ def test_all_floors_connected():
 
 def test_world_builder_with_seed_is_deterministic():
     width, height, num_floors, seed = 20, 20, 3, 123
-    builder1 = WorldBuilder(width, height, num_floors=num_floors, seed=seed)
+    builder1 = WorldBuilder(
+        width, height, num_floors=num_floors, random_generator=random.Random(seed)
+    )
     world_maps1, player_start1, amulet_pos1, _ = builder1.build()
 
-    builder2 = WorldBuilder(width, height, num_floors=num_floors, seed=seed)
+    builder2 = WorldBuilder(
+        width, height, num_floors=num_floors, random_generator=random.Random(seed)
+    )
     world_maps2, player_start2, amulet_pos2, _ = builder2.build()
 
     assert player_start1 == player_start2

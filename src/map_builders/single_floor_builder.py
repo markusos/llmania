@@ -1,5 +1,4 @@
-import random
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from src.item import Item
 from src.map_algorithms.connectivity import MapConnectivityManager
@@ -9,6 +8,9 @@ from src.map_builders.builder_base import BuilderBase
 from src.monster import Monster
 from src.world_map import WorldMap
 
+if TYPE_CHECKING:
+    from random import Random
+
 
 class SingleFloorBuilder(BuilderBase):
     DEFAULT_FLOOR_PORTION = 0.5
@@ -17,17 +19,21 @@ class SingleFloorBuilder(BuilderBase):
         self,
         width: int,
         height: int,
-        seed: Optional[int] = None,
+        random_generator: "Random",
         floor_portion: Optional[float] = None,
         existing_map: Optional[WorldMap] = None,
     ):
-        super().__init__(width, height, seed)
+        super().__init__(width, height, random_generator)
 
         self.floor_portion = (
             floor_portion if floor_portion is not None else self.DEFAULT_FLOOR_PORTION
         )
-        self.connectivity_manager = MapConnectivityManager()
-        self.density_adjuster = FloorDensityAdjuster(self.connectivity_manager)
+        self.connectivity_manager = MapConnectivityManager(
+            random_generator=self.random
+        )
+        self.density_adjuster = FloorDensityAdjuster(
+            self.connectivity_manager, random_generator=self.random
+        )
         self.path_finder = PathFinder()
         self.world_map = (
             existing_map if existing_map else self._initialize_map(width, height)
@@ -93,7 +99,9 @@ class SingleFloorBuilder(BuilderBase):
         for _ in range(max_attempts):
             if max_x < min_x or max_y < min_y:  # type: ignore
                 return None
-            rand_x, rand_y = random.randint(min_x, max_x), random.randint(min_y, max_y)
+            rand_x, rand_y = self.random.randint(min_x, max_x), self.random.randint(
+                min_y, max_y
+            )
             if (
                 tile := self.world_map.get_tile(rand_x, rand_y)
             ) and tile.type == tile_type:
@@ -142,15 +150,17 @@ class SingleFloorBuilder(BuilderBase):
                 preferred_directions.append((1, 0))
 
             chosen_dx, chosen_dy = (
-                random.choice(possible_directions) if possible_directions else (0, 0)
+                self.random.choice(possible_directions)
+                if possible_directions
+                else (0, 0)
             )
-            if preferred_directions and random.random() < 0.75:
-                chosen_dx, chosen_dy = random.choice(preferred_directions)
+            if preferred_directions and self.random.random() < 0.75:
+                chosen_dx, chosen_dy = self.random.choice(preferred_directions)
 
             if (
                 (last_dx, last_dy) != (0, 0)
                 and (last_dx, last_dy) in possible_directions
-                and random.random() < 0.6
+                and self.random.random() < 0.6
             ):
                 chosen_dx, chosen_dy = last_dx, last_dy
 
@@ -214,13 +224,13 @@ class SingleFloorBuilder(BuilderBase):
             if not end_node_choices:
                 end_node_choices = [player_start_pos]
 
-            end_node = random.choice(end_node_choices)
+            end_node = self.random.choice(end_node_choices)
             if end_node == start_node and len(end_node_choices) > 1:
                 potential_end_nodes = [
                     fn for fn in end_node_choices if fn != start_node
                 ]
                 if potential_end_nodes:
-                    end_node = random.choice(potential_end_nodes)
+                    end_node = self.random.choice(potential_end_nodes)
 
             self._perform_directed_random_walk(start_node, end_node)
 
@@ -238,7 +248,7 @@ class SingleFloorBuilder(BuilderBase):
                 max(max(1, base_sum // 10), base_sum // 5),
             )
         )
-        num_additional_paths = random.randint(min_paths, max_paths)
+        num_additional_paths = self.random.randint(min_paths, max_paths)
 
         potential_target_tiles = []
         for y_coord in range(1, self.height - 1):
@@ -259,7 +269,7 @@ class SingleFloorBuilder(BuilderBase):
             if not potential_target_tiles:
                 break
             target_pos = potential_target_tiles.pop(
-                random.randrange(len(potential_target_tiles))
+                self.random.randrange(len(potential_target_tiles))
             )
 
             current_floor_tiles = self._collect_floor_tiles()
@@ -272,7 +282,7 @@ class SingleFloorBuilder(BuilderBase):
             if not origin_choices:
                 origin_choices = [player_start_pos]
 
-            origin_pos = random.choice(origin_choices)
+            origin_pos = self.random.choice(origin_choices)
 
             self.path_finder.carve_bresenham_line(
                 self.world_map,
@@ -300,9 +310,9 @@ class SingleFloorBuilder(BuilderBase):
             or t.is_portal
         ):
             return False
-        if random.random() < 0.25:
-            if random.random() < 0.6:
-                it = random.choice(
+        if self.random.random() < 0.25:
+            if self.random.random() < 0.6:
+                it = self.random.choice(
                     [
                         (
                             "Health Potion",
@@ -318,7 +328,7 @@ class SingleFloorBuilder(BuilderBase):
                 )
                 self.world_map.place_item(Item(it[0], it[1], it[2]), x, y)
             else:
-                mt = random.choice([("Goblin", 10, 3), ("Bat", 5, 2)])
+                mt = self.random.choice([("Goblin", 10, 3), ("Bat", 5, 2)])
                 self.world_map.place_monster(
                     Monster(mt[0], mt[1], mt[2], x=x, y=y), x, y
                 )
@@ -339,7 +349,7 @@ class SingleFloorBuilder(BuilderBase):
             for t in floor_tiles
             if t != player_start_pos and t != poi_pos and t not in self.portals_on_floor
         ]
-        random.shuffle(av_t)
+        self.random.shuffle(av_t)
         for _ in range(npt):
             if not av_t:
                 break
@@ -371,12 +381,12 @@ class SingleFloorBuilder(BuilderBase):
                     f"{len(potential_spots)} spots."
                 )
 
-        player_start_pos = random.choice(potential_spots)
+        player_start_pos = self.random.choice(potential_spots)
         temp_win_pos_choices = [p for p in potential_spots if p != player_start_pos]
         if not temp_win_pos_choices:
             original_win_pos = player_start_pos
         else:
-            original_win_pos = random.choice(temp_win_pos_choices)
+            original_win_pos = self.random.choice(temp_win_pos_choices)
 
         self.world_map.set_tile_type(player_start_pos[0], player_start_pos[1], "floor")
         self.world_map.set_tile_type(original_win_pos[0], original_win_pos[1], "floor")

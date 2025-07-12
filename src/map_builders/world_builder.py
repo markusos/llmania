@@ -1,23 +1,27 @@
-import random
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 from src.item import Item
 from src.map_builders.single_floor_builder import SingleFloorBuilder
 from src.world_map import WorldMap
 
+if TYPE_CHECKING:
+    from random import Random
+
 
 class WorldBuilder:
     def __init__(
-        self, width: int, height: int, seed: Optional[int] = None, num_floors: int = 1
+        self,
+        width: int,
+        height: int,
+        random_generator: "Random",
+        num_floors: int = 1,
     ):
         self.width = width
         self.height = height
-        self.seed = seed
+        self.random = random_generator
         self.num_floors = num_floors
         self.world_maps: dict[int, WorldMap] = {}
         self.floor_details: list[dict] = []
-        if self.seed is not None:
-            random.seed(self.seed)
 
     def _initialize_world(self):
         num_common_portal_coords = (
@@ -36,11 +40,13 @@ class WorldBuilder:
                 for y in range(1, self.height - 1)
             ]
             if possible_inner_coords:
-                random.shuffle(possible_inner_coords)
+                self.random.shuffle(possible_inner_coords)
                 common_portal_coords = possible_inner_coords[:num_common_portal_coords]
 
         for floor_id in range(self.num_floors):
-            builder = SingleFloorBuilder(self.width, self.height)
+            builder = SingleFloorBuilder(
+                self.width, self.height, random_generator=self.random
+            )
             self.world_maps[floor_id] = builder.world_map
             self.floor_details.append(
                 {"id": floor_id, "map": self.world_maps[floor_id]}
@@ -71,7 +77,7 @@ class WorldBuilder:
             return False
 
         shuffled_coords = list(common_portal_coords)
-        random.shuffle(shuffled_coords)
+        self.random.shuffle(shuffled_coords)
 
         # Create a ring of portals
         for i in range(self.num_floors):
@@ -112,12 +118,14 @@ class WorldBuilder:
             roots = [i for i in range(self.num_floors) if parent[i] == i]
             if len(roots) < 2:
                 break
-            r1_root, r2_root = random.sample(roots, 2)
+            r1_root, r2_root = self.random.sample(roots, 2)
             comp1_floors = [i for i in range(self.num_floors) if find_set(i) == r1_root]
             comp2_floors = [i for i in range(self.num_floors) if find_set(i) == r2_root]
             if not comp1_floors or not comp2_floors:
                 continue
-            f1_rand, f2_rand = random.choice(comp1_floors), random.choice(comp2_floors)
+            f1_rand, f2_rand = self.random.choice(comp1_floors), self.random.choice(
+                comp2_floors
+            )
 
             coord_found_for_extra_link = False
             for p_x, p_y in shuffled_coords:
@@ -157,7 +165,7 @@ class WorldBuilder:
                 f["id"] for f in self.floor_details if f["id"] != player_start_floor
             ]
             amulet_floor_id = (
-                random.choice(possible_amulet_floors)
+                self.random.choice(possible_amulet_floors)
                 if possible_amulet_floors
                 else (player_start_floor + 1) % self.num_floors
             )
@@ -186,7 +194,7 @@ class WorldBuilder:
                 amulet_map.set_tile_type(self.width // 2, self.height // 2, "floor")
                 amulet_floor_tiles.append((self.width // 2, self.height // 2))
 
-        amulet_pos = random.choice(amulet_floor_tiles)
+        amulet_pos = self.random.choice(amulet_floor_tiles)
         amulet_item = Item("Amulet of Yendor", "Object of quest!", {"type": "quest"})
         amulet_map.place_item(amulet_item, amulet_pos[0], amulet_pos[1])
 
@@ -206,7 +214,7 @@ class WorldBuilder:
             builder = SingleFloorBuilder(
                 self.width,
                 self.height,
-                seed=self.seed,
+                random_generator=self.random,
                 existing_map=self.world_maps[floor_id],
             )
             world_map, floor_start_pos, floor_poi_pos = builder.build()
