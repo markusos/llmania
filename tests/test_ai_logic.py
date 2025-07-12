@@ -354,9 +354,8 @@ class TestAILogic(unittest.TestCase):
         self.assertTrue(
             any(
                 (
-                    f"AI: Pathing to explore unvisited tile at "
-                    f"({self.ai.current_path[-1][0]},{self.ai.current_path[-1][1]}) "
-                    f"on current floor."
+                    f"AI: Pathing to explore at ({self.ai.current_path[-1][0]},"
+                    f"{self.ai.current_path[-1][1]}) on floor {self.ai.current_path[-1][2]}."
                 )
                 in str(call_args)
                 for call_args in self.message_log.add_message.call_args_list
@@ -491,6 +490,51 @@ class TestAILogic(unittest.TestCase):
             )
         self.message_log.add_message.assert_any_call(
             "AI: Pathing to quest_item at (0,0) on floor 1."
+        )
+
+    def test_ai_prioritizes_unvisited_portal(self):
+        self._create_floor_layout(0, 5, 1, ["S.1.M"], is_ai_map=True)
+        self._create_floor_layout(1, 1, 1, ["."], is_ai_map=True)
+        self.mock_player.x = 0
+        self.mock_player.y = 0
+        self.mock_player.current_floor_id = 0
+
+        monster = Monster(name="Goblin", health=10, attack_power=2, x=4, y=0)
+        self._setup_tile_at(0, 4, 0, monster=monster)
+
+        action = self.ai.get_next_action()
+
+        self.assertIsNotNone(self.ai.current_path)
+        if self.ai.current_path:
+            self.assertEqual(self.ai.current_path[-1], (2, 0, 0))
+        self.message_log.add_message.assert_any_call(
+            "AI: Pathing to unvisited_portal at (2,0) on floor 0."
+        )
+
+    def test_ai_prioritizes_portal_to_unexplored_floor(self):
+        self._create_floor_layout(0, 5, 1, ["S.1.M"], is_ai_map=True)
+        self._create_floor_layout(1, 1, 1, ["."], is_ai_map=True)
+        self.mock_player.x = 0
+        self.mock_player.y = 0
+        self.mock_player.current_floor_id = 0
+
+        # Mark portal as visited
+        self.ai.physically_visited_coords.append((2, 0, 0))
+
+        # Make floor 1 unexplored
+        for y, x in self.ai_visible_maps[1].iter_coords():
+            self.ai_visible_maps[1].get_tile(x, y).is_explored = False
+
+        monster = Monster(name="Goblin", health=10, attack_power=2, x=4, y=0)
+        self._setup_tile_at(0, 4, 0, monster=monster)
+
+        action = self.ai.get_next_action()
+
+        self.assertIsNotNone(self.ai.current_path)
+        if self.ai.current_path:
+            self.assertEqual(self.ai.current_path[-1], (2, 0, 0))
+        self.message_log.add_message.assert_any_call(
+            "AI: Pathing to portal_to_unexplored at (2,0) on floor 0."
         )
 
 

@@ -32,6 +32,12 @@ class WorldMap:
             [Tile(tile_type="floor") for _ in range(width)] for _ in range(height)
         ]
 
+    def iter_coords(self):
+        """Returns an iterator over all coordinates in the map."""
+        for y in range(self.height):
+            for x in range(self.width):
+                yield y, x
+
     def get_tile(self, x: int, y: int) -> Tile | None:
         """
         Retrieves the Tile object at the specified coordinates.
