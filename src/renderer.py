@@ -59,6 +59,7 @@ class Renderer:
         current_floor_id: int,
         debug_render_to_list: bool = False,
         ai_path: Optional[List[Tuple[int, int, int]]] = None,
+        apply_fog: bool = True,
     ) -> list[str] | None:
         if not debug_render_to_list and not self.stdscr and not self.debug_mode:
             print("Error: Renderer.stdscr not initialized for curses rendering.")
@@ -96,7 +97,7 @@ class Renderer:
                         if tile:
                             # In debug/list mode, fog is implicitly handled by
                             # tile.get_display_info if visible_map is passed
-                            symbol, _ = tile.get_display_info(apply_fog=True)
+                            symbol, _ = tile.get_display_info(apply_fog=apply_fog)
                             char_to_draw = symbol
                         else:  # Should not happen if map is complete
                             char_to_draw = TILE_SYMBOLS.get("fog", " ")
