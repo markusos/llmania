@@ -120,6 +120,7 @@ def print_full_map_debug(game):
             message_log=game.message_log,  # Empty for this purpose
             debug_render_to_list=True,
             current_floor_id=floor_id,
+            apply_fog=False,  # Render the whole map regardless of exploration
         )
         if map_render:
             for row in map_render:
