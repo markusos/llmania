@@ -259,6 +259,7 @@ class GameEngine:
                     if self.game_over:
                         self.message_log.add_message("The game is over.")
                     else:
+                        floor_before_command = self.player.current_floor_id
                         results = self.command_processor.process_command(
                             parsed_command_output,
                             self.player,
@@ -267,6 +268,17 @@ class GameEngine:
                             self.winning_full_pos,
                             game_engine=self,
                         )
+                        floor_after_command = self.player.current_floor_id
+                        if (
+                            self.ai_active
+                            and self.ai_logic
+                            and floor_before_command != floor_after_command
+                        ):
+                            self.ai_logic.current_path = None
+                            self.message_log.add_message(
+                                "AI: Floor changed, clearing path."
+                            )
+
                         self.game_over = results.get("game_over", False)
                         if not self.game_over:
                             self._update_fog_of_war_visibility()

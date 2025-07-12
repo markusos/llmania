@@ -38,6 +38,19 @@ class WorldMap:
             for x in range(self.width):
                 yield y, x
 
+    def is_in_bounds(self, x: int, y: int) -> bool:
+        """
+        Checks if the given coordinates are within the map's bounds.
+
+        Args:
+            x: The x-coordinate to check.
+            y: The y-coordinate to check.
+
+        Returns:
+            True if (x, y) is within the map's bounds, False otherwise.
+        """
+        return 0 <= x < self.width and 0 <= y < self.height
+
     def get_tile(self, x: int, y: int) -> Tile | None:
         """
         Retrieves the Tile object at the specified coordinates.
@@ -49,7 +62,7 @@ class WorldMap:
         Returns:
             The Tile object if the coordinates are within map bounds, otherwise None.
         """
-        if 0 <= x < self.width and 0 <= y < self.height:
+        if self.is_in_bounds(x, y):
             return self.grid[y][x]
         return None  # Coordinates are out of bounds
 
@@ -86,7 +99,7 @@ class WorldMap:
         """
         tile = self.get_tile(x, y)
         # Valid if tile exists and not wall (entities don't block movement here).
-        if tile and tile.type != "wall":
+        if tile and (tile.type != "wall" or tile.is_portal):
             return True
         return False
 
