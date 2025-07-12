@@ -44,11 +44,23 @@ class TestGameEngine(unittest.TestCase):
         self.mock_world_map_instance.height = 10
 
         self.player_start_coords_f0 = (1, 1)
+        self.player_start_full_pos_f0 = (1, 1, 0)
         self.poi_coords_f0 = (5, 5)
-        self.mock_world_gen_instance._generate_single_floor.return_value = (
-            self.mock_world_map_instance,
-            self.player_start_coords_f0,
-            self.poi_coords_f0,
+        self.winning_full_pos_f0 = (5, 5, 0)
+
+        # Mock for generate_world (now called by GameEngine.__init__)
+        self.mock_world_gen_instance.generate_world.return_value = (
+            {0: self.mock_world_map_instance},
+            self.player_start_full_pos_f0,
+            self.winning_full_pos_f0,
+            [
+                {
+                    "id": 0,
+                    "map": self.mock_world_map_instance,
+                    "start": self.player_start_coords_f0,
+                    "poi": self.poi_coords_f0,
+                }
+            ],
         )
 
         self.mock_player_instance = MockPlayer.return_value
@@ -87,13 +99,13 @@ class TestGameEngine(unittest.TestCase):
             self.game_engine.renderer.stdscr = self.mock_stdscr
 
     def test_game_engine_initialization(self):
-        self.mock_world_gen_instance._generate_single_floor.assert_called_once_with(
-            20, 10, current_seed=None
+        self.mock_world_gen_instance.generate_world.assert_called_once_with(
+            20, 10, seed=None
         )
         self.MockPlayer.assert_called_once_with(
-            x=self.player_start_coords_f0[0],
-            y=self.player_start_coords_f0[1],
-            current_floor_id=0,
+            x=self.player_start_full_pos_f0[0],
+            y=self.player_start_full_pos_f0[1],
+            current_floor_id=self.player_start_full_pos_f0[2],
             health=20,
         )
         self.assertEqual(self.game_engine.player.x, self.player_start_coords_f0[0])
@@ -214,10 +226,13 @@ class TestGameEngine(unittest.TestCase):
             mock_wm_inst_debug = MagicMock(spec=WorldMap)
             mock_wm_inst_debug.width = 10
             mock_wm_inst_debug.height = 5
-            mock_wg_inst_debug._generate_single_floor.return_value = (
-                mock_wm_inst_debug,
-                (0, 0),
-                (1, 1),
+
+            # Adjust mock for generate_world
+            mock_wg_inst_debug.generate_world.return_value = (
+                {0: mock_wm_inst_debug},  # world_maps
+                (0, 0, 0),  # player_start_full_pos
+                (1, 1, 0),  # winning_full_pos
+                [{"id": 0, "map": mock_wm_inst_debug, "start": (0,0), "poi": (1,1)}]  # floor_details
             )
 
             mock_player_inst_debug = MockPlayer_debug.return_value
@@ -227,7 +242,6 @@ class TestGameEngine(unittest.TestCase):
             mock_player_inst_debug.health = 100
 
             mock_ih_inst_debug = MockIH_debug.return_value
-            # mock_r_inst_debug = MockR_debug.return_value # F841: This line removed
             mock_cp_inst_debug = MockCP_debug.return_value
 
             debug_engine = GameEngine(map_width=10, map_height=5, debug_mode=True)

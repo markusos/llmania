@@ -1,5 +1,6 @@
-import random  # Added for selecting random tiles
+import random
 from collections import deque
+from typing import List, Optional, Set  # Added Optional, List
 
 from src.map_algorithms.pathfinding import (
     PathFinder,  # For carve_bresenham_line
@@ -58,9 +59,11 @@ class MapConnectivityManager:
         player_start_pos: tuple[int, int],
         map_width: int,
         map_height: int,
+        protected_coords: Optional[List[tuple[int,int]]] = None
     ) -> None:
         """
         Ensures all "floor" tiles on the map are connected into a single component.
+        Respects protected_coords by passing them to path carving.
         Connects any disconnected floor areas to the main component containing
         the player_start_pos.
         Assumes "potential_floor" tiles are resolved before this.
@@ -135,6 +138,7 @@ class MapConnectivityManager:
                             player_start_pos,
                             map_width,
                             map_height,
+                            protected_coords=protected_coords
                         )
                 elif new_component_nodes:  # Ensure new_component_nodes is not empty.
                     node_from_new = random.choice(list(new_component_nodes))
@@ -146,6 +150,7 @@ class MapConnectivityManager:
                         node_from_main,
                         map_width,
                         map_height,
+                        protected_coords=protected_coords
                     )
 
                 # The main_component_nodes set is rebuilt after each connection by
@@ -206,3 +211,56 @@ class MapConnectivityManager:
                         visited.add((next_x, next_y))
                         queue.append((next_x, next_y))
         return False
+
+    def get_reachable_floor_tiles(
+        self,
+        world_map: WorldMap,
+        start_nodes: list[tuple[int, int]],
+        map_width: int,
+        map_height: int,
+    ) -> Set[tuple[int, int]]:
+        """
+        Performs a BFS starting from one or more start_nodes to find all
+        reachable "floor" tiles within the inner map area.
+
+        Args:
+            world_map: The WorldMap instance.
+            start_nodes: A list of (x,y) coordinates to start the BFS from.
+            map_width: The width of the map.
+            map_height: The height of the map.
+
+        Returns:
+            A set of (x,y) coordinates of all reachable inner floor tiles.
+        """
+        reachable_tiles = set()
+        queue = deque()
+        visited = set()
+
+        for start_node in start_nodes:
+            if not (
+                1 <= start_node[0] < map_width - 1 and 1 <= start_node[1] < map_height - 1
+            ):
+                continue # Start node must be within the inner map
+
+            start_tile_obj = world_map.get_tile(start_node[0], start_node[1])
+            if start_tile_obj and start_tile_obj.type == "floor" and start_node not in visited:
+                queue.append(start_node)
+                visited.add(start_node)
+                reachable_tiles.add(start_node)
+
+        while queue:
+            curr_x, curr_y = queue.popleft()
+
+            for dx, dy in [(0, -1), (0, 1), (1, 0), (-1, 0)]:  # N, S, E, W
+                next_x, next_y = curr_x + dx, curr_y + dy
+
+                if not (1 <= next_x < map_width - 1 and 1 <= next_y < map_height - 1):
+                    continue  # Must be within inner map area
+
+                if (next_x, next_y) not in visited:
+                    tile = world_map.get_tile(next_x, next_y)
+                    if tile and tile.type == "floor":
+                        visited.add((next_x, next_y))
+                        queue.append((next_x, next_y))
+                        reachable_tiles.add((next_x, next_y))
+        return reachable_tiles
