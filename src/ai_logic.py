@@ -413,6 +413,7 @@ class AILogic:
         self.message_log.add_message("AI: No path found for any target or exploration.")
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
+        player_floor_before_action = self.player.current_floor_id
         self.update_visibility()
         player_pos_xyz = (self.player.x, self.player.y, self.player.current_floor_id)
         if player_pos_xyz not in self.physically_visited_coords:
@@ -541,6 +542,9 @@ class AILogic:
                             )
                             self.message_log.add_message(log_msg)
                             self.last_move_command = move_command
+                            # Check if the next step is a portal
+                            if next_step_xyz[2] != player_floor_before_action:
+                                self.current_path = None
                             return move_command
                         else:
                             self.message_log.add_message(
@@ -602,6 +606,8 @@ class AILogic:
                     )
                     self.message_log.add_message(log_msg)
                     self.last_move_command = move_command
+                    if next_step_xyz[2] != player_floor_before_action:
+                        self.current_path = None
                     return move_command
                 else:
                     self.message_log.add_message(
