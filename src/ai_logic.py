@@ -22,11 +22,13 @@ class AILogic:
         real_world_maps: Dict[int, "WorldMap"],
         ai_visible_maps: Dict[int, "WorldMap"],
         message_log: "MessageLog",
+        verbose: int = 0,
     ):
         self.player = player
         self.real_world_maps = real_world_maps
         self.ai_visible_maps = ai_visible_maps
         self.message_log = message_log
+        self.verbose = verbose
         self.path_finder = PathFinder()
         self.physically_visited_coords: List[Tuple[int, int, int]] = []
         self.current_path: Optional[List[Tuple[int, int, int]]] = None
@@ -413,6 +415,15 @@ class AILogic:
         self.message_log.add_message("AI: No path found for any target or exploration.")
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
+        action = self._get_next_action_logic()
+        if self.verbose > 0:
+            if action:
+                print(f"AI Action: {action[0]} {action[1] if action[1] else ''}")
+            else:
+                print("AI Action: None")
+        return action
+
+    def _get_next_action_logic(self) -> Optional[Tuple[str, Optional[str]]]:
         player_floor_before_action = self.player.current_floor_id
         self.update_visibility()
         player_pos_xyz = (self.player.x, self.player.y, self.player.current_floor_id)
