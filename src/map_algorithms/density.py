@@ -1,5 +1,5 @@
 import random
-from typing import Optional, List # Ensure this is present
+from typing import Optional  # Ensure this is present
 
 from src.map_algorithms.connectivity import MapConnectivityManager
 from src.world_map import WorldMap  # For type hinting

@@ -58,25 +58,15 @@ class GameEngine:
         # Generate the game world: multiple floors, player start (x,y,floor_id),
         # and win position (x,y,floor_id).
         # This will use the new generate_world method.
-        # NOTE: This line will be uncommented/updated when generate_world is fully ready
-        # and its return signature matches.
-        # For now, using placeholder for single floor from old generate_map:
-        # self.world_maps, player_start_full_pos, self.winning_full_pos = \
-        #     self.world_generator.generate_world(map_width, map_height, seed=None)
-
-        temp_single_map, temp_player_start_coords, temp_winning_coords = (
-            self.world_generator._generate_single_floor(
-                map_width, map_height, current_seed=None
-            )
-        )  # Changed to _generate_single_floor
-
-        self.world_maps = {0: temp_single_map}  # Initialize with one floor
-        player_start_full_pos = (
-            temp_player_start_coords[0],
-            temp_player_start_coords[1],
-            0,
-        )
-        self.winning_full_pos = (temp_winning_coords[0], temp_winning_coords[1], 0)
+        # Generate the game world: multiple floors, player start (x,y,floor_id),
+        # and win position (x,y,floor_id).
+        (
+            self.world_maps,
+            player_start_full_pos,
+            self.winning_full_pos,
+            # _floor_details_list is not used by GameEngine yet
+            _floor_details_list,
+        ) = self.world_generator.generate_world(map_width, map_height, seed=None)
 
         # Create a visible map for each floor.
         self.visible_maps: dict[int, WorldMap] = {}
@@ -85,13 +75,23 @@ class GameEngine:
                 width=w_map.width, height=w_map.height
             )
 
-        # Renderer map dimensions are based on floor 0.
-        # Assumes fixed map size for now.
+        # Renderer map dimensions are based on the first generated floor.
+        # Assumes all floors have same dimensions as map_width, map_height.
+        # A failure in generate_world might lead to empty world_maps.
+        first_floor_id = min(self.world_maps.keys()) if self.world_maps else 0
+        # Fallback dimensions if no maps; indicates a deeper problem.
+        render_map_width = (
+            self.world_maps[first_floor_id].width if self.world_maps else map_width
+        )
+        render_map_height = (
+            self.world_maps[first_floor_id].height if self.world_maps else map_height
+        )
+
         player_symbol = "@"
         self.renderer = Renderer(
             debug_mode=self.debug_mode,
-            map_width=self.world_maps[0].width,
-            map_height=self.world_maps[0].height,
+            map_width=render_map_width,
+            map_height=render_map_height,
             player_symbol=player_symbol,
         )
 
@@ -189,6 +189,45 @@ class GameEngine:
                 current_visible_map_for_render = self.visible_maps.get(
                     0, WorldMap(self.renderer.map_width, self.renderer.map_height)
                 )
+
+            # Debug: Print map for the first few floors
+            if self.debug_mode:
+                print("--- Game Engine Debug Start ---")
+                # Print first 3 floors or fewer if less than 3 exist
+                for floor_id_to_print in sorted(self.world_maps.keys())[:3]:
+                    f_map = self.world_maps[floor_id_to_print]
+                    print(f"Floor ID: {floor_id_to_print}")
+                    portals_on_floor = []
+                    for r_idx in range(f_map.height):
+                        row_str = ""
+                        for c_idx in range(f_map.width):
+                            tile = f_map.get_tile(c_idx, r_idx)
+                            if tile:
+                                if tile.is_portal:
+                                    row_str += "▢"
+                                    portals_on_floor.append(
+                                        ((c_idx, r_idx), tile.portal_to_floor_id)
+                                    )
+                                elif tile.type == "wall":
+                                    row_str += "#"
+                                elif tile.type == "floor":
+                                    row_str += "."
+                                else:
+                                    row_str += "?"
+                            else:
+                                # Should not happen with initialized maps
+                                row_str += " "
+                        print(row_str)
+                    print(f"Portals on floor {floor_id_to_print}: {portals_on_floor}")
+                    if self.player.current_floor_id == floor_id_to_print:
+                        player_loc_msg = (
+                            f"Player on this floor at: ({self.player.x}, "
+                            f"{self.player.y})"
+                        )
+                        print(player_loc_msg)
+                print(f"Winning position: {self.winning_full_pos}")
+                print("--- Game Engine Debug End ---")
+
 
             self.renderer.render_all(
                 player_x=self.player.x,

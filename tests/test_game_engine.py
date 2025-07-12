@@ -43,12 +43,24 @@ class TestGameEngine(unittest.TestCase):
         self.mock_world_map_instance.width = 20
         self.mock_world_map_instance.height = 10
 
-        self.player_start_coords_f0 = (1, 1)
-        self.poi_coords_f0 = (5, 5)
+        self.player_start_coords_f0 = (1, 1) # x, y
+        self.player_start_full_pos_f0 = (1, 1, 0) # x, y, floor_id
+        self.poi_coords_f0 = (5, 5) # x, y
+        self.winning_full_pos_f0 = (5,5,0) # x, y, floor_id
+
+        # Mock for _generate_single_floor (still used by some tests if they directly call it)
         self.mock_world_gen_instance._generate_single_floor.return_value = (
-            self.mock_world_map_instance,
-            self.player_start_coords_f0,
-            self.poi_coords_f0,
+            self.mock_world_map_instance, # world_map for floor 0
+            self.player_start_coords_f0,  # player_start_pos (x,y) for floor 0
+            self.poi_coords_f0            # poi_pos (x,y) for floor 0
+        )
+
+        # Mock for generate_world (now called by GameEngine.__init__)
+        self.mock_world_gen_instance.generate_world.return_value = (
+            {0: self.mock_world_map_instance},  # world_maps dictionary
+            self.player_start_full_pos_f0,      # player_start_full_pos (x,y,floor_id)
+            self.winning_full_pos_f0,           # winning_full_pos (x,y,floor_id)
+            [{"id": 0, "map": self.mock_world_map_instance, "start": self.player_start_coords_f0, "poi": self.poi_coords_f0}] # floor_details_list
         )
 
         self.mock_player_instance = MockPlayer.return_value
