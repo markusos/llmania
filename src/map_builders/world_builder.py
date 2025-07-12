@@ -203,13 +203,10 @@ class WorldBuilder:
         self._initialize_world()
 
         for floor_id in range(self.num_floors):
-            single_floor_seed = (
-                random.randint(0, 2**32 - 1) if self.seed is not None else None
-            )
             builder = SingleFloorBuilder(
                 self.width,
                 self.height,
-                seed=single_floor_seed,
+                seed=self.seed,
                 existing_map=self.world_maps[floor_id],
             )
             world_map, floor_start_pos, floor_poi_pos = builder.build()

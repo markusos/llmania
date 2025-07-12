@@ -1,5 +1,3 @@
-import random
-
 from src.world_generator import WorldGenerator
 from src.world_map import WorldMap
 
@@ -37,20 +35,35 @@ def test_generate_world_returns_correct_types():
 
 def test_world_generation_with_seed_is_deterministic():
     width, height, seed = 25, 15, 12345
-    generator = WorldGenerator()
-    maps1, ps1, ap1, fd1 = generator.generate_world(width, height, seed=seed)
-    random.seed(seed)  # Reset seed for fair comparison
-    maps2, ps2, ap2, fd2 = generator.generate_world(width, height, seed=seed)
+    generator1 = WorldGenerator()
+    maps1, ps1, ap1, fd1 = generator1.generate_world(width, height, seed=seed)
+
+    generator2 = WorldGenerator()
+    maps2, ps2, ap2, fd2 = generator2.generate_world(width, height, seed=seed)
 
     assert ps1 == ps2
     assert ap1 == ap2
     assert len(maps1) == len(maps2)
 
+    # Compare floor details
     fd1_sorted = sorted(fd1, key=lambda x: x["id"])
     fd2_sorted = sorted(fd2, key=lambda x: x["id"])
     for d1, d2 in zip(fd1_sorted, fd2_sorted):
         assert d1["start"] == d2["start"]
         assert d1["poi"] == d2["poi"]
+
+    # Compare maps tile by tile
+    for floor_id in maps1:
+        assert floor_id in maps2
+        map1 = maps1[floor_id]
+        map2 = maps2[floor_id]
+        for y in range(height):
+            for x in range(width):
+                tile1 = map1.get_tile(x, y)
+                tile2 = map2.get_tile(x, y)
+                assert tile1.type == tile2.type
+                assert tile1.is_portal == tile2.is_portal
+                assert tile1.portal_to_floor_id == tile2.portal_to_floor_id
 
 
 def test_world_generation_without_seed_is_non_deterministic():
