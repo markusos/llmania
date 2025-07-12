@@ -136,7 +136,6 @@ class Renderer:
                     break
                 char_to_draw = ""
                 color_attribute = curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR)
-                # is_path_tile = False # Reset for each tile - F841 unused
 
                 if x_tile_idx == player_x and y_map_idx == player_y:
                     char_to_draw = self.player_symbol
@@ -147,7 +146,6 @@ class Renderer:
                     ]
                     current_xy = (x_tile_idx, y_map_idx)
                     if current_xy in path_segment:
-                        is_path_tile = True
                         # If current_xy is the last point of ai_path AND on current floor
                         if (
                             current_xy == (ai_path[-1][0], ai_path[-1][1])

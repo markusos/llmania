@@ -33,9 +33,11 @@ class PathFinder:
         g_score: Dict[Tuple[int, int], float] = {start_pos_xy: 0}
 
         # Heuristic function (Manhattan distance)
-        heuristic = lambda a, b: abs(a[0] - b[0]) + abs(a[1] - b[1])
+        def heuristic(a: Tuple[int, int], b: Tuple[int, int]) -> int:
+            return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
         f_score: Dict[Tuple[int, int], float] = {
-            start_pos_xy: heuristic(start_pos_xy, goal_pos_xy)
+            start_pos_xy: float(heuristic(start_pos_xy, goal_pos_xy))
         }
 
         while open_set:

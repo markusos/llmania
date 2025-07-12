@@ -159,12 +159,7 @@ class AILogic:
                         and y_coord_item == player_pos_xy[1]
                         and floor_id == player_floor_id
                     )
-                    if (
-                        tile
-                        and tile.is_explored
-                        and tile.item
-                        and not player_at_target
-                    ):
+                    if tile and tile.is_explored and tile.item and not player_at_target:
                         is_potion_full_health = (
                             tile.item.properties.get("type") == "heal"
                             and "health potion" in tile.item.name.lower()
@@ -284,9 +279,7 @@ class AILogic:
             return None
 
         # 1. Unvisited tiles on current floor
-        explorable_physically_unvisited_coords_current_floor: List[
-            Tuple[int, int]
-        ] = []
+        explorable_physically_unvisited_coords_current_floor: List[Tuple[int, int]] = []
         for y_explore in range(current_ai_map.height):
             for x_explore in range(current_ai_map.width):
                 tile = current_ai_map.get_tile(x_explore, y_explore)
