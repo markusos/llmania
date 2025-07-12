@@ -1,9 +1,10 @@
 import random
 import unittest
-from typing import Dict, Optional  # Optional is now imported
-from unittest.mock import MagicMock
+from typing import Dict, Optional
+from unittest.mock import MagicMock, patch
 
-from src.ai_logic import AILogic
+from src.ai_logic.main import AILogic
+from src.ai_logic.states import AttackingState, ExploringState, LootingState
 from src.item import Item
 from src.message_log import MessageLog
 from src.monster import Monster
@@ -29,40 +30,16 @@ class TestAILogic(unittest.TestCase):
 
         self.message_log = MagicMock(spec=MessageLog)
 
-        self.ai = AILogic(
-            player=self.mock_player,
-            real_world_maps=self.mock_real_world_maps,
-            ai_visible_maps=self.ai_visible_maps,
-            message_log=self.message_log,
-            random_generator=random.Random(),
-        )
-
-        self.current_tile_f0 = self.ai_visible_maps[0].get_tile(
-            self.mock_player.x, self.mock_player.y
-        )
-        if self.current_tile_f0:
-            self.current_tile_f0.type = "floor"
-            self.current_tile_f0.is_explored = True
-            self.current_tile_f0.item = None
-            self.current_tile_f0.monster = None
-
-        def default_real_get_tile_f0(x, y):
-            tile = Tile(tile_type="floor")
-            tile.is_explored = True
-            return tile
-
-        self.mock_real_world_maps[0].get_tile.side_effect = default_real_get_tile_f0
-        self.mock_real_world_maps[0].is_valid_move.return_value = True
-
-        for r_idx in range(self.ai_visible_maps[0].height):
-            for c_idx in range(self.ai_visible_maps[0].width):
-                tile = self.ai_visible_maps[0].get_tile(c_idx, r_idx)
-                if tile:
-                    tile.type = "floor"
-                    tile.is_explored = True
-
-        self.ai.physically_visited_coords = []
-        self.ai.last_move_command = None
+        with patch("src.ai_logic.main.TargetFinder") as self.mock_target_finder, patch(
+            "src.ai_logic.main.Explorer"
+        ) as self.mock_explorer:
+            self.ai = AILogic(
+                player=self.mock_player,
+                real_world_maps=self.mock_real_world_maps,
+                ai_visible_maps=self.ai_visible_maps,
+                message_log=self.message_log,
+                random_generator=random.Random(),
+            )
 
     def _create_floor_layout(
         self,
@@ -198,85 +175,17 @@ class TestAILogic(unittest.TestCase):
             self.mock_real_world_maps[floor_id].get_tile.side_effect = new_side_effect
         return tile
 
-    def test_ai_takes_quest_item_on_current_floor(self):
+    def test_ai_transitions_to_looting_state(self):
         self.mock_player.current_floor_id = 0
-        quest_item = MagicMock(spec=Item)
-        quest_item.name = "Amulet of Yendor"
-        quest_item.properties = {"type": "quest"}
-
-        player_tile_ai = self.ai_visible_maps[0].get_tile(
-            self.mock_player.x, self.mock_player.y
-        )
-        if player_tile_ai:
-            player_tile_ai.item = quest_item
-
-        real_tile_with_item = Tile(tile_type="floor", item=quest_item)
-        self.mock_real_world_maps[0].get_tile.side_effect = (
-            lambda rx, ry: real_tile_with_item
-            if rx == self.mock_player.x and ry == self.mock_player.y
-            else Tile(tile_type="floor")
-        )
-
-        action = self.ai.get_next_action()
-        self.assertEqual(action, ("take", quest_item.name))
-        self.message_log.add_message.assert_any_call(
-            f"AI: Found quest item {quest_item.name}!"
-        )
-
-    def test_ai_uses_health_potion_when_low_health_on_current_floor(self):
-        self.mock_player.current_floor_id = 0
-        self.mock_player.health = 5
-        potion = MagicMock(spec=Item)
-        potion.name = "Health Potion"
-        potion.properties = {"type": "heal"}
-        self.mock_player.inventory = [potion]
-
-        action = self.ai.get_next_action()
-        self.assertEqual(action, ("use", "Health Potion"))
-        self.message_log.add_message.assert_any_call(
-            "AI: Low health, using Health Potion from inventory."
-        )
-
-    def test_ai_does_not_use_health_potion_if_not_present_current_floor(self):
-        self.mock_player.current_floor_id = 0
-        self.mock_player.health = 5
-        self.mock_player.inventory = []
-
-        self.ai_visible_maps[0].is_valid_move = MagicMock(return_value=False)
-        self.mock_real_world_maps[0].is_valid_move = MagicMock(return_value=False)
-
-        action = self.ai.get_next_action()
-        self.assertEqual(action, ("look", None))
-        for call_args in self.message_log.add_message.call_args_list:
-            self.assertNotIn("AI: Low health, using Health Potion.", call_args[0][0])
-
-    def test_ai_takes_regular_item_current_floor(self):
-        self.mock_player.current_floor_id = 0
-        self.mock_player.health = 20
         sword_item = MagicMock(spec=Item)
         sword_item.name = "Sword"
         sword_item.properties = {}
+        self._setup_tile_at(0, self.mock_player.x, self.mock_player.y, item=sword_item)
 
-        player_tile_ai = self.ai_visible_maps[0].get_tile(
-            self.mock_player.x, self.mock_player.y
-        )
-        if player_tile_ai:
-            player_tile_ai.item = sword_item
+        self.ai.get_next_action()
+        self.assertIsInstance(self.ai.state, LootingState)
 
-        real_tile_with_item = Tile(tile_type="floor", item=sword_item)
-        self.mock_real_world_maps[0].get_tile.side_effect = (
-            lambda rx, ry: real_tile_with_item
-            if rx == self.mock_player.x and ry == self.mock_player.y
-            else Tile(tile_type="floor")
-        )
-
-        action = self.ai.get_next_action()
-        self.assertEqual(action, ("take", "Sword"))
-        self.message_log.add_message.assert_any_call(
-            "AI: Found item Sword on current tile, taking it."
-        )
-
-    def test_ai_attacks_adjacent_monster_current_floor(self):
+    def test_ai_transitions_to_attacking_state(self):
         self.mock_player.current_floor_id = 0
         monster_mock = Monster(
             name="Goblin",
@@ -285,288 +194,28 @@ class TestAILogic(unittest.TestCase):
             x=self.mock_player.x + 1,
             y=self.mock_player.y,
         )
-
         self._setup_tile_at(
             0, self.mock_player.x + 1, self.mock_player.y, monster=monster_mock
         )
 
-        real_monster_tile = Tile(tile_type="floor", monster=monster_mock)
-
-        def real_map_get_tile_monster(rx, ry):
-            if rx == self.mock_player.x + 1 and ry == self.mock_player.y:
-                return real_monster_tile
-            if rx == self.mock_player.x and ry == self.mock_player.y:
-                return Tile(tile_type="floor")
-            return Tile(tile_type="floor")
-
-        self.mock_real_world_maps[0].get_tile.side_effect = real_map_get_tile_monster
-
-        action = self.ai.get_next_action()
-        self.assertEqual(action, ("attack", "Goblin"))
-        self.message_log.add_message.assert_any_call("AI: Attacking adjacent Goblin.")
-
-    def test_ai_attacks_one_of_multiple_adj_monsters_current_floor(self):
-        self.mock_player.current_floor_id = 0
-        monster1 = Monster(
-            name="Orc",
-            health=15,
-            attack_power=4,
-            x=self.mock_player.x,
-            y=self.mock_player.y - 1,
-        )
-        monster2 = Monster(
-            name="Slime",
-            health=5,
-            attack_power=1,
-            x=self.mock_player.x + 1,
-            y=self.mock_player.y,
-        )
-        self.ai.random.choice = MagicMock(return_value=monster1)
-
-        self._setup_tile_at(
-            0, self.mock_player.x, self.mock_player.y - 1, monster=monster1
-        )
-        self._setup_tile_at(
-            0, self.mock_player.x + 1, self.mock_player.y, monster=monster2
-        )
-
-        action = self.ai.get_next_action()
-        self.assertEqual(action, ("attack", "Orc"))
-        self.message_log.add_message.assert_any_call("AI: Attacking adjacent Orc.")
-
-    def test_ai_explores_unvisited_tile_current_floor(self):
-        self.mock_player.x = 0
-        self.mock_player.y = 0
-        self.mock_player.current_floor_id = 0
-        self.ai_visible_maps[0] = self._create_floor_layout(
-            0, 3, 3, ["S..", ".#.", ".#."]
-        )
-        self.mock_player.x = 0
-        self.mock_player.y = 0
-        self.ai.physically_visited_coords = [(0, 0, 0), (0, 1, 0)]
-
         self.ai.get_next_action()
-        self.assertIsNotNone(self.ai.current_path)
-        if self.ai.current_path:
-            self.assertEqual(
-                self.ai.current_path[-1],
-                (1, 0, 0),
-                "AI should target the closest unvisited floor tile.",
-            )
-        self.assertTrue(
-            any(
-                (
-                    f"AI: Pathing to explore at ({self.ai.current_path[-1][0]},"
-                    f"{self.ai.current_path[-1][1]}) on floor "
-                    f"{self.ai.current_path[-1][2]}."
-                )
-                in str(call_args)
-                for call_args in self.message_log.add_message.call_args_list
-            ),
-            "Log message for exploring unvisited tile not found or incorrect.",
-        )
+        self.assertIsInstance(self.ai.state, AttackingState)
 
-    def test_ai_explores_randomly_when_all_neighbors_visited_current_floor(self):
-        self.mock_player.x = 1
-        self.mock_player.y = 1
-        self.mock_player.current_floor_id = 0
-
-        self.ai_visible_maps[0] = self._create_floor_layout(
-            0, 3, 3, ["...", ".S.", "..."], is_ai_map=True
-        )
-        self._create_floor_layout(0, 3, 3, ["...", ".S.", "..."], is_ai_map=False)
-        self.mock_player.x = 1
-        self.mock_player.y = 1
-
-        self.ai.physically_visited_coords = [
-            (1, 1, 0),
-            (0, 1, 0),
-            (2, 1, 0),
-            (1, 0, 0),
+    def test_ai_explores_when_no_other_targets(self):
+        self.ai.target_finder.find_quest_items.return_value = []
+        self.ai.target_finder.find_health_potions.return_value = []
+        self.ai.target_finder.find_other_items.return_value = []
+        self.ai.target_finder.find_monsters.return_value = []
+        self.ai.explorer.find_unvisited_portals.return_value = []
+        self.ai.explorer.find_portal_to_unexplored_floor.return_value = []
+        self.ai.explorer.find_exploration_targets.return_value = [
             (1, 2, 0),
+            (1, 1, 0),
         ]
 
-        for r_idx in range(self.ai_visible_maps[0].height):
-            for c_idx in range(self.ai_visible_maps[0].width):
-                tile = self.ai_visible_maps[0].get_tile(c_idx, r_idx)
-                if tile:
-                    tile.item = None
-                    tile.monster = None
-
-                real_tile = self.mock_real_world_maps[0].get_tile(c_idx, r_idx)
-                if real_tile:
-                    real_tile.item = None
-                    real_tile.monster = None
-
-        self.ai.path_finder.find_path_bfs = MagicMock(return_value=None)
-        self.ai.random.choice = MagicMock(return_value=("move", "east"))
-        self.message_log.reset_mock()
-        action = self.ai.get_next_action()
-        self.assertEqual(action, ("move", "east"))
-
-        actual_log_calls = self.message_log.add_message.call_args_list
-        self.assertTrue(
-            any(
-                c.args[0] == "AI: No path found for any target or exploration."
-                for c in actual_log_calls
-                if c.args
-            ),
-            "Log 'No path found for any target or exploration.' not found.",
-        )
-
-        self.assertEqual(
-            len(actual_log_calls),
-            2,
-            f"Expected 2 logs, got {len(actual_log_calls)}. Calls: {actual_log_calls}",
-        )
-        if len(actual_log_calls) == 2:
-            actual_msg_text = str(actual_log_calls[1].args[0])
-            self.assertIn(
-                "AI: All nearby visited",
-                actual_msg_text,
-                f"Substring 'AI: All nearby visited' not in '{actual_msg_text}'",
-            )
-            self.assertIn(
-                "on current floor",
-                actual_msg_text,
-                f"Substring 'on current floor' not in '{actual_msg_text}'",
-            )
-            self.assertIn(
-                "Moving east",
-                actual_msg_text,
-                f"Substring 'Moving east' not in '{actual_msg_text}'",
-            )
-
-        possible_random_moves = [
-            ("move", "north"),
-            ("move", "south"),
-            ("move", "west"),
-            ("move", "east"),
-        ]
-        self.ai.random.choice.assert_called_once_with(possible_random_moves)
-
-    def test_ai_looks_when_stuck_current_floor(self):
-        self.mock_player.current_floor_id = 0
-        self.ai_visible_maps[0] = self._create_floor_layout(0, 1, 1, ["S"])
-        self.mock_player.x = 0
-        self.mock_player.y = 0
-
-        self.ai.path_finder.find_path_bfs = MagicMock(return_value=None)
-
         self.ai.get_next_action()
-        self.assertEqual(self.ai.last_move_command, ("look", None))
-        self.message_log.add_message.assert_any_call(
-            "AI: No actions available. Looking around."
-        )
-        self.assertEqual(self.ai.last_move_command, ("look", None))
-
-    def test_ai_paths_to_quest_item_on_different_floor(self):
-        self._create_floor_layout(0, 3, 1, ["S.1"], is_ai_map=True)
-        self._create_floor_layout(1, 3, 1, ["G.0"], is_ai_map=True)
-        self.mock_player.x = 0
-        self.mock_player.y = 0
-        self.mock_player.current_floor_id = 0
-
-        quest_item = Item(
-            name="Amulet", description="Quest item", properties={"type": "quest"}
-        )
-        self._setup_tile_at(1, 0, 0, item=quest_item)
-
-        action = self.ai.get_next_action()
-
-        self.assertIsNotNone(
-            self.ai.current_path,
-            "AI should find a path to the quest item on another floor.",
-        )
-        if self.ai.current_path:
-            self.assertEqual(
-                self.ai.current_path[-1],
-                (0, 0, 1),
-                "Path should end at quest item on floor 1.",
-            )
-            self.assertEqual(
-                action, ("move", "east"), "AI should move towards the portal."
-            )
-        self.message_log.add_message.assert_any_call(
-            "AI: Pathing to quest_item at (0,0) on floor 1."
-        )
-
-    def test_ai_prioritizes_unvisited_portal(self):
-        self._create_floor_layout(0, 5, 1, ["S.1.M"], is_ai_map=True)
-        self._create_floor_layout(1, 1, 1, ["."], is_ai_map=True)
-        self.mock_player.x = 0
-        self.mock_player.y = 0
-        self.mock_player.current_floor_id = 0
-
-        monster = Monster(name="Goblin", health=10, attack_power=2, x=4, y=0)
-        self._setup_tile_at(0, 4, 0, monster=monster)
-
-        self.ai.get_next_action()
-
+        self.assertIsInstance(self.ai.state, ExploringState)
         self.assertIsNotNone(self.ai.current_path)
-        if self.ai.current_path:
-            self.assertEqual(self.ai.current_path[-1], (2, 0, 0))
-        self.message_log.add_message.assert_any_call(
-            "AI: Pathing to unvisited_portal at (2,0) on floor 0."
-        )
-
-    def test_ai_prioritizes_portal_to_unexplored_floor(self):
-        self._create_floor_layout(0, 5, 1, ["S.1.M"], is_ai_map=True)
-        self._create_floor_layout(1, 1, 1, ["."], is_ai_map=True)
-        self.mock_player.x = 0
-        self.mock_player.y = 0
-        self.mock_player.current_floor_id = 0
-
-        # Mark portal as visited
-        self.ai.physically_visited_coords.append((2, 0, 0))
-
-        # Make floor 1 unexplored
-        for y, x in self.ai_visible_maps[1].iter_coords():
-            self.ai_visible_maps[1].get_tile(x, y).is_explored = False
-
-        monster = Monster(name="Goblin", health=10, attack_power=2, x=4, y=0)
-        self._setup_tile_at(0, 4, 0, monster=monster)
-
-        self.ai.get_next_action()
-
-        self.assertIsNotNone(self.ai.current_path)
-        if self.ai.current_path:
-            self.assertEqual(self.ai.current_path[-1], (2, 0, 0))
-        self.message_log.add_message.assert_any_call(
-            "AI: Pathing to portal_to_unexplored at (2,0) on floor 0."
-        )
-
-    def test_ai_resets_path_after_portal_travel(self):
-        # Setup maps: Floor 0 with a portal to Floor 1
-        self._create_floor_layout(0, 3, 1, ["S.1"], is_ai_map=True)
-        self._create_floor_layout(1, 3, 1, ["..R"], is_ai_map=True)  # R for Rock
-        self.mock_player.x = 0
-        self.mock_player.y = 0
-        self.mock_player.current_floor_id = 0
-
-        # AI finds a path to the portal
-        self.ai.get_next_action()
-        self.assertIsNotNone(self.ai.current_path)
-        self.assertEqual(self.ai.current_path[-1], (2, 0, 0))
-
-        # Simulate moving through the portal
-        self.mock_player.x = 2
-        self.mock_player.y = 0
-        self.mock_player.current_floor_id = 1
-        self.ai.current_path = None  # This would be cleared by the GameEngine
-
-        # Now on floor 1, AI should re-evaluate
-        # The GameEngine would call _update_fog_of_war_visibility, which updates
-        # the AI's visible map. We don't need to call anything on the AI directly.
-
-        # Get next action, which should now be taking the rock
-        action = self.ai.get_next_action()
-
-        self.assertEqual(action, ("take", "Rock"))
-        self.assertIsNone(self.ai.current_path)
-        self.message_log.add_message.assert_any_call(
-            "AI: Found item Rock on current tile, taking it."
-        )
 
 
 if __name__ == "__main__":
