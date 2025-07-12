@@ -245,35 +245,30 @@ class PathFinder:
         protected_coords: Optional[List[tuple[int, int]]] = None,
     ) -> None:
         """
-        Carves a path of "floor" tiles between start_pos and end_pos using a
-        Bresenham-like line algorithm. Ensures the path stays within map bounds.
+        Carves a 4-directional path of "floor" tiles between start_pos and end_pos.
+        This avoids diagonal connections.
         If protected_coords are given, tiles at these coordinates will not be changed.
-        This method was formerly _carve_path in WorldGenerator.
         """
-        path_points = []
         effective_protected_coords = (
             set(protected_coords) if protected_coords else set()
         )
-        curr_x, curr_y = start_pos
-        dx = end_pos[0] - curr_x
-        dy = end_pos[1] - curr_y
-        steps = max(abs(dx), abs(dy))
+        x1, y1 = start_pos
+        x2, y2 = end_pos
 
-        if steps == 0:
-            if 0 <= curr_x < map_width and 0 <= curr_y < map_height:
-                path_points.append(start_pos)
-        else:
-            x_increment = dx / steps
-            y_increment = dy / steps
-            for i in range(steps + 1):
-                px = round(curr_x + i * x_increment)
-                py = round(curr_y + i * y_increment)
-                if 0 <= px < map_width and 0 <= py < map_height:
-                    path_points.append((px, py))
+        # Helper to apply the change
+        def carve_at(x, y):
+            if 0 <= x < map_width and 0 <= y < map_height:
+                if (x, y) not in effective_protected_coords:
+                    world_map.set_tile_type(x, y, "floor")
 
-        for px, py in set(
-            path_points
-        ):  # Use set to avoid redundant checks/sets on same point
-            if 0 <= px < map_width and 0 <= py < map_height:
-                if (px, py) not in effective_protected_coords:
-                    world_map.set_tile_type(px, py, "floor")
+        # Start carving from the start position
+        carve_at(x1, y1)
+
+        # Move horizontally, then vertically
+        while x1 != x2:
+            x1 += 1 if x1 < x2 else -1
+            carve_at(x1, y1)
+
+        while y1 != y2:
+            y1 += 1 if y1 < y2 else -1
+            carve_at(x1, y1)
