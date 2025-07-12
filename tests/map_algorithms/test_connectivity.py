@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from src.map_algorithms.connectivity import MapConnectivityManager
@@ -6,7 +8,7 @@ from src.world_map import WorldMap
 
 @pytest.fixture
 def connectivity_manager():
-    return MapConnectivityManager()
+    return MapConnectivityManager(random_generator=random.Random())
 
 
 @pytest.fixture

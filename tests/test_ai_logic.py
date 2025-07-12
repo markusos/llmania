@@ -1,6 +1,7 @@
+import random
 import unittest
 from typing import Dict, Optional  # Optional is now imported
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from src.ai_logic import AILogic
 from src.item import Item
@@ -33,6 +34,7 @@ class TestAILogic(unittest.TestCase):
             real_world_maps=self.mock_real_world_maps,
             ai_visible_maps=self.ai_visible_maps,
             message_log=self.message_log,
+            random_generator=random.Random(),
         )
 
         self.current_tile_f0 = self.ai_visible_maps[0].get_tile(
@@ -303,10 +305,7 @@ class TestAILogic(unittest.TestCase):
         self.assertEqual(action, ("attack", "Goblin"))
         self.message_log.add_message.assert_any_call("AI: Attacking adjacent Goblin.")
 
-    @patch("src.ai_logic.random.choice")
-    def test_ai_attacks_one_of_multiple_adj_monsters_current_floor(
-        self, mock_random_choice
-    ):
+    def test_ai_attacks_one_of_multiple_adj_monsters_current_floor(self):
         self.mock_player.current_floor_id = 0
         monster1 = Monster(
             name="Orc",
@@ -322,7 +321,7 @@ class TestAILogic(unittest.TestCase):
             x=self.mock_player.x + 1,
             y=self.mock_player.y,
         )
-        mock_random_choice.return_value = monster1
+        self.ai.random.choice = MagicMock(return_value=monster1)
 
         self._setup_tile_at(
             0, self.mock_player.x, self.mock_player.y - 1, monster=monster1
@@ -367,10 +366,7 @@ class TestAILogic(unittest.TestCase):
             "Log message for exploring unvisited tile not found or incorrect.",
         )
 
-    @patch("src.ai_logic.random.choice")
-    def test_ai_explores_randomly_when_all_neighbors_visited_current_floor(
-        self, mock_random_choice
-    ):
+    def test_ai_explores_randomly_when_all_neighbors_visited_current_floor(self):
         self.mock_player.x = 1
         self.mock_player.y = 1
         self.mock_player.current_floor_id = 0
@@ -403,7 +399,7 @@ class TestAILogic(unittest.TestCase):
                     real_tile.monster = None
 
         self.ai.path_finder.find_path_bfs = MagicMock(return_value=None)
-        mock_random_choice.return_value = ("move", "east")
+        self.ai.random.choice = MagicMock(return_value=("move", "east"))
         self.message_log.reset_mock()
         action = self.ai.get_next_action()
         self.assertEqual(action, ("move", "east"))
@@ -447,7 +443,7 @@ class TestAILogic(unittest.TestCase):
             ("move", "west"),
             ("move", "east"),
         ]
-        mock_random_choice.assert_called_once_with(possible_random_moves)
+        self.ai.random.choice.assert_called_once_with(possible_random_moves)
 
     def test_ai_looks_when_stuck_current_floor(self):
         self.mock_player.current_floor_id = 0

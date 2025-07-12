@@ -1,9 +1,10 @@
-import random
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from src.map_algorithms.pathfinding import PathFinder
 
 if TYPE_CHECKING:
+    from random import Random
+
     from src.message_log import MessageLog
     from src.monster import Monster
     from src.player import Player
@@ -22,12 +23,14 @@ class AILogic:
         real_world_maps: Dict[int, "WorldMap"],
         ai_visible_maps: Dict[int, "WorldMap"],
         message_log: "MessageLog",
+        random_generator: "Random",
         verbose: int = 0,
     ):
         self.player = player
         self.real_world_maps = real_world_maps
         self.ai_visible_maps = ai_visible_maps
         self.message_log = message_log
+        self.random = random_generator
         self.verbose = verbose
         self.path_finder = PathFinder()
         self.physically_visited_coords: List[Tuple[int, int, int]] = []
@@ -465,7 +468,7 @@ class AILogic:
 
         adjacent_monsters = self._get_adjacent_monsters()
         if adjacent_monsters:
-            monster_to_attack = random.choice(adjacent_monsters)
+            monster_to_attack = self.random.choice(adjacent_monsters)
             self.message_log.add_message(
                 f"AI: Attacking adjacent {monster_to_attack.name}."
             )
@@ -670,7 +673,7 @@ class AILogic:
                 self.last_move_command = chosen_move
                 return chosen_move
             else:
-                chosen_move = random.choice(possible_moves_current_floor)
+                chosen_move = self.random.choice(possible_moves_current_floor)
                 self.message_log.add_message(
                     f"AI: All nearby visited on current floor. Moving {chosen_move[1]}."
                 )

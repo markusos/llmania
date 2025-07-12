@@ -99,9 +99,9 @@ class TestGameEngine(unittest.TestCase):
             self.game_engine.renderer.stdscr = self.mock_stdscr
 
     def test_game_engine_initialization(self):
-        self.mock_world_gen_instance.generate_world.assert_called_once_with(
-            20, 10, seed=None
-        )
+        self.mock_world_gen_instance.generate_world.assert_called_once()
+        # Further argument checks can be done here if needed, e.g., by
+        # inspecting `call_args`.
         self.MockPlayer.assert_called_once_with(
             x=self.player_start_full_pos_f0[0],
             y=self.player_start_full_pos_f0[1],

@@ -1,3 +1,4 @@
+import random
 from unittest.mock import MagicMock
 
 import pytest
@@ -30,7 +31,9 @@ def setup_world():
         return_value=set([(1, 1), original_win_pos])
     )  # Basic reachability
 
-    adjuster = FloorDensityAdjuster(mock_connectivity_manager)
+    adjuster = FloorDensityAdjuster(
+        mock_connectivity_manager, random_generator=random.Random()
+    )
 
     return adjuster, world_map, player_start_pos, original_win_pos
 

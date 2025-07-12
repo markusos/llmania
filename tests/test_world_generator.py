@@ -1,3 +1,5 @@
+import random
+
 from src.world_generator import WorldGenerator
 from src.world_map import WorldMap
 
@@ -6,7 +8,7 @@ def test_generate_world_returns_correct_types():
     width, height = 30, 20
     generator = WorldGenerator()
     world_maps, player_start_pos, amulet_pos, floor_details = generator.generate_world(
-        width, height
+        width, height, random_generator=random.Random()
     )
 
     assert isinstance(world_maps, dict)
@@ -36,10 +38,14 @@ def test_generate_world_returns_correct_types():
 def test_world_generation_with_seed_is_deterministic():
     width, height, seed = 25, 15, 12345
     generator1 = WorldGenerator()
-    maps1, ps1, ap1, fd1 = generator1.generate_world(width, height, seed=seed)
+    maps1, ps1, ap1, fd1 = generator1.generate_world(
+        width, height, random_generator=random.Random(seed)
+    )
 
     generator2 = WorldGenerator()
-    maps2, ps2, ap2, fd2 = generator2.generate_world(width, height, seed=seed)
+    maps2, ps2, ap2, fd2 = generator2.generate_world(
+        width, height, random_generator=random.Random(seed)
+    )
 
     assert ps1 == ps2
     assert ap1 == ap2
@@ -69,12 +75,18 @@ def test_world_generation_with_seed_is_deterministic():
 def test_world_generation_without_seed_is_non_deterministic():
     width, height = 22, 18
     generator = WorldGenerator()
-    maps1, ps1, ap1, _ = generator.generate_world(width, height, seed=None)
-    maps2, ps2, ap2, _ = generator.generate_world(width, height, seed=None)
+    maps1, ps1, ap1, _ = generator.generate_world(
+        width, height, random_generator=random.Random()
+    )
+    maps2, ps2, ap2, _ = generator.generate_world(
+        width, height, random_generator=random.Random()
+    )
 
     are_different = ps1 != ps2 or ap1 != ap2 or len(maps1) != len(maps2)
     if not are_different:
-        maps3, ps3, ap3, _ = generator.generate_world(width, height, seed=None)
+        maps3, ps3, ap3, _ = generator.generate_world(
+            width, height, random_generator=random.Random()
+        )
         are_different = ps1 != ps3 or ap1 != ap3 or len(maps1) != len(maps3)
 
     assert are_different, "Worlds generated without seed were identical."

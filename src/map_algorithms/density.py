@@ -1,14 +1,21 @@
-import random
-from typing import List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
 from src.map_algorithms.connectivity import MapConnectivityManager
 from src.map_algorithms.pathfinding import PathFinder
 from src.world_map import WorldMap
 
+if TYPE_CHECKING:
+    from random import Random
+
 
 class FloorDensityAdjuster:
-    def __init__(self, connectivity_manager: MapConnectivityManager):
+    def __init__(
+        self,
+        connectivity_manager: MapConnectivityManager,
+        random_generator: "Random",
+    ):
         self.connectivity_manager = connectivity_manager
+        self.random = random_generator
 
     def adjust_density(
         self,
@@ -98,7 +105,7 @@ class FloorDensityAdjuster:
                 if not walls_to_add:
                     break  # No more walls can be converted
 
-                random.shuffle(walls_to_add)
+                self.random.shuffle(walls_to_add)
 
                 converted_in_pass = 0
                 for c_x, c_y in walls_to_add:
@@ -121,7 +128,7 @@ class FloorDensityAdjuster:
                 and world_map.get_tile(f_x, f_y)
                 and world_map.get_tile(f_x, f_y).type == "floor"
             ]
-            random.shuffle(candidate_floors_to_wall)
+            self.random.shuffle(candidate_floors_to_wall)
 
             tiles_to_convert = num_current_floor - target_floor_tiles
             converted_count = 0
