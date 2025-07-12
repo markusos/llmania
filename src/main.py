@@ -44,92 +44,17 @@ def main_debug(seed=None, verbose=0):
     This allows for printing game state and messages directly to the console,
     which is useful for testing game logic and content generation.
     """
-    print("--- Starting Game in Debug Mode ---")
     # Initialize game engine in debug mode with AI enabled.
     game = GameEngine(
-        map_width=20,
-        map_height=10,
+        map_width=30,
+        map_height=15,
         debug_mode=True,
         ai_active=True,
         ai_sleep_duration=0,
         seed=seed,
         verbose=verbose,
     )
-
-    print("\n--- Initial Player and Map State ---")
-    print(f"Player initial position: ({game.player.x}, {game.player.y})")
-    print(f"Player initial health: {game.player.health}")
-    print(f"Winning position: {game.winning_full_pos}")
-    print(f"Seed used: {seed if seed else 'default'}")
-    print_full_map_debug(game)
-
-    # Run the game loop until the game is over
     game.run()
-
-    print("\n--- Game Over ---")
-    # Final state output
-    final_map = game.renderer.render_all(
-        player_x=game.player.x,
-        player_y=game.player.y,
-        player_health=game.player.health,
-        world_map_to_render=game.visible_maps.get(
-            game.player.current_floor_id, game.world_maps[0]
-        ),
-        input_mode=game.input_handler.get_input_mode(),
-        current_command_buffer=game.input_handler.get_command_buffer(),
-        message_log=game.message_log,
-        debug_render_to_list=True,
-        ai_path=game.ai_logic.current_path if game.ai_logic else None,
-        current_floor_id=game.player.current_floor_id,
-    )
-    if final_map:
-        for row in final_map:
-            print(row)
-
-    print("\n--- Final Messages ---")
-    for msg in game.message_log.messages:
-        print(msg)
-
-    print("\n--- Debug Mode Finished ---")
-
-
-def print_full_map_debug(game):
-    """
-    Prints the full map layout for each floor, including portal connections.
-    """
-    print("\n--- World Map Layout ---")
-    for floor_id, world_map in sorted(game.world_maps.items()):
-        print(f"\n--- Floor {floor_id} ---")
-        portal_info = []
-        for y in range(world_map.height):
-            for x in range(world_map.width):
-                tile = world_map.get_tile(x, y)
-                if tile and tile.is_portal:
-                    portal_info.append(
-                        f"Portal at ({x}, {y}) -> Floor {tile.portal_to_floor_id}"
-                    )
-
-        # Render the map to a list of strings
-        map_render = game.renderer.render_all(
-            player_x=-1,  # No player shown
-            player_y=-1,
-            player_health=0,
-            world_map_to_render=world_map,
-            input_mode="",
-            current_command_buffer="",
-            message_log=game.message_log,  # Empty for this purpose
-            debug_render_to_list=True,
-            current_floor_id=floor_id,
-            apply_fog=False,  # Render the whole map regardless of exploration
-        )
-        if map_render:
-            for row in map_render:
-                print(row)
-
-        if portal_info:
-            print("Portals:")
-            for info in portal_info:
-                print(f"- {info}")
 
 
 if __name__ == "__main__":

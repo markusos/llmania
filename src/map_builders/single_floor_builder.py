@@ -22,8 +22,6 @@ class SingleFloorBuilder(BuilderBase):
         existing_map: Optional[WorldMap] = None,
     ):
         super().__init__(width, height, seed)
-        if seed is not None:
-            random.seed(seed)
 
         self.floor_portion = (
             floor_portion if floor_portion is not None else self.DEFAULT_FLOOR_PORTION
