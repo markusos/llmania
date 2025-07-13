@@ -17,17 +17,12 @@ class SurvivalState(AIState):
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
         # 1. Use Health Potion if available
-        for item in self.ai_logic.player.inventory:
-            if item.properties.get("type") == "heal":
-                self.ai_logic.message_log.add_message(
-                    f"AI: Low health, using {item.name}."
-                )
-                return ("use", item.name)
+        action = self._use_item("heal")
+        if action:
+            return action
 
         # 2. Flee from adjacent monsters
-        adjacent_monsters = self.ai_logic._get_adjacent_monsters()
-        if adjacent_monsters:
-            # Calculate a "safe" direction away from monsters
+        if self.ai_logic._get_adjacent_monsters():
             safe_moves = self._get_safe_moves()
             if safe_moves:
                 move_direction = self.ai_logic.random.choice(safe_moves)
@@ -36,38 +31,22 @@ class SurvivalState(AIState):
                 )
                 return ("move", move_direction)
 
-        # 3. Find health potions on the map
-        player_pos_xy = (self.ai_logic.player.x, self.ai_logic.player.y)
-        player_floor_id = self.ai_logic.player.current_floor_id
-        health_potions = self.ai_logic.target_finder.find_health_potions(
-            player_pos_xy, player_floor_id
-        )
-        health_potions = [
-            potion
-            for potion in health_potions
-            if (potion[0], potion[1]) != player_pos_xy or potion[2] != player_floor_id
-        ]
-        if health_potions:
-            target_x, target_y, target_floor_id, _, _ = health_potions[0]
-            path = self.ai_logic.path_finder.find_path_bfs(
-                self.ai_logic.ai_visible_maps,
-                player_pos_xy,
-                player_floor_id,
-                (target_x, target_y),
-                target_floor_id,
-            )
-            if path:
-                log_msg = (
-                    "AI: Low health, pathing to health potion at "
-                    f"({target_x},{target_y}) on floor {target_floor_id}."
-                )
-                self.ai_logic.message_log.add_message(log_msg)
-                self.ai_logic.current_path = path
-                return self._follow_path()
+        # 3. Take item on current tile (e.g., a health potion)
+        action = self._pickup_item()
+        if action:
+            return action
 
-        # 4. If no other options, explore to find potions
+        # 4. Find health potions on the map
+        action = self._path_to_best_target(
+            self.ai_logic.target_finder.find_health_potions,
+        )
+        if action:
+            return action
+
+        # 5. If no other options, explore to find potions
         exploration_path = self.ai_logic.explorer.find_exploration_targets(
-            player_pos_xy, player_floor_id
+            (self.ai_logic.player.x, self.ai_logic.player.y),
+            self.ai_logic.player.current_floor_id,
         )
         if exploration_path:
             self.ai_logic.current_path = exploration_path
