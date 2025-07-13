@@ -42,6 +42,11 @@ class SurvivalState(AIState):
         health_potions = self.ai_logic.target_finder.find_health_potions(
             player_pos_xy, player_floor_id
         )
+        health_potions = [
+            potion
+            for potion in health_potions
+            if (potion[0], potion[1]) != player_pos_xy or potion[2] != player_floor_id
+        ]
         if health_potions:
             target_x, target_y, target_floor_id, _, _ = health_potions[0]
             path = self.ai_logic.path_finder.find_path_bfs(

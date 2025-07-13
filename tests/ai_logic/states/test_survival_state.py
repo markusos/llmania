@@ -62,3 +62,14 @@ class TestSurvivalState(unittest.TestCase):
         self.state._explore_randomly = MagicMock()
         self.state.get_next_action()
         self.state._explore_randomly.assert_called()
+
+        # Test that it doesn't path to a health potion on the same tile
+        self.ai_logic.player.x = 1
+        self.ai_logic.player.y = 1
+        self.ai_logic.player.current_floor_id = 0
+        self.ai_logic.target_finder.find_health_potions.return_value = [
+            (1, 1, 0, "health_potion", 0)
+        ]
+        self.ai_logic.path_finder.find_path_bfs.reset_mock()
+        self.state.get_next_action()
+        self.ai_logic.path_finder.find_path_bfs.assert_not_called()
