@@ -79,4 +79,5 @@ class LootingState(AIState):
                 return self._follow_path()
 
         # 5. If no items to loot, switch back to exploring
-        return None
+        self.ai_logic.state = self.ai_logic._get_state("ExploringState")
+        return self.ai_logic.state.get_next_action()
