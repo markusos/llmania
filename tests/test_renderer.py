@@ -118,6 +118,38 @@ def test_render_all_basic_structure(setup_renderer):
     assert "Msg2" in ui_and_message_section
 
 
+def test_render_ai_mode_info(setup_renderer):
+    (
+        renderer,
+        world_map,
+        player_pos,
+        player_health,
+        message_log,
+        current_floor_id,
+        input_mode,
+        current_command_buffer,
+    ) = setup_renderer
+    ai_state = "Exploring"
+
+    output = renderer.render_all(
+        player_pos[0],
+        player_pos[1],
+        player_health,
+        world_map,
+        input_mode,
+        current_command_buffer,
+        message_log,
+        current_floor_id,
+        debug_render_to_list=True,
+        ai_state=ai_state,
+    )
+
+    assert isinstance(output, list)
+    ui_section = "\n".join(output[world_map.height :])
+    assert f"AI State: {ai_state}" in ui_section
+    assert f"Position: ({player_pos[0]}, {player_pos[1]})" in ui_section
+
+
 def test_render_fog_of_war(setup_renderer):
     (
         renderer,

@@ -171,8 +171,10 @@ class GameEngine:
         try:
             self._update_fog_of_war_visibility()
             current_ai_path_initial = None
+            ai_state = None
             if self.ai_active and self.ai_logic:
                 current_ai_path_initial = self.ai_logic.current_path
+                ai_state = self.ai_logic.state.__class__.__name__
 
             initial_visible_map = self.visible_maps.get(self.player.current_floor_id)
             if not initial_visible_map:
@@ -191,6 +193,7 @@ class GameEngine:
                 debug_render_to_list=self.debug_mode,
                 ai_path=current_ai_path_initial,
                 current_floor_id=self.player.current_floor_id,
+                ai_state=ai_state,
             )
 
             while not self.game_over:
@@ -200,6 +203,7 @@ class GameEngine:
                     if self.ai_sleep_duration > 0:
                         time.sleep(self.ai_sleep_duration)
                     parsed_command_output = self.ai_logic.get_next_action()
+                    ai_state = self.ai_logic.state.__class__.__name__
                 else:
                     parsed_command_output = (
                         self.input_handler.handle_input_and_get_command()
@@ -254,6 +258,7 @@ class GameEngine:
                     debug_render_to_list=self.debug_mode,
                     ai_path=current_ai_path_loop,
                     current_floor_id=self.player.current_floor_id,
+                    ai_state=ai_state,
                 )
 
             self._update_fog_of_war_visibility()
@@ -276,6 +281,7 @@ class GameEngine:
                 debug_render_to_list=self.debug_mode,
                 ai_path=current_ai_path_final,
                 current_floor_id=self.player.current_floor_id,
+                ai_state=ai_state,
             )
             if self.game_over and not self.debug_mode:
                 curses.napms(2000)
@@ -301,6 +307,7 @@ class GameEngine:
         start_time = time.time()
         timeout_seconds = 30
         self._update_fog_of_war_visibility()
+        ai_state = None
         while not self.game_over:
             if time.time() - start_time > timeout_seconds:
                 print("--- Debug Mode Timeout ---")
@@ -310,6 +317,7 @@ class GameEngine:
                 # Update visibility before AI action
                 self._update_fog_of_war_visibility()
                 parsed_command_output = self.ai_logic.get_next_action()
+                ai_state = self.ai_logic.state.__class__.__name__
                 if parsed_command_output:
                     floor_before_command = self.player.current_floor_id
                     results = self.command_processor.process_command(
@@ -343,6 +351,7 @@ class GameEngine:
             debug_render_to_list=True,
             ai_path=self.ai_logic.current_path if self.ai_logic else None,
             current_floor_id=self.player.current_floor_id,
+            ai_state=ai_state,
         )
         if final_map:
             for row in final_map:
