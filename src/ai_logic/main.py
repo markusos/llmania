@@ -78,11 +78,10 @@ class AILogic:
                     return True
         return False
 
-    def _break_loop(self) -> Optional[Tuple[str, Optional[str]]]:
+    def _break_loop(self) -> None:
         self.message_log.add_message("AI: Detected a loop, breaking.")
         self.current_path = None
         self.loop_breaker_moves_left = 5  # Set the number of random moves
-        return self.state._explore_randomly()
 
     def _get_adjacent_monsters(self) -> List["Monster"]:
         adjacent_monsters: List["Monster"] = []
@@ -128,7 +127,7 @@ class AILogic:
         if self.loop_breaker_moves_left > 0:
             self.loop_breaker_moves_left -= 1
             self.message_log.add_message("AI: Taking a random action to break a loop.")
-            return self.state._explore_randomly()
+            return self.state._explore_randomly(break_loop=True)
 
         if self.player.current_floor_id != self.last_player_floor_id:
             prev_map = self.ai_visible_maps.get(self.last_player_floor_id)
