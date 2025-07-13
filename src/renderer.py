@@ -60,6 +60,7 @@ class Renderer:
         debug_render_to_list: bool = False,
         ai_path: Optional[List[Tuple[int, int, int]]] = None,
         apply_fog: bool = True,
+        ai_state: Optional[str] = None,
     ) -> list[str] | None:
         if not debug_render_to_list and not self.stdscr and not self.debug_mode:
             print("Error: Renderer.stdscr not initialized for curses rendering.")
@@ -107,6 +108,9 @@ class Renderer:
             output_buffer.append(f"HP: {player_health}")
             output_buffer.append(f"Floor: {current_floor_id}")
             output_buffer.append(f"MODE: {input_mode.upper()}")
+            if ai_state:
+                output_buffer.append(f"AI State: {ai_state}")
+                output_buffer.append(f"Position: ({player_x}, {player_y})")
             if input_mode == "command":
                 output_buffer.append(f"> {current_command_buffer}")
 
@@ -120,7 +124,7 @@ class Renderer:
             print("Critical Error: stdscr is None during curses rendering attempt.")
             return None
         self.stdscr.clear()
-        UI_LINES_BUFFER = 5
+        UI_LINES_BUFFER = 7 if ai_state else 5
         try:
             curses_lines = curses.LINES
             curses_cols = curses.COLS
@@ -197,43 +201,68 @@ class Renderer:
                     break
                 current_screen_x += 1
 
-        hp_line_y = max_y_curses_rows
-        if hp_line_y < curses_lines:
+        next_line_y = max_y_curses_rows
+        if next_line_y < curses_lines:
             try:
                 self.stdscr.addstr(
-                    hp_line_y,
+                    next_line_y,
                     0,
                     f"HP: {player_health}",
                     curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
                 )
+                next_line_y += 1
             except curses.error:
                 pass
 
-        floor_line_y = hp_line_y + 1
-        if floor_line_y < curses_lines:
+        if next_line_y < curses_lines:
             try:
                 self.stdscr.addstr(
-                    floor_line_y,
+                    next_line_y,
                     0,
                     f"Floor: {current_floor_id}",
                     curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
                 )
+                next_line_y += 1
             except curses.error:
                 pass
 
-        mode_line_y = floor_line_y + 1
-        if mode_line_y < curses_lines:
+        if next_line_y < curses_lines:
             try:
                 self.stdscr.addstr(
-                    mode_line_y,
+                    next_line_y,
                     0,
                     f"MODE: {input_mode.upper()}",
                     curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
                 )
+                next_line_y += 1
             except curses.error:
                 pass
 
-        message_start_y = mode_line_y + 1
+        if ai_state:
+            if next_line_y < curses_lines:
+                try:
+                    self.stdscr.addstr(
+                        next_line_y,
+                        0,
+                        f"AI State: {ai_state}",
+                        curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
+                    )
+                    next_line_y += 1
+                except curses.error:
+                    pass
+            if next_line_y < curses_lines:
+                try:
+                    self.stdscr.addstr(
+                        next_line_y,
+                        0,
+                        f"Position: ({player_x}, {player_y})",
+                        curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
+                    )
+                    next_line_y += 1
+                except curses.error:
+                    pass
+
+        message_start_y = next_line_y
         if input_mode == "command":
             if message_start_y < curses_lines:
                 try:

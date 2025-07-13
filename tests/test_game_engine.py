@@ -157,6 +157,7 @@ class TestGameEngine(unittest.TestCase):
             current_floor_id=self.game_engine.player.current_floor_id,
             debug_render_to_list=False,
             ai_path=None,
+            ai_state=None,
         )
         self.assertGreaterEqual(self.mock_renderer_instance.render_all.call_count, 3)
         self.assertEqual(
