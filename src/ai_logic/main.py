@@ -127,9 +127,7 @@ class AILogic:
     def _get_next_action_logic(self) -> Optional[Tuple[str, Optional[str]]]:
         if self.loop_breaker_moves_left > 0:
             self.loop_breaker_moves_left -= 1
-            self.message_log.add_message(
-                "AI: Taking a random action to break a loop."
-            )
+            self.message_log.add_message("AI: Taking a random action to break a loop.")
             return self.state._explore_randomly()
 
         if self.player.current_floor_id != self.last_player_floor_id:

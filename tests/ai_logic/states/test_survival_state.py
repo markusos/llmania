@@ -33,6 +33,7 @@ class TestSurvivalState(unittest.TestCase):
         # Test fleeing from a monster
         self.state._use_item = MagicMock(return_value=None)
         self.ai_logic._get_adjacent_monsters.return_value = [MagicMock()]
+        self.ai_logic._is_in_loop.return_value = False  # Not in a loop
         self.state._get_safe_moves = MagicMock(return_value=[("move", "north")])
         self.ai_logic.random.choice.return_value = ("move", "north")
         action = self.state.get_next_action()
