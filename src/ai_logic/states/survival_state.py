@@ -46,7 +46,15 @@ class SurvivalState(AIState):
         if action:
             return action
 
-        # 5. If no other options, explore randomly
+        # 5. If no other options, explore to find potions
+        exploration_path = self.ai_logic.explorer.find_exploration_targets(
+            (self.ai_logic.player.x, self.ai_logic.player.y),
+            self.ai_logic.player.current_floor_id,
+        )
+        if exploration_path:
+            self.ai_logic.current_path = exploration_path
+            return self._follow_path()
+
         return self._explore_randomly()
 
     def _get_safe_moves(self) -> list[Tuple[str, str]]:
