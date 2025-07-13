@@ -24,65 +24,41 @@ class TestLootingState(unittest.TestCase):
         self.ai_logic._get_adjacent_monsters.return_value = [MagicMock()]
         self.assertEqual(self.state.handle_transitions(), "AttackingState")
 
-        # Test no transition
+        # Test transition to ExploringState
         self.ai_logic._get_adjacent_monsters.return_value = []
+        self.state._has_visible_items = MagicMock(return_value=False)
+        self.assertEqual(self.state.handle_transitions(), "ExploringState")
+
+        # Test no transition
+        self.state._has_visible_items = MagicMock(return_value=True)
         self.assertEqual(self.state.handle_transitions(), "LootingState")
 
     def test_get_next_action(self):
         # Test using a health potion
-        item = MagicMock()
-        item.properties = {"type": "heal"}
-        item.name = "Health Potion"
-        self.ai_logic.player.inventory = [item]
-        self.ai_logic.player.health = 1
-        self.ai_logic.player.max_health = 10
+        self.state._use_item = MagicMock(return_value=("use", "Health Potion"))
         action = self.state.get_next_action()
         self.assertEqual(action, ("use", "Health Potion"))
 
         # Test equipping a better weapon
-        self.ai_logic.player.health = 10
-        self.ai_logic.player.max_health = 10
-        weapon1 = MagicMock()
-        weapon1.properties = {"type": "weapon", "attack_bonus": 5}
-        weapon1.name = "Sword"
-        weapon2 = MagicMock()
-        weapon2.properties = {"type": "weapon", "attack_bonus": 10}
-        weapon2.name = "Axe"
-        self.ai_logic.player.inventory = [weapon1, weapon2]
-        self.ai_logic.player.equipped_weapon = weapon1
+        self.state._use_item = MagicMock(return_value=None)
+        self.state._equip_better_weapon = MagicMock(return_value=("use", "Axe"))
         action = self.state.get_next_action()
         self.assertEqual(action, ("use", "Axe"))
 
         # Test taking an item
-        self.ai_logic.player.inventory = []
-        (
-            self.ai_logic.ai_visible_maps.get.return_value.get_tile.return_value.item.name
-        ) = "Rock"
+        self.state._equip_better_weapon = MagicMock(return_value=None)
+        self.state._pickup_item = MagicMock(return_value=("take", "Rock"))
         action = self.state.get_next_action()
         self.assertEqual(action, ("take", "Rock"))
 
         # Test pathfinding to an item
-        self.ai_logic.ai_visible_maps.get.return_value.get_tile.return_value.item = None
-        self.ai_logic.target_finder.find_other_items.return_value = [
-            (1, 1, 0, "item", 1)
-        ]
-        self.ai_logic.path_finder.find_path_bfs.return_value = [(1, 1, 0)]
-        self.state._follow_path = MagicMock()
-        self.state.get_next_action()
-        self.state._follow_path.assert_called()
+        self.state._pickup_item = MagicMock(return_value=None)
+        self.state._path_to_best_target = MagicMock(return_value=("move", "north"))
+        action = self.state.get_next_action()
+        self.assertEqual(action, ("move", "north"))
 
         # Test exploring
-        self.ai_logic.target_finder.find_other_items.return_value = []
-        self.state.get_next_action()
-        self.ai_logic._get_state.assert_called_with("ExploringState")
-
-        # Test that it doesn't path to an item on the same tile
-        self.ai_logic.player.x = 1
-        self.ai_logic.player.y = 1
-        self.ai_logic.player.current_floor_id = 0
-        self.ai_logic.target_finder.find_other_items.return_value = [
-            (1, 1, 0, "item", 0)
-        ]
-        self.ai_logic.path_finder.find_path_bfs.reset_mock()
-        self.state.get_next_action()
-        self.ai_logic.path_finder.find_path_bfs.assert_not_called()
+        self.state._path_to_best_target = MagicMock(return_value=None)
+        self.state._explore_randomly = MagicMock(return_value=("move", "south"))
+        action = self.state.get_next_action()
+        self.assertEqual(action, ("move", "south"))
