@@ -28,6 +28,7 @@ class SurvivalState(AIState):
                     "AI: Detected a loop, trying a different random move."
                 )
                 return self._explore_randomly()
+
             safe_moves = self._get_safe_moves()
             if safe_moves:
                 move_command = self.ai_logic.random.choice(safe_moves)
