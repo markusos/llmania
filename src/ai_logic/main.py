@@ -61,6 +61,15 @@ class AILogic:
         self.last_player_floor_id = player.current_floor_id
         self.last_player_pos = (player.x, player.y)
         self.player_pos_history = []
+        self.command_history: List[Optional[Tuple[str, Optional[str]]]] = []
+
+    def _is_in_loop(self, lookback: int = 4) -> bool:
+        if len(self.command_history) < lookback:
+            return False
+        last_commands = self.command_history[-lookback:]
+        if len(set(last_commands)) <= 2:
+            return True
+        return False
 
     def _get_adjacent_monsters(self) -> List["Monster"]:
         adjacent_monsters: List["Monster"] = []
@@ -92,6 +101,9 @@ class AILogic:
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
         action = self._get_next_action_logic()
+        self.command_history.append(action)
+        if len(self.command_history) > 10:
+            self.command_history.pop(0)
         if self.verbose > 0:
             if action:
                 print(f"AI Action: {action[0]} {action[1] if action[1] else ''}")

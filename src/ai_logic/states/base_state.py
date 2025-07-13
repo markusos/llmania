@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+
+from src.ai_logic.states import common_actions
 
 if TYPE_CHECKING:
     from src.ai_logic.main import AILogic
@@ -17,7 +19,34 @@ class AIState:
         # Default behavior: no transition
         return self.__class__.__name__
 
+    def _use_item(self, item_type: str) -> Optional[Tuple[str, str]]:
+        return common_actions.use_item(self.ai_logic, item_type)
+
+    def _equip_better_weapon(self) -> Optional[Tuple[str, str]]:
+        return common_actions.equip_better_weapon(self.ai_logic)
+
+    def _pickup_item(self) -> Optional[Tuple[str, str]]:
+        return common_actions.pickup_item(self.ai_logic)
+
+    def _path_to_best_target(
+        self,
+        target_finder_func: Callable[
+            [Tuple[int, int], int], List[Tuple[int, int, int, str, int]]
+        ],
+        sort_key_func: Optional[
+            Callable[[Tuple[int, int, int, str, int]], Tuple[int, int]]
+        ] = None,
+    ) -> Optional[Tuple[str, Optional[str]]]:
+        return common_actions.path_to_best_target(
+            self.ai_logic, target_finder_func, sort_key_func
+        )
+
     def _follow_path(self) -> Optional[Tuple[str, Optional[str]]]:
+        if self.ai_logic._is_in_loop():
+            self.ai_logic.message_log.add_message("AI: Detected a loop, breaking.")
+            self.ai_logic.current_path = None
+            return self._explore_randomly()
+
         if self.ai_logic.current_path:
             current_pos_xyz = (
                 self.ai_logic.player.x,
@@ -47,6 +76,11 @@ class AIState:
         return None
 
     def _explore_randomly(self) -> Optional[Tuple[str, Optional[str]]]:
+        if self.ai_logic._is_in_loop():
+            self.ai_logic.message_log.add_message(
+                "AI: Detected a loop, trying a different random move."
+            )
+
         current_ai_map = self.ai_logic.ai_visible_maps.get(
             self.ai_logic.player.current_floor_id
         )
@@ -64,6 +98,14 @@ class AIState:
             if current_ai_map.is_valid_move(check_x, check_y):
                 possible_moves.append(("move", direction))
 
-        if possible_moves:
-            return self.ai_logic.random.choice(possible_moves)
-        return ("look", None)
+        if not possible_moves:
+            return ("look", None)
+
+        # Try to avoid the last move if possible
+        if (
+            len(possible_moves) > 1
+            and self.ai_logic.last_move_command in possible_moves
+        ):
+            possible_moves.remove(self.ai_logic.last_move_command)
+
+        return self.ai_logic.random.choice(possible_moves)

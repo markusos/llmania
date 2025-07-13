@@ -32,77 +32,28 @@ class TestExploringState(unittest.TestCase):
         self.assertEqual(self.state.handle_transitions(), "LootingState")
 
         # Test no transition
-        self.ai_logic.ai_visible_maps.get.return_value.get_tile.return_value.item = None
-        self.assertEqual(self.state.handle_transitions(), "ExploringState")
-
-    def test_transition_to_looting_state(self):
-        # Test transition to LootingState
-        self.ai_logic.player.health = 10
-        self.ai_logic.player.max_health = 10
-        self.ai_logic._get_adjacent_monsters.return_value = []
         (
             self.ai_logic.ai_visible_maps.get.return_value.get_tile.return_value.item
-        ) = MagicMock()
-        self.assertEqual(self.state.handle_transitions(), "LootingState")
+        ) = None
+        self.assertEqual(self.state.handle_transitions(), "ExploringState")
 
     def test_get_next_action(self):
-        # Test finding health potions
-        self.ai_logic.target_finder.find_health_potions.return_value = [
-            (1, 1, 0, "health_potion", 1)
+        # Test exploring
+        self.ai_logic.explorer.find_exploration_targets.return_value = [
+            (1, 1, 0, "explorer_target", 1)
         ]
-        self.ai_logic.path_finder.find_path_bfs.return_value = [(1, 1, 0)]
-        self.state.get_next_action()
-        self.ai_logic.path_finder.find_path_bfs.assert_called()
+        self.state._follow_path = MagicMock(return_value=("move", "south"))
+        action = self.state.get_next_action()
+        self.assertEqual(action, ("move", "south"))
 
-        # Test finding quest items
-        self.ai_logic.target_finder.find_health_potions.return_value = []
-        self.ai_logic.target_finder.find_quest_items.return_value = [
-            (1, 1, 0, "quest_item", 1)
-        ]
-        self.state.get_next_action()
-        self.ai_logic.path_finder.find_path_bfs.assert_called()
-
-        # Test finding exploration targets
-        self.ai_logic.target_finder.find_quest_items.return_value = []
-        self.ai_logic.explorer.find_exploration_targets.return_value = [(1, 1, 0)]
-        self.state.get_next_action()
-        self.assertIsNotNone(self.ai_logic.current_path)
+        # Test pathfinding to a target
+        self.ai_logic.explorer.find_exploration_targets.return_value = None
+        self.state._path_to_best_target = MagicMock(return_value=("move", "north"))
+        action = self.state.get_next_action()
+        self.assertEqual(action, ("move", "north"))
 
         # Test exploring randomly
-        self.ai_logic.explorer.find_exploration_targets.return_value = None
-        self.state._explore_randomly = MagicMock()
-        self.state.get_next_action()
-        self.state._explore_randomly.assert_called()
-
-        # Test finding unvisited portals
-        self.ai_logic.explorer.find_exploration_targets.return_value = None
-        self.ai_logic.explorer.find_unvisited_portals.return_value = [
-            (1, 1, 0, "unvisited_portal", 1)
-        ]
-        self.ai_logic.path_finder.find_path_bfs.return_value = [(1, 1, 0)]
-        self.state.get_next_action()
-        self.ai_logic.path_finder.find_path_bfs.assert_called()
-
-        # Test finding portals to unexplored floors
-        self.ai_logic.explorer.find_unvisited_portals.return_value = []
-        self.ai_logic.explorer.find_portal_to_unexplored_floor.return_value = [
-            (1, 1, 0, "portal_to_unexplored", 1)
-        ]
-        self.state.get_next_action()
-        self.ai_logic.path_finder.find_path_bfs.assert_called()
-
-        # Test finding other items
-        self.ai_logic.explorer.find_portal_to_unexplored_floor.return_value = []
-        self.ai_logic.target_finder.find_other_items.return_value = [
-            (1, 1, 0, "item", 1)
-        ]
-        self.state.get_next_action()
-        self.ai_logic.path_finder.find_path_bfs.assert_called()
-
-        # Test finding monsters
-        self.ai_logic.target_finder.find_other_items.return_value = []
-        self.ai_logic.target_finder.find_monsters.return_value = [
-            (1, 1, 0, "monster", 1)
-        ]
-        self.state.get_next_action()
-        self.ai_logic.path_finder.find_path_bfs.assert_called()
+        self.state._path_to_best_target = MagicMock(return_value=None)
+        self.state._explore_randomly = MagicMock(return_value=("look", None))
+        action = self.state.get_next_action()
+        self.assertEqual(action, ("look", None))

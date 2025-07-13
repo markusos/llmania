@@ -11,6 +11,7 @@ class TestSurvivalState(unittest.TestCase):
     def setUp(self):
         self.ai_logic = MagicMock()
         self.state = SurvivalState(self.ai_logic)
+        self.ai_logic.state = self.state
 
     def test_handle_transitions(self):
         # Test transition to ExploringState
@@ -25,51 +26,83 @@ class TestSurvivalState(unittest.TestCase):
 
     def test_get_next_action(self):
         # Test using a health potion
-        item = MagicMock()
-        item.properties = {"type": "heal"}
-        item.name = "Health Potion"
-        self.ai_logic.player.inventory = [item]
+        self.state._use_item = MagicMock(return_value=("use", "Health Potion"))
         action = self.state.get_next_action()
         self.assertEqual(action, ("use", "Health Potion"))
 
         # Test fleeing from a monster
-        self.ai_logic.player.inventory = []
+        self.state._use_item = MagicMock(return_value=None)
         self.ai_logic._get_adjacent_monsters.return_value = [MagicMock()]
-        self.state._get_safe_moves = MagicMock(return_value=["north"])
-        self.ai_logic.random.choice.return_value = "north"
+        self.state._get_safe_moves = MagicMock(return_value=[("move", "north")])
+        self.ai_logic.random.choice.return_value = ("move", "north")
         action = self.state.get_next_action()
         self.assertEqual(action, ("move", "north"))
 
-        # Test pathfinding to a health potion
+        # Test taking an item
         self.ai_logic._get_adjacent_monsters.return_value = []
-        self.ai_logic.target_finder.find_health_potions.return_value = [
-            (1, 1, 0, "health_potion", 1)
-        ]
-        self.ai_logic.path_finder.find_path_bfs.return_value = [(1, 1, 0)]
-        self.state._follow_path = MagicMock()
-        self.state.get_next_action()
-        self.state._follow_path.assert_called()
+        self.state._pickup_item = MagicMock(return_value=("take", "Health Potion"))
+        action = self.state.get_next_action()
+        self.assertEqual(action, ("take", "Health Potion"))
+
+        # Test pathfinding to a health potion
+        self.state._pickup_item = MagicMock(return_value=None)
+        self.state._path_to_best_target = MagicMock(return_value=("move", "north"))
+        action = self.state.get_next_action()
+        self.assertEqual(action, ("move", "north"))
 
         # Test exploring
-        self.ai_logic.target_finder.find_health_potions.return_value = []
-        self.ai_logic.explorer.find_exploration_targets.return_value = [(1, 1, 0)]
-        self.state._follow_path = MagicMock()
-        self.state.get_next_action()
-        self.state._follow_path.assert_called()
+        self.state._path_to_best_target = MagicMock(return_value=None)
+        self.ai_logic.explorer.find_exploration_targets.return_value = [
+            (1, 1, 0, "explorer_target", 1)
+        ]
+        self.state._follow_path = MagicMock(return_value=("move", "south"))
+        action = self.state.get_next_action()
+        self.assertEqual(action, ("move", "south"))
 
         # Test exploring randomly
         self.ai_logic.explorer.find_exploration_targets.return_value = None
-        self.state._explore_randomly = MagicMock()
-        self.state.get_next_action()
-        self.state._explore_randomly.assert_called()
+        self.state._explore_randomly = MagicMock(return_value=("look", None))
+        action = self.state.get_next_action()
+        self.assertEqual(action, ("look", None))
 
-        # Test that it doesn't path to a health potion on the same tile
-        self.ai_logic.player.x = 1
-        self.ai_logic.player.y = 1
-        self.ai_logic.player.current_floor_id = 0
-        self.ai_logic.target_finder.find_health_potions.return_value = [
-            (1, 1, 0, "health_potion", 0)
+    def test_fleeing_loop(self):
+        # Test that the AI can break out of a fleeing loop
+        self.state._use_item = MagicMock(return_value=None)
+        self.ai_logic._get_adjacent_monsters.return_value = [MagicMock()]
+        self.state._get_safe_moves = MagicMock(
+            return_value=[("move", "north"), ("move", "south")]
+        )
+        self.ai_logic.random.choice.side_effect = [
+            ("move", "north"),
+            ("move", "south"),
+            ("move", "north"),
+            ("move", "south"),
         ]
-        self.ai_logic.path_finder.find_path_bfs.reset_mock()
+        self.ai_logic._is_in_loop.return_value = False
         self.state.get_next_action()
-        self.ai_logic.path_finder.find_path_bfs.assert_not_called()
+        self.state.get_next_action()
+        self.state.get_next_action()
+        self.ai_logic._is_in_loop.return_value = True
+        self.state._explore_randomly = MagicMock(return_value=("move", "east"))
+        action = self.state.get_next_action()
+        self.assertNotEqual(action, ("move", "north"))
+        self.assertNotEqual(action, ("move", "south"))
+
+    def test_path_to_potion_avoids_monsters(self):
+        # Test that the AI avoids monsters when pathing to a health potion
+        self.state._use_item = MagicMock(return_value=None)
+        self.ai_logic._get_adjacent_monsters.return_value = []
+        self.state._pickup_item = MagicMock(return_value=None)
+        self.ai_logic.target_finder.find_health_potions.return_value = [
+            (1, 1, 0, "health_potion", 1)
+        ]
+        self.ai_logic.path_finder.find_path_bfs.return_value = None
+        self.state.get_next_action()
+        self.ai_logic.path_finder.find_path_bfs.assert_called_with(
+            self.ai_logic.ai_visible_maps,
+            (self.ai_logic.player.x, self.ai_logic.player.y),
+            self.ai_logic.player.current_floor_id,
+            (1, 1),
+            0,
+            avoid_monsters=True,
+        )

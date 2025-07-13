@@ -199,6 +199,21 @@ class TestPathFinderMultiFloor(unittest.TestCase):
         if path:
             self.assertEqual(path, expected_optimal_path)
 
+    def test_path_avoids_monster_if_flag_is_set(self):
+        layout_floor0_actual = ["S.M.G"]
+        self.world_maps[0] = self._create_floor(0, 5, 1, layout_floor0_actual)
+        path = self.path_finder.find_path_bfs(
+            world_maps=self.world_maps,
+            start_pos_xy=(0, 0),
+            start_floor_id=0,
+            goal_pos_xy=(4, 0),
+            goal_floor_id=0,
+            avoid_monsters=True,
+        )
+        self.assertIsNone(
+            path, "Path should be blocked by monster if avoid_monsters is True."
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
