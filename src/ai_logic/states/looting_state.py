@@ -62,6 +62,11 @@ class LootingState(AIState):
         other_items = self.ai_logic.target_finder.find_other_items(
             player_pos_xy, player_floor_id
         )
+        other_items = [
+            item
+            for item in other_items
+            if (item[0], item[1]) != player_pos_xy or item[2] != player_floor_id
+        ]
         if other_items:
             target_x, target_y, target_floor_id, _, _ = other_items[0]
             path = self.ai_logic.path_finder.find_path_bfs(
