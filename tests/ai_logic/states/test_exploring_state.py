@@ -35,6 +35,16 @@ class TestExploringState(unittest.TestCase):
         self.ai_logic.ai_visible_maps.get.return_value.get_tile.return_value.item = None
         self.assertEqual(self.state.handle_transitions(), "ExploringState")
 
+    def test_transition_to_looting_state(self):
+        # Test transition to LootingState
+        self.ai_logic.player.health = 10
+        self.ai_logic.player.max_health = 10
+        self.ai_logic._get_adjacent_monsters.return_value = []
+        (
+            self.ai_logic.ai_visible_maps.get.return_value.get_tile.return_value.item
+        ) = MagicMock()
+        self.assertEqual(self.state.handle_transitions(), "LootingState")
+
     def test_get_next_action(self):
         # Test finding health potions
         self.ai_logic.target_finder.find_health_potions.return_value = [

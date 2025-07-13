@@ -244,6 +244,13 @@ class TestAILogic(unittest.TestCase):
         # Verify that the target is an exploration target, not the portal
         self.assertNotEqual(self.ai.current_path[-1], (3, 1, 0))
 
+    def test_ai_breaks_out_of_stuck_loop(self):
+        self.ai.player_pos_history = [(1, 1), (1, 2), (1, 1), (1, 2)]
+        self.ai.current_path = [(1, 3, 0)]
+        self.ai.explorer.find_exploration_targets.return_value = None
+        self.ai.get_next_action()
+        self.assertIsNone(self.ai.current_path)
+
 
 if __name__ == "__main__":
     unittest.main()

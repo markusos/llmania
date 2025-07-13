@@ -60,6 +60,7 @@ class AILogic:
         self.state: "AIState" = ExploringState(self)
         self.last_player_floor_id = player.current_floor_id
         self.last_player_pos = (player.x, player.y)
+        self.player_pos_history = []
 
     def _get_adjacent_monsters(self) -> List["Monster"]:
         adjacent_monsters: List["Monster"] = []
@@ -120,6 +121,14 @@ class AILogic:
 
         self.last_player_floor_id = self.player.current_floor_id
         self.last_player_pos = (self.player.x, self.player.y)
+
+        # Stuck detection
+        self.player_pos_history.append(self.last_player_pos)
+        if len(self.player_pos_history) > 4:
+            self.player_pos_history.pop(0)
+            if len(set(self.player_pos_history)) <= 2:
+                self.current_path = None
+                self.player_pos_history = []
 
         # Delegate action to the current state
         next_state_name = self.state.handle_transitions()
