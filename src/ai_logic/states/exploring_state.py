@@ -2,19 +2,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Tuple
 
+from .base_state import AIState
+
 if TYPE_CHECKING:
-    from src.ai_logic.main import AILogic
-
-
-class AIState:
-    def __init__(self, ai_logic: "AILogic"):
-        self.ai_logic = ai_logic
-
-    def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
-        raise NotImplementedError
+    pass
 
 
 class ExploringState(AIState):
+    def handle_transitions(self) -> str:
+        player = self.ai_logic.player
+        if player.health <= player.max_health / 2:
+            return "SurvivalState"
+        if self.ai_logic._get_adjacent_monsters():
+            return "AttackingState"
+        current_ai_map = self.ai_logic.ai_visible_maps.get(player.current_floor_id)
+        if current_ai_map:
+            current_tile = current_ai_map.get_tile(player.x, player.y)
+            if current_tile and current_tile.item:
+                return "LootingState"
+        return "ExploringState"
+
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
         self.ai_logic.current_path = None
         player_pos_xy = (self.ai_logic.player.x, self.ai_logic.player.y)
@@ -46,7 +53,7 @@ class ExploringState(AIState):
                         f"{target_coord[1]}) on floor {target_coord[2]}."
                     )
                     self.ai_logic.message_log.add_message(log_msg)
-                    return self.ai_logic._follow_path()
+                    return self._follow_path()
 
                 # 4. Other targets if exploration is complete
                 targets = []
@@ -119,56 +126,9 @@ class ExploringState(AIState):
                 self.ai_logic.message_log.add_message(log_msg)
 
         if self.ai_logic.current_path:
-            return self.ai_logic._follow_path()
+            return self._follow_path()
         else:
             self.ai_logic.message_log.add_message(
                 "AI: No path found for any target or exploration."
             )
-            return self.ai_logic._explore_randomly()
-
-
-class AttackingState(AIState):
-    def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
-        adjacent_monsters = self.ai_logic._get_adjacent_monsters()
-        if adjacent_monsters:
-            monster_to_attack = self.ai_logic.random.choice(adjacent_monsters)
-            self.ai_logic.message_log.add_message(
-                f"AI: Attacking adjacent {monster_to_attack.name}."
-            )
-            self.ai_logic.current_path = None
-            return ("attack", monster_to_attack.name)
-        else:
-            # If no adjacent monsters, switch back to exploring
-            self.ai_logic.state = ExploringState(self.ai_logic)
-            return self.ai_logic.state.get_next_action()
-
-
-class LootingState(AIState):
-    def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
-        player_pos_xyz = (
-            self.ai_logic.player.x,
-            self.ai_logic.player.y,
-            self.ai_logic.player.current_floor_id,
-        )
-        current_ai_map = self.ai_logic.ai_visible_maps.get(player_pos_xyz[2])
-        if not current_ai_map:
-            return None
-        current_tile_on_visible_map = current_ai_map.get_tile(
-            player_pos_xyz[0], player_pos_xyz[1]
-        )
-
-        if (
-            current_tile_on_visible_map
-            and current_tile_on_visible_map.is_explored
-            and current_tile_on_visible_map.item
-        ):
-            item_name = current_tile_on_visible_map.item.name
-            self.ai_logic.message_log.add_message(
-                f"AI: Found item {item_name} on current tile, taking it."
-            )
-            self.ai_logic.current_path = None
-            return ("take", item_name)
-        else:
-            # If no item, switch back to exploring
-            self.ai_logic.state = ExploringState(self.ai_logic)
-            return self.ai_logic.state.get_next_action()
+            return self._explore_randomly()

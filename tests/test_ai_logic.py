@@ -4,7 +4,9 @@ from typing import Dict, Optional
 from unittest.mock import MagicMock, patch
 
 from src.ai_logic.main import AILogic
-from src.ai_logic.states import AttackingState, ExploringState, LootingState
+from src.ai_logic.states.attacking_state import AttackingState
+from src.ai_logic.states.exploring_state import ExploringState
+from src.ai_logic.states.looting_state import LootingState
 from src.item import Item
 from src.message_log import MessageLog
 from src.monster import Monster
@@ -19,7 +21,7 @@ class TestAILogic(unittest.TestCase):
         self.mock_player.x = 1
         self.mock_player.y = 1
         self.mock_player.current_floor_id = 0
-        self.mock_player.health = 20
+        self.mock_player.health = 100
         self.mock_player.max_health = 100
         self.mock_player.inventory = []
 
@@ -40,6 +42,7 @@ class TestAILogic(unittest.TestCase):
                 message_log=self.message_log,
                 random_generator=random.Random(),
             )
+            self.ai.target_finder.find_health_potions.return_value = []
 
     def _create_floor_layout(
         self,
@@ -240,6 +243,13 @@ class TestAILogic(unittest.TestCase):
         self.assertIsNotNone(self.ai.current_path)
         # Verify that the target is an exploration target, not the portal
         self.assertNotEqual(self.ai.current_path[-1], (3, 1, 0))
+
+    def test_ai_breaks_out_of_stuck_loop(self):
+        self.ai.player_pos_history = [(1, 1), (1, 2), (1, 1), (1, 2)]
+        self.ai.current_path = [(1, 3, 0)]
+        self.ai.explorer.find_exploration_targets.return_value = None
+        self.ai.get_next_action()
+        self.assertIsNone(self.ai.current_path)
 
 
 if __name__ == "__main__":
