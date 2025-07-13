@@ -43,9 +43,8 @@ class AIState:
 
     def _follow_path(self) -> Optional[Tuple[str, Optional[str]]]:
         if self.ai_logic._is_in_loop():
-            self.ai_logic.message_log.add_message("AI: Detected a loop, breaking.")
-            self.ai_logic.current_path = None
-            return self._explore_randomly()
+            self.ai_logic._break_loop()
+            return None
 
         if self.ai_logic.current_path:
             current_pos_xyz = (
@@ -75,11 +74,12 @@ class AIState:
                 return move_command
         return None
 
-    def _explore_randomly(self) -> Optional[Tuple[str, Optional[str]]]:
-        if self.ai_logic._is_in_loop():
-            self.ai_logic.message_log.add_message(
-                "AI: Detected a loop, trying a different random move."
-            )
+    def _explore_randomly(
+        self, break_loop: bool = False
+    ) -> Optional[Tuple[str, Optional[str]]]:
+        if not break_loop and self.ai_logic._is_in_loop():
+            self.ai_logic._break_loop()
+            return None
 
         current_ai_map = self.ai_logic.ai_visible_maps.get(
             self.ai_logic.player.current_floor_id

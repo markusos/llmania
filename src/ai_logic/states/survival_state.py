@@ -24,10 +24,7 @@ class SurvivalState(AIState):
         # 2. Flee from adjacent monsters
         if self.ai_logic._get_adjacent_monsters():
             if self.ai_logic._is_in_loop():
-                self.ai_logic.message_log.add_message(
-                    "AI: Detected a loop, trying a different random move."
-                )
-                return self._explore_randomly()
+                return self.ai_logic._break_loop()
 
             safe_moves = self._get_safe_moves()
             if safe_moves:
@@ -42,9 +39,9 @@ class SurvivalState(AIState):
         if action:
             return action
 
-        # 4. Find health potions on the map
+        # 4. Path to the most important target
         action = self._path_to_best_target(
-            self.ai_logic.target_finder.find_health_potions,
+            self._find_best_target, self._target_sort_key
         )
         if action:
             return action
@@ -79,3 +76,44 @@ class SurvivalState(AIState):
             if tile and tile.type != "wall" and not tile.monster:
                 safe_moves.append(("move", move))
         return safe_moves
+
+    def _find_best_target(self, player_pos_xy, player_floor_id):
+        targets = []
+        # 1. Survival: Find health potions if low on health
+        targets.extend(
+            self.ai_logic.target_finder.find_health_potions(
+                player_pos_xy, player_floor_id
+            )
+        )
+        # 2. Quest Items
+        targets.extend(
+            self.ai_logic.target_finder.find_quest_items(player_pos_xy, player_floor_id)
+        )
+        # 3. Other targets
+        targets.extend(
+            self.ai_logic.explorer.find_unvisited_portals(
+                player_pos_xy, player_floor_id
+            )
+        )
+        targets.extend(
+            self.ai_logic.explorer.find_portal_to_unexplored_floor(
+                player_pos_xy, player_floor_id
+            )
+        )
+        targets.extend(
+            self.ai_logic.target_finder.find_other_items(player_pos_xy, player_floor_id)
+        )
+        return targets
+
+    def _target_sort_key(self, target_data):
+        _, _, _, target_type, dist = target_data
+        priority = 5
+        if target_type == "health_potion":
+            priority = 1
+        elif target_type == "quest_item":
+            priority = 2
+        elif target_type == "unvisited_portal":
+            priority = 3
+        elif target_type == "portal_to_unexplored":
+            priority = 4
+        return (priority, dist)

@@ -7,9 +7,13 @@ if TYPE_CHECKING:
 
 
 def use_item(ai_logic: "AILogic", item_type: str) -> Optional[Tuple[str, str]]:
+    if item_type == "heal":
+        # Do not use healing items if health is full
+        if ai_logic.player.health >= ai_logic.player.max_health:
+            return None
     for item in ai_logic.player.inventory:
         if item.properties.get("type") == item_type:
-            ai_logic.message_log.add_message(f"AI: Low health, using {item.name}.")
+            ai_logic.message_log.add_message(f"AI: Using {item.name}.")
             return ("use", item.name)
     return None
 
