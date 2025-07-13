@@ -90,6 +90,7 @@ class PathFinder:
         start_floor_id: int,
         goal_pos_xy: Tuple[int, int],
         goal_floor_id: int,
+        avoid_monsters: bool = False,
     ) -> Optional[List[Tuple[int, int, int]]]:
         """
         Finds a path from (start_pos_xy, start_floor_id) to
@@ -103,6 +104,7 @@ class PathFinder:
             start_floor_id: The starting floor ID.
             goal_pos_xy: The target (x, y) coordinates.
             goal_floor_id: The target floor ID.
+            avoid_monsters: If True, treats tiles with monsters as obstacles.
 
         Returns:
             A list of (x, y, floor_id) tuples representing the path,
@@ -134,6 +136,8 @@ class PathFinder:
                 if current_map.is_valid_move(next_x, next_y):
                     target_tile = current_map.get_tile(next_x, next_y)
                     if target_tile and target_tile.monster:
+                        if avoid_monsters:
+                            continue
                         # Allow pathing to monster only if it's the goal node
                         if next_node_on_floor != goal_node:
                             continue  # Don't path through other monsters

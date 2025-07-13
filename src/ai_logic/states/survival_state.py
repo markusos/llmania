@@ -23,13 +23,19 @@ class SurvivalState(AIState):
 
         # 2. Flee from adjacent monsters
         if self.ai_logic._get_adjacent_monsters():
+            if self.ai_logic._is_in_loop():
+                self.ai_logic.message_log.add_message(
+                    "AI: Detected a loop, trying a different random move."
+                )
+                return self._explore_randomly()
+
             safe_moves = self._get_safe_moves()
             if safe_moves:
-                move_direction = self.ai_logic.random.choice(safe_moves)
+                move_command = self.ai_logic.random.choice(safe_moves)
                 self.ai_logic.message_log.add_message(
                     "AI: Low health, fleeing from monster."
                 )
-                return ("move", move_direction)
+                return move_command
 
         # 3. Take item on current tile (e.g., a health potion)
         action = self._pickup_item()
@@ -54,7 +60,7 @@ class SurvivalState(AIState):
 
         return self._explore_randomly()
 
-    def _get_safe_moves(self) -> list[str]:
+    def _get_safe_moves(self) -> list[Tuple[str, str]]:
         safe_moves = []
         possible_moves = {
             "north": (0, -1),
@@ -71,5 +77,5 @@ class SurvivalState(AIState):
                 continue
             tile = current_ai_map.get_tile(check_x, check_y)
             if tile and tile.type != "wall" and not tile.monster:
-                safe_moves.append(move)
+                safe_moves.append(("move", move))
         return safe_moves

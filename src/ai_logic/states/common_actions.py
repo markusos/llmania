@@ -65,12 +65,14 @@ def path_to_best_target(
         targets.sort(key=sort_key_func)
 
     for target_x, target_y, target_floor_id, target_type, _ in targets:
+        avoid_monsters = ai_logic.state.__class__.__name__ == "SurvivalState"
         path = ai_logic.path_finder.find_path_bfs(
             ai_logic.ai_visible_maps,
             player_pos_xy,
             player_floor_id,
             (target_x, target_y),
             target_floor_id,
+            avoid_monsters=avoid_monsters,
         )
         if path:
             log_msg = (
