@@ -9,9 +9,7 @@ if TYPE_CHECKING:
 def use_item(ai_logic: "AILogic", item_type: str) -> Optional[Tuple[str, str]]:
     for item in ai_logic.player.inventory:
         if item.properties.get("type") == item_type:
-            ai_logic.message_log.add_message(
-                f"AI: Low health, using {item.name}."
-            )
+            ai_logic.message_log.add_message(f"AI: Low health, using {item.name}.")
             return ("use", item.name)
     return None
 

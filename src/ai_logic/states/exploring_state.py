@@ -79,9 +79,7 @@ class ExploringState(AIState):
             )
         )
         targets.extend(
-            self.ai_logic.target_finder.find_other_items(
-                player_pos_xy, player_floor_id
-            )
+            self.ai_logic.target_finder.find_other_items(player_pos_xy, player_floor_id)
         )
         targets.extend(
             self.ai_logic.target_finder.find_monsters(player_pos_xy, player_floor_id)

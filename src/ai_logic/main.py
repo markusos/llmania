@@ -32,6 +32,7 @@ class AILogic:
             return SurvivalState(self)
         else:
             raise ValueError(f"Unknown state name: {state_name}")
+
     """
     Handles the decision-making for AI-controlled characters, primarily the player
     when AI mode is active.
