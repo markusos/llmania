@@ -63,14 +63,26 @@ class AILogic:
         self.last_player_pos = (player.x, player.y)
         self.player_pos_history = []
         self.command_history: List[Optional[Tuple[str, Optional[str]]]] = []
+        self.loop_breaker_moves_left = 0
 
     def _is_in_loop(self, lookback: int = 4) -> bool:
         if len(self.command_history) < lookback:
             return False
+        # Check if the last `lookback` commands are stuck in a loop of 2 commands
         last_commands = self.command_history[-lookback:]
         if len(set(last_commands)) <= 2:
-            return True
+            # Check if we are alternating between two positions
+            if len(self.player_pos_history) >= 4:
+                # Check if the last 4 positions are just 2 unique positions
+                if len(set(self.player_pos_history[-4:])) <= 2:
+                    return True
         return False
+
+    def _break_loop(self) -> Optional[Tuple[str, Optional[str]]]:
+        self.message_log.add_message("AI: Detected a loop, breaking.")
+        self.current_path = None
+        self.loop_breaker_moves_left = 5  # Set the number of random moves
+        return self.state._explore_randomly()
 
     def _get_adjacent_monsters(self) -> List["Monster"]:
         adjacent_monsters: List["Monster"] = []
@@ -113,6 +125,13 @@ class AILogic:
         return action
 
     def _get_next_action_logic(self) -> Optional[Tuple[str, Optional[str]]]:
+        if self.loop_breaker_moves_left > 0:
+            self.loop_breaker_moves_left -= 1
+            self.message_log.add_message(
+                "AI: Taking a random action to break a loop."
+            )
+            return self.state._explore_randomly()
+
         if self.player.current_floor_id != self.last_player_floor_id:
             prev_map = self.ai_visible_maps.get(self.last_player_floor_id)
             if prev_map:

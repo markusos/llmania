@@ -24,10 +24,7 @@ class SurvivalState(AIState):
         # 2. Flee from adjacent monsters
         if self.ai_logic._get_adjacent_monsters():
             if self.ai_logic._is_in_loop():
-                self.ai_logic.message_log.add_message(
-                    "AI: Detected a loop, trying a different random move."
-                )
-                return self._explore_randomly()
+                return self.ai_logic._break_loop()
 
             safe_moves = self._get_safe_moves()
             if safe_moves:
