@@ -9,22 +9,18 @@ if TYPE_CHECKING:
 
 
 class ExploringState(AIState):
-    def handle_transitions(self) -> "AIState":
-        from .attacking_state import AttackingState
-        from .looting_state import LootingState
-        from .survival_state import SurvivalState
-
+    def handle_transitions(self) -> str:
         player = self.ai_logic.player
         if player.health <= player.max_health / 2:
-            return SurvivalState(self.ai_logic)
+            return "SurvivalState"
         if self.ai_logic._get_adjacent_monsters():
-            return AttackingState(self.ai_logic)
+            return "AttackingState"
         current_ai_map = self.ai_logic.ai_visible_maps.get(player.current_floor_id)
         if current_ai_map:
             current_tile = current_ai_map.get_tile(player.x, player.y)
             if current_tile and current_tile.item:
-                return LootingState(self.ai_logic)
-        return self
+                return "LootingState"
+        return "ExploringState"
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
         self.ai_logic.current_path = None

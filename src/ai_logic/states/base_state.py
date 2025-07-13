@@ -13,9 +13,9 @@ class AIState:
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
         raise NotImplementedError
 
-    def handle_transitions(self) -> "AIState":
+    def handle_transitions(self) -> str:
         # Default behavior: no transition
-        return self
+        return self.__class__.__name__
 
     def _follow_path(self) -> Optional[Tuple[str, Optional[str]]]:
         if self.ai_logic.current_path:

@@ -9,16 +9,13 @@ if TYPE_CHECKING:
 
 
 class AttackingState(AIState):
-    def handle_transitions(self) -> "AIState":
-        from .exploring_state import ExploringState
-        from .survival_state import SurvivalState
-
+    def handle_transitions(self) -> str:
         player = self.ai_logic.player
         if player.health <= player.max_health / 2:
-            return SurvivalState(self.ai_logic)
+            return "SurvivalState"
         if not self.ai_logic._get_adjacent_monsters():
-            return ExploringState(self.ai_logic)
-        return self
+            return "ExploringState"
+        return "AttackingState"
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
         adjacent_monsters = self.ai_logic._get_adjacent_monsters()

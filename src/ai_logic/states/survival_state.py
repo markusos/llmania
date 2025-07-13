@@ -9,13 +9,11 @@ if TYPE_CHECKING:
 
 
 class SurvivalState(AIState):
-    def handle_transitions(self) -> "AIState":
-        from .exploring_state import ExploringState
-
+    def handle_transitions(self) -> str:
         player = self.ai_logic.player
         if player.health > player.max_health / 2:
-            return ExploringState(self.ai_logic)
-        return self
+            return "ExploringState"
+        return "SurvivalState"
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
         # 1. Use Health Potion if available

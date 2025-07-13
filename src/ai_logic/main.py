@@ -3,7 +3,10 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from src.map_algorithms.pathfinding import PathFinder
 
 from .explorer import Explorer
+from .states.attacking_state import AttackingState
 from .states.exploring_state import ExploringState
+from .states.looting_state import LootingState
+from .states.survival_state import SurvivalState
 from .target_finder import TargetFinder
 
 if TYPE_CHECKING:
@@ -18,6 +21,17 @@ if TYPE_CHECKING:
 
 
 class AILogic:
+    def _get_state(self, state_name: str) -> "AIState":
+        if state_name == "ExploringState":
+            return ExploringState(self)
+        elif state_name == "AttackingState":
+            return AttackingState(self)
+        elif state_name == "LootingState":
+            return LootingState(self)
+        elif state_name == "SurvivalState":
+            return SurvivalState(self)
+        else:
+            raise ValueError(f"Unknown state name: {state_name}")
     """
     Handles the decision-making for AI-controlled characters, primarily the player
     when AI mode is active.
@@ -108,5 +122,7 @@ class AILogic:
         self.last_player_pos = (self.player.x, self.player.y)
 
         # Delegate action to the current state
-        self.state = self.state.handle_transitions()
+        next_state_name = self.state.handle_transitions()
+        if next_state_name != self.state.__class__.__name__:
+            self.state = self._get_state(next_state_name)
         return self.state.get_next_action()

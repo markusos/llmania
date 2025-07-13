@@ -5,20 +5,17 @@ from typing import TYPE_CHECKING, Optional, Tuple
 from .base_state import AIState
 
 if TYPE_CHECKING:
-    from .exploring_state import ExploringState
+    pass
 
 
 class LootingState(AIState):
-    def handle_transitions(self) -> "AIState":
-        from .attacking_state import AttackingState
-        from .survival_state import SurvivalState
-
+    def handle_transitions(self) -> str:
         player = self.ai_logic.player
         if player.health <= player.max_health / 2:
-            return SurvivalState(self.ai_logic)
+            return "SurvivalState"
         if self.ai_logic._get_adjacent_monsters():
-            return AttackingState(self.ai_logic)
-        return self
+            return "AttackingState"
+        return "LootingState"
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
         player = self.ai_logic.player
@@ -82,5 +79,4 @@ class LootingState(AIState):
                 return self._follow_path()
 
         # 5. If no items to loot, switch back to exploring
-        self.ai_logic.state = ExploringState(self.ai_logic)
-        return self.ai_logic.state.get_next_action()
+        return None
