@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from src.map_algorithms.pathfinding import PathFinder
 
 from .explorer import Explorer
-from .states import AttackingState, ExploringState, LootingState
+from .states import AttackingState, ExploringState, LootingState, SurvivalState
 from .target_finder import TargetFinder
 
 if TYPE_CHECKING:
@@ -60,6 +60,24 @@ class AILogic:
                 adjacent_monsters.append(tile.monster)
         return adjacent_monsters
 
+    def _get_safe_moves(self) -> List[str]:
+        safe_moves = []
+        possible_moves = {
+            "north": (0, -1),
+            "south": (0, 1),
+            "west": (-1, 0),
+            "east": (1, 0),
+        }
+        for move, (dx, dy) in possible_moves.items():
+            check_x, check_y = self.player.x + dx, self.player.y + dy
+            current_ai_map = self.ai_visible_maps.get(self.player.current_floor_id)
+            if not current_ai_map:
+                continue
+            tile = current_ai_map.get_tile(check_x, check_y)
+            if tile and tile.type != "wall" and not tile.monster:
+                safe_moves.append(move)
+        return safe_moves
+
     def _coordinates_to_move_command(
         self, start_pos_xy: Tuple[int, int], end_pos_xy: Tuple[int, int]
     ) -> Optional[Tuple[str, str]]:
@@ -114,13 +132,19 @@ class AILogic:
         return self.state.get_next_action()
 
     def _update_state(self):
-        # Check for adjacent monsters
+        # 1. Check for low health
+        if self.player.health <= self.player.max_health / 2:
+            if not isinstance(self.state, SurvivalState):
+                self.state = SurvivalState(self)
+            return
+
+        # 2. Check for adjacent monsters
         if self._get_adjacent_monsters():
             if not isinstance(self.state, AttackingState):
                 self.state = AttackingState(self)
             return
 
-        # Check for items on the current tile
+        # 3. Check for items on the current tile or other known items
         current_ai_map = self.ai_visible_maps.get(self.player.current_floor_id)
         if current_ai_map:
             current_tile = current_ai_map.get_tile(self.player.x, self.player.y)
@@ -129,7 +153,7 @@ class AILogic:
                     self.state = LootingState(self)
                 return
 
-        # Default to exploring
+        # 4. Default to exploring
         if not isinstance(self.state, ExploringState):
             self.state = ExploringState(self)
 

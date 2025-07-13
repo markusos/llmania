@@ -19,7 +19,7 @@ class TestAILogic(unittest.TestCase):
         self.mock_player.x = 1
         self.mock_player.y = 1
         self.mock_player.current_floor_id = 0
-        self.mock_player.health = 20
+        self.mock_player.health = 100
         self.mock_player.max_health = 100
         self.mock_player.inventory = []
 
@@ -40,6 +40,7 @@ class TestAILogic(unittest.TestCase):
                 message_log=self.message_log,
                 random_generator=random.Random(),
             )
+            self.ai.target_finder.find_health_potions.return_value = []
 
     def _create_floor_layout(
         self,
