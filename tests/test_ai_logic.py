@@ -4,7 +4,9 @@ from typing import Dict, Optional
 from unittest.mock import MagicMock, patch
 
 from src.ai_logic.main import AILogic
-from src.ai_logic.states import AttackingState, ExploringState, LootingState
+from src.ai_logic.states.attacking_state import AttackingState
+from src.ai_logic.states.exploring_state import ExploringState
+from src.ai_logic.states.looting_state import LootingState
 from src.item import Item
 from src.message_log import MessageLog
 from src.monster import Monster
