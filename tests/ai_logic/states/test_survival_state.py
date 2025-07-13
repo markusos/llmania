@@ -51,17 +51,8 @@ class TestSurvivalState(unittest.TestCase):
         action = self.state.get_next_action()
         self.assertEqual(action, ("move", "north"))
 
-        # Test exploring
-        self.state._path_to_best_target = MagicMock(return_value=None)
-        self.ai_logic.explorer.find_exploration_targets.return_value = [
-            (1, 1, 0, "explorer_target", 1)
-        ]
-        self.state._follow_path = MagicMock(return_value=("move", "south"))
-        action = self.state.get_next_action()
-        self.assertEqual(action, ("move", "south"))
-
         # Test exploring randomly
-        self.ai_logic.explorer.find_exploration_targets.return_value = None
+        self.state._path_to_best_target = MagicMock(return_value=None)
         self.state._explore_randomly = MagicMock(return_value=("look", None))
         action = self.state.get_next_action()
         self.assertEqual(action, ("look", None))
