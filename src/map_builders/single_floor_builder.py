@@ -330,9 +330,7 @@ class SingleFloorBuilder(BuilderBase):
                 if item:
                     self.world_map.place_item(item, x, y)
             else:
-                monster = self.monster_factory.create_random_monster(
-                    self.random, x, y
-                )
+                monster = self.monster_factory.create_random_monster(self.random, x, y)
                 if monster:
                     self.world_map.place_monster(monster, x, y)
             return True

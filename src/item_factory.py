@@ -50,9 +50,7 @@ class ItemFactory:
             properties=properties,
         )
 
-    def create_random_item(
-        self, random_generator: "Random"
-    ) -> Optional[Item]:
+    def create_random_item(self, random_generator: "Random") -> Optional[Item]:
         """
         Creates a random item from the available item data based on rarity.
 
