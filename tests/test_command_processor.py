@@ -18,7 +18,10 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.y = 1
         self.mock_player.health = 100
         self.mock_player.inventory = []
-        self.mock_player.equipped_weapon = None
+        self.mock_player.equipment = {
+            "main_hand": None,
+            "off_hand": None,
+        }
 
         self.mock_world_map = MagicMock(spec=WorldMap)
         self.mock_world_map.get_tile = MagicMock()

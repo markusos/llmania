@@ -38,7 +38,7 @@ class InventoryCommand(Command):
             inventory_display = []
             for item_obj in self.player.inventory:
                 display_name = item_obj.name
-                if self.player.equipped_weapon == item_obj:
+                if item_obj in self.player.equipment.values():
                     display_name += " (equipped)"
                 inventory_display.append(display_name)
             self.message_log.add_message(f"Inventory: {', '.join(inventory_display)}")
