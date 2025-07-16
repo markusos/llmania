@@ -2,13 +2,121 @@
   "goblin": {
     "name": "Goblin",
     "health": 10,
+    "attack_power": 2,
+    "rarity": 25
+  },
+  "orc": {
+    "name": "Orc",
+    "health": 15,
     "attack_power": 3,
-    "rarity": 80
+    "rarity": 20
+  },
+  "troll": {
+    "name": "Troll",
+    "health": 25,
+    "attack_power": 5,
+    "rarity": 10
+  },
+  "skeleton": {
+    "name": "Skeleton",
+    "health": 12,
+    "attack_power": 3,
+    "rarity": 20
+  },
+  "zombie": {
+    "name": "Zombie",
+    "health": 20,
+    "attack_power": 2,
+    "rarity": 15
+  },
+  "giant_spider": {
+    "name": "Giant Spider",
+    "health": 8,
+    "attack_power": 4,
+    "rarity": 15
+  },
+  "dire_wolf": {
+    "name": "Dire Wolf",
+    "health": 14,
+    "attack_power": 4,
+    "rarity": 10
+  },
+  "golem": {
+    "name": "Golem",
+    "health": 30,
+    "attack_power": 4,
+    "rarity": 5
+  },
+  "dragon": {
+    "name": "Dragon",
+    "health": 50,
+    "attack_power": 8,
+    "rarity": 2
+  },
+  "lich": {
+    "name": "Lich",
+    "health": 40,
+    "attack_power": 6,
+    "rarity": 3
   },
   "bat": {
     "name": "Bat",
     "health": 5,
+    "attack_power": 1,
+    "rarity": 30
+  },
+  "rat": {
+    "name": "Rat",
+    "health": 4,
+    "attack_power": 1,
+    "rarity": 30
+  },
+  "slime": {
+    "name": "Slime",
+    "health": 8,
     "attack_power": 2,
+    "rarity": 25
+  },
+  "kobold": {
+    "name": "Kobold",
+    "health": 9,
+    "attack_power": 2,
+    "rarity": 25
+  },
+  "gnoll": {
+    "name": "Gnoll",
+    "health": 13,
+    "attack_power": 3,
     "rarity": 20
+  },
+  "harpy": {
+    "name": "Harpy",
+    "health": 11,
+    "attack_power": 3,
+    "rarity": 15
+  },
+  "gargoyle": {
+    "name": "Gargoyle",
+    "health": 18,
+    "attack_power": 4,
+    "rarity": 10
+  },
+  "minotaur": {
+    "name": "Minotaur",
+    "health": 28,
+    "attack_power": 6,
+    "rarity": 5
+  },
+  "beholder": {
+    "name": "Beholder",
+    "health": 35,
+    "attack_power": 7,
+    "rarity": 2
+  },
+  "demon": {
+    "name": "Demon",
+    "health": 45,
+    "attack_power": 9,
+    "rarity": 1
   }
 }
