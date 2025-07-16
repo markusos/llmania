@@ -22,10 +22,10 @@ def equip_better_weapon(ai_logic: "AILogic") -> Optional[Tuple[str, str]]:
     for item in ai_logic.player.inventory:
         if item.properties.get("type") == "weapon":
             current_attack_bonus = 0
-            if ai_logic.player.equipped_weapon:
-                current_attack_bonus = ai_logic.player.equipped_weapon.properties.get(
-                    "attack_bonus", 0
-                )
+            if ai_logic.player.equipment["main_hand"]:
+                current_attack_bonus = ai_logic.player.equipment[
+                    "main_hand"
+                ].properties.get("attack_bonus", 0)
 
             new_weapon_attack_bonus = item.properties.get("attack_bonus", 0)
             if new_weapon_attack_bonus > current_attack_bonus:
