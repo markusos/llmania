@@ -36,10 +36,13 @@ class DropCommand(Command):
             self.message_log.add_message("Drop what?")
             return {"game_over": False}
 
-        item_is_equipped_weapon = False
-        if self.player.equipped_weapon and self.argument:
-            if self.player.equipped_weapon.name.lower() == self.argument.lower():
-                item_is_equipped_weapon = True
+        item_is_equipped = (
+            self.player.equipment["main_hand"] is not None
+            and self.player.equipment["main_hand"].name.lower() == self.argument.lower()
+        ) or (
+            self.player.equipment["off_hand"] is not None
+            and self.player.equipment["off_hand"].name.lower() == self.argument.lower()
+        )
 
         dropped_item = self.player.drop_item(self.argument)
 
@@ -47,7 +50,7 @@ class DropCommand(Command):
             self.message_log.add_message(f"You don't have a {self.argument} to drop.")
             return {"game_over": False}
 
-        if item_is_equipped_weapon:
+        if item_is_equipped:
             self.message_log.add_message(f"You unequip the {dropped_item.name}.")
 
         tile = self.world_map.get_tile(self.player.x, self.player.y)
