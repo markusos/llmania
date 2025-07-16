@@ -36,18 +36,17 @@ class ItemFactory:
             return None
 
         properties = item_info.get("properties", {})
-        if properties.get("type") == "weapon":
+        if "slot" in properties:
             return Equippable(
                 name=item_info["name"],
                 description=item_info["description"],
                 properties=properties,
             )
-        else:
-            return Item(
-                name=item_info["name"],
-                description=item_info["description"],
-                properties=properties,
-            )
+        return Item(
+            name=item_info["name"],
+            description=item_info["description"],
+            properties=properties,
+        )
 
     def create_random_item(self) -> Optional[Item]:
         """
