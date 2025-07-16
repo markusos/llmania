@@ -68,6 +68,7 @@ class TestGameEngine(unittest.TestCase):
         self.mock_player_instance.y = self.player_start_coords_f0[1]
         self.mock_player_instance.current_floor_id = 0
         self.mock_player_instance.health = 100
+        self.mock_player_instance.invisibility_turns = 0
 
         self.mock_parser_instance = MockParser.return_value
         self.mock_input_handler_instance = MockInputHandler.return_value

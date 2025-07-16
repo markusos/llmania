@@ -17,7 +17,16 @@ class Monster:
     """
 
     def __init__(
-        self, name: str, health: int, attack_power: int, x: int = 0, y: int = 0
+        self,
+        name: str,
+        health: int,
+        attack_power: int,
+        x: int = 0,
+        y: int = 0,
+        defense: int = 0,
+        evasion: float = 0.0,
+        resistance: str = None,
+        vulnerability: str = None,
     ):
         """
         Initializes a Monster instance.
@@ -28,30 +37,52 @@ class Monster:
             attack_power: The attack power of the monster.
             x: Initial x-coordinate (defaults to 0).
             y: Initial y-coordinate (defaults to 0).
+            defense: The defense of the monster.
+            evasion: The evasion chance of the monster.
+            resistance: The damage type the monster is resistant to.
+            vulnerability: The damage type the monster is vulnerable to.
         """
         self.name = name
         self.health = health
         self.attack_power = attack_power
-        self.x = x  # Position on the map
-        self.y = y  # Position on the map
+        self.x = x
+        self.y = y
+        self.defense = defense
+        self.evasion = evasion
+        self.resistance = resistance
+        self.vulnerability = vulnerability
 
-    def take_damage(self, damage: int) -> dict[str, bool | int]:
+    def take_damage(
+        self, damage: int, damage_type: str = "physical"
+    ) -> dict[str, bool | int]:
         """
         Reduces the monster's health by the given amount of damage.
         Health cannot go below zero.
 
         Args:
             damage: The amount of damage to inflict.
+            damage_type: The type of damage being dealt.
 
         Returns:
             A dictionary containing:
                 "damage_taken" (int): The amount of damage dealt.
                 "defeated" (bool): True if health is <= 0, False otherwise.
         """
-        self.health -= damage
+        import random
+
+        if random.random() < self.evasion:
+            return {"damage_taken": 0, "defeated": False}
+
+        if self.resistance == damage_type:
+            damage = damage // 2
+        if self.vulnerability == damage_type:
+            damage = damage * 2
+
+        damage_taken = max(0, damage - self.defense)
+        self.health -= damage_taken
         if self.health < 0:
-            self.health = 0  # Health should not be negative
-        return {"damage_taken": damage, "defeated": self.health <= 0}
+            self.health = 0
+        return {"damage_taken": damage_taken, "defeated": self.health <= 0}
 
     def attack(self, player: "Player") -> dict[str, bool | int]:
         """

@@ -1,6 +1,7 @@
-from typing import List, Optional  # Sorted, Added for type hinting
+from typing import Dict, List, Optional
 
-from src.item import Item  # Kept for type hinting
+from src.equippable import Equippable
+from src.item import Item
 from src.monster import Monster
 
 
@@ -16,7 +17,8 @@ class Player:
         max_health (int): The player's maximum health points.
         inventory (List[Item]): A list of items currently held by the player.
         base_attack_power (int): Innate attack power, before weapon bonuses.
-        equipped_weapon (Optional[Item]): Currently equipped weapon, if any.
+        equipment (Dict[str, Optional[Equippable]]): A dictionary mapping
+            equipment slots to equipped items.
     """
 
     def __init__(self, x: int, y: int, current_floor_id: int, health: int):
@@ -33,10 +35,22 @@ class Player:
         self.y = y
         self.current_floor_id = current_floor_id
         self.health = health
-        self.max_health = health  # Player starts with max health.
+        self.max_health = health
         self.inventory: List[Item] = []
-        self.base_attack_power = 2  # Default base attack power.
-        self.equipped_weapon: Optional[Item] = None
+        self.base_attack_power = 2
+        self.base_defense = 0
+        self.base_speed = 1
+        self.invisibility_turns = 0
+        self.equipment: Dict[str, Optional[Equippable]] = {
+            "head": None,
+            "chest": None,
+            "legs": None,
+            "main_hand": None,
+            "off_hand": None,
+            "ring": None,
+            "amulet": None,
+            "boots": None,
+        }
 
     def move(self, dx: int, dy: int):
         """
@@ -49,55 +63,82 @@ class Player:
         self.x += dx
         self.y += dy
 
+    def get_attack_power(self) -> int:
+        """
+        Calculates the player's total attack power, including equipment bonuses.
+
+        Returns:
+            The total attack power.
+        """
+        total_attack_power = self.base_attack_power
+        for item in self.equipment.values():
+            if item:
+                total_attack_power += item.attack_bonus
+        return total_attack_power
+
+    def get_defense(self) -> int:
+        """
+        Calculates the player's total defense, including equipment bonuses.
+
+        Returns:
+            The total defense.
+        """
+        total_defense = self.base_defense
+        for item in self.equipment.values():
+            if item and hasattr(item, "defense_bonus"):
+                total_defense += item.defense_bonus
+        return total_defense
+
+    def get_speed(self) -> int:
+        """
+        Calculates the player's total speed, including equipment bonuses.
+
+        Returns:
+            The total speed.
+        """
+        total_speed = self.base_speed
+        for item in self.equipment.values():
+            if item and hasattr(item, "speed_bonus"):
+                total_speed += item.speed_bonus
+        return total_speed
+
     def attack_monster(self, monster: Monster) -> dict[str, str | int | bool]:
         """
         Attacks a specified monster.
-
-        The player's attack power is their base attack power plus any bonus
-        from an equipped weapon.
 
         Args:
             monster: The Monster instance to attack.
 
         Returns:
-            A dictionary containing the results of the attack:
-                "damage_dealt" (int): The amount of damage dealt to the monster.
-                "monster_defeated" (bool): True if the monster was defeated.
-                "monster_name" (str): The name of the monster attacked.
+            A dictionary containing the results of the attack.
         """
-        current_attack_power = self.base_attack_power
-        if (
-            self.equipped_weapon is not None
-            and self.equipped_weapon.properties.get("type") == "weapon"
-        ):
-            current_attack_power += self.equipped_weapon.properties.get(
-                "attack_bonus", 0
-            )
-
-        monster_take_damage_result = monster.take_damage(current_attack_power)
+        attack_power = self.get_attack_power()
+        damage_type = "physical"
+        if self.equipment["main_hand"]:
+            damage_type = self.equipment["main_hand"].properties.get("damage_type", "physical")
+        monster_take_damage_result = monster.take_damage(attack_power, damage_type)
         return {
-            "damage_dealt": current_attack_power,
+            "damage_dealt": monster_take_damage_result["damage_taken"],
             "monster_defeated": monster_take_damage_result["defeated"],
             "monster_name": monster.name,
         }
 
     def take_damage(self, damage: int) -> dict[str, bool | int]:
         """
-        Reduces the player's health by the given amount of damage.
-        Health cannot go below zero.
+        Reduces the player's health by the given amount of damage, taking
+        defense into account.
 
         Args:
             damage: The amount of damage to inflict on the player.
 
         Returns:
-            A dictionary containing:
-                "damage_taken" (int): The amount of damage taken.
-                "is_defeated" (bool): True if the player's health is 0 or less.
+            A dictionary containing the results of taking damage.
         """
-        self.health -= damage
+        damage_taken = max(0, damage - self.get_defense())
+        self.health -= damage_taken
         if self.health < 0:
             self.health = 0
-        return {"damage_taken": damage, "is_defeated": self.health <= 0}
+        return {"damage_taken": damage_taken, "is_defeated": self.health <= 0}
 
     def take_item(self, item: Item):
         """
@@ -107,11 +148,10 @@ class Player:
             item: The Item instance to add.
         """
         self.inventory.append(item)
-        # Note: No message is generated here; CommandProcessor handles messages.
 
     def _find_item_in_inventory(self, item_name: str) -> Optional[Item]:
         """
-        Searches the player's inventory for an item by name (case-insensitive).
+        Searches the player's inventory for an item by name.
 
         Args:
             item_name: The name of the item to find.
@@ -127,21 +167,20 @@ class Player:
     def drop_item(self, item_name: str) -> Optional[Item]:
         """
         Removes an item from the player's inventory by name.
-        If the dropped item is the equipped weapon, it is unequipped.
 
         Args:
-            item_name: The name of the item to drop (case-insensitive).
+            item_name: The name of the item to drop.
 
         Returns:
-            The Item instance that was dropped, or None if the item was not found.
+            The Item instance that was dropped, or None if not found.
         """
         item_to_drop = self._find_item_in_inventory(item_name)
         if not item_to_drop:
-            return None  # Item not found, no message here.
+            return None
 
-        # If the item to drop is the currently equipped weapon, unequip it.
-        if self.equipped_weapon == item_to_drop:
-            self.equipped_weapon = None
+        if isinstance(item_to_drop, Equippable):
+            self.unequip(item_to_drop.slot)
+
         self.inventory.remove(item_to_drop)
         return item_to_drop
 
@@ -149,71 +188,173 @@ class Player:
         """
         Uses an item from the player's inventory by name.
 
-        The effect of using an item depends on its type:
-        - "weapon": Equips or unequips the weapon.
-        - "cursed": Damages the player and is consumed.
-        - "heal": Restores health (up to max_health) and is consumed if effective.
-        - "junk": Cannot be used.
-        - Other types: A generic "You use the <item name>." message.
-
         Args:
-            item_name: The name of the item to use (case-insensitive).
+            item_name: The name of the item to use.
 
         Returns:
-            A string message describing the outcome of using the item.
+            A string message describing the outcome.
         """
         item_to_use = self._find_item_in_inventory(item_name)
         if not item_to_use:
             return "Item not found."
 
+        if isinstance(item_to_use, Equippable):
+            return self.toggle_equip(item_to_use)
+
         item_type = item_to_use.properties.get("type")
 
-        if item_type == "weapon":
-            if self.equipped_weapon == item_to_use:  # Trying to use equipped weapon
-                self.equipped_weapon = None  # Unequip it
-                return f"You unequip {item_to_use.name}."
-            else:  # Equip new weapon (or re-equip if it was different)
-                unequip_message = ""
-                if (
-                    self.equipped_weapon
-                ):  # If another weapon was equipped, unequip it first
-                    unequip_message = f"You unequip {self.equipped_weapon.name}. "
-                self.equipped_weapon = item_to_use
-                return f"{unequip_message}Equipped {item_to_use.name}."
-
+        if item_type == "heal":
+            return self.use_health_potion(item_to_use)
         elif item_type == "cursed":
-            damage = item_to_use.properties.get("damage", 0)
-            self.health -= damage
-            if self.health < 0:
-                self.health = 0
-            self.inventory.remove(item_to_use)  # Cursed items are consumed
-            # Message clearly indicates damage and that item is cursed.
-            # If health drops to 0, CommandProcessor will handle game over.
-            return f"The {item_to_use.name} is cursed! You take {damage} damage."
-
-        elif item_type == "heal":
-            if self.health == self.max_health:
-                # Player is already at full health.
-                # Item is not consumed in this case as per current logic.
-                return (
-                    f"You use {item_to_use.name}, but you are already at full health."
-                )
-
-            heal_amount = item_to_use.properties.get("amount", 0)
-            healed_actually = min(heal_amount, self.max_health - self.health)
-
-            self.health += healed_actually  # Apply healing
-
-            if healed_actually > 0:  # Item consumed only if it had a positive effect
-                self.inventory.remove(item_to_use)
-                return f"Used {item_to_use.name}, healed by {healed_actually} HP."
-            else:
-                # Item had 0 heal amount or player was full (already checked).
-                # Item not consumed if no effective healing.
-                return f"You use {item_to_use.name}, but it has no effect."
-
+            return self.use_cursed_item(item_to_use)
+        elif item_type == "damage":
+            return self.use_damage_item(item_to_use)
+        elif item_type == "teleport":
+            return self.use_teleport_scroll(item_to_use)
+        elif item_type == "invisibility":
+            return self.use_invisibility_potion(item_to_use)
         elif item_type == "junk" or item_type is None:
             return f"Cannot use {item_to_use.name}."
 
-        # Default message for other usable items (e.g. quest items if 'usable').
         return f"You use the {item_to_use.name}."
+
+    def use_health_potion(self, item: Item) -> str:
+        """
+        Uses a health potion to restore health.
+
+        Args:
+            item: The health potion item.
+
+        Returns:
+            A message describing the outcome.
+        """
+        if self.health == self.max_health:
+            return f"You use {item.name}, but you are already at full health."
+
+        heal_amount = item.properties.get("amount", 0)
+        healed_actually = min(heal_amount, self.max_health - self.health)
+        self.health += healed_actually
+
+        if healed_actually > 0:
+            self.inventory.remove(item)
+            return f"Used {item.name}, healed by {healed_actually} HP."
+        else:
+            return f"You use {item.name}, but it has no effect."
+
+    def use_cursed_item(self, item: Item) -> str:
+        """
+        Uses a cursed item, taking damage.
+
+        Args:
+            item: The cursed item.
+
+        Returns:
+            A message describing the outcome.
+        """
+        damage = item.properties.get("damage", 0)
+        self.health -= damage
+        if self.health < 0:
+            self.health = 0
+        self.inventory.remove(item)
+        return f"The {item.name} is cursed! You take {damage} damage."
+
+    def toggle_equip(self, item: Equippable) -> str:
+        """
+        Equips or unequips an item.
+
+        Args:
+            item: The item to toggle.
+
+        Returns:
+            A message describing the outcome.
+        """
+        slot = item.slot
+        if self.equipment.get(slot) == item:
+            return self.unequip(slot)
+        else:
+            return self.equip(item)
+
+    def equip(self, item: Equippable) -> str:
+        """
+        Equips an item to its slot.
+
+        Args:
+            item: The item to equip.
+
+        Returns:
+            A message describing the outcome.
+        """
+        slot = item.slot
+        if not slot or slot not in self.equipment:
+            return f"Cannot equip {item.name}."
+
+        unequip_message = ""
+        if self.equipment[slot]:
+            unequip_message = self.unequip(slot) + " "
+
+        self.equipment[slot] = item
+        if item.properties.get("type") == "amulet":
+            self.max_health += item.properties.get("max_health_bonus", 0)
+            self.health += item.properties.get("max_health_bonus", 0)
+        return f"{unequip_message}Equipped {item.name}."
+
+    def unequip(self, slot: str) -> str:
+        """
+        Unequips an item from a slot.
+
+        Args:
+            slot: The slot to unequip.
+
+        Returns:
+            A message describing the outcome.
+        """
+        if not slot or slot not in self.equipment or not self.equipment[slot]:
+            return ""
+
+        item = self.equipment[slot]
+        self.equipment[slot] = None
+        if item.properties.get("type") == "amulet":
+            self.max_health -= item.properties.get("max_health_bonus", 0)
+            if self.health > self.max_health:
+                self.health = self.max_health
+        return f"You unequip {item.name}."
+
+    def use_damage_item(self, item: Item) -> str:
+        """
+        Uses a damage item, which is consumed.
+
+        Args:
+            item: The damage item.
+
+        Returns:
+            A message describing the outcome.
+        """
+        self.inventory.remove(item)
+        return f"You use the {item.name}, it's now ready to be thrown."
+
+    def use_teleport_scroll(self, item: Item) -> str:
+        """
+        Uses a teleport scroll, which is consumed.
+
+        Args:
+            item: The teleport scroll.
+
+        Returns:
+            A message describing the outcome.
+        """
+        self.inventory.remove(item)
+        return f"You read the {item.name}."
+
+    def use_invisibility_potion(self, item: Item) -> str:
+        """
+        Uses an invisibility potion, which is consumed.
+
+        Args:
+            item: The invisibility potion.
+
+        Returns:
+            A message describing the outcome.
+        """
+        self.inventory.remove(item)
+        self.invisibility_turns += item.properties.get("duration", 0)
+        return f"You drink the {item.name} and become invisible."
