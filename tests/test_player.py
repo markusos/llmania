@@ -96,6 +96,49 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(self.player.health, 0)
         self.assertEqual(result, {"damage_taken": 90, "is_defeated": True})
 
+    def test_get_defense(self):
+        self.assertEqual(self.player.get_defense(), 0)
+        helmet = Equippable(
+            "Helmet",
+            "A basic helmet.",
+            {"type": "armor", "defense_bonus": 1, "slot": "head"},
+        )
+        self.player.take_item(helmet)
+        self.player.use_item("Helmet")
+        self.assertEqual(self.player.get_defense(), 1)
+
+    def test_get_speed(self):
+        self.assertEqual(self.player.get_speed(), 1)
+        boots = Equippable(
+            "Boots of Speed",
+            "Boots that increase your movement speed.",
+            {"type": "boots", "speed_bonus": 1, "slot": "boots"},
+        )
+        self.player.take_item(boots)
+        self.player.use_item("Boots of Speed")
+        self.assertEqual(self.player.get_speed(), 2)
+
+    def test_use_invisibility_potion(self):
+        potion = Item(
+            "Invisibility Potion",
+            "Makes you invisible.",
+            {"type": "invisibility", "duration": 10},
+        )
+        self.player.take_item(potion)
+        self.player.use_item("Invisibility Potion")
+        self.assertEqual(self.player.invisibility_turns, 10)
+
+    def test_equip_amulet_of_health(self):
+        amulet = Equippable(
+            "Amulet of Health",
+            "Increases max health.",
+            {"type": "amulet", "max_health_bonus": 10, "slot": "amulet"},
+        )
+        self.player.take_item(amulet)
+        initial_max_health = self.player.max_health
+        self.player.use_item("Amulet of Health")
+        self.assertEqual(self.player.max_health, initial_max_health + 10)
+
 
 if __name__ == "__main__":
     unittest.main()

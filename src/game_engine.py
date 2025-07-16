@@ -197,6 +197,7 @@ class GameEngine:
             )
 
             while not self.game_over:
+                self._handle_invisibility()
                 self._update_fog_of_war_visibility()
                 parsed_command_output = None
                 if self.ai_active and self.ai_logic:
@@ -222,6 +223,8 @@ class GameEngine:
                             self.winning_full_pos,
                             game_engine=self,
                         )
+                        if "used_item" in results:
+                            self._handle_item_use(results["used_item"])
                         floor_after_command = self.player.current_floor_id
                         if (
                             self.ai_active
@@ -362,6 +365,49 @@ class GameEngine:
             print(msg)
 
         print("\n--- Debug Mode Finished ---")
+
+    def _handle_item_use(self, item):
+        """
+        Handles the effects of using an item.
+        """
+        item_type = item.properties.get("type")
+        if item_type == "teleport":
+            self._teleport_player()
+        elif item_type == "damage":
+            self._handle_damage_item(item)
+
+    def _teleport_player(self):
+        """
+        Teleports the player to a random walkable tile on the current floor.
+        """
+        current_map = self.world_maps[self.player.current_floor_id]
+        walkable_tiles = [
+            (x, y)
+            for y in range(current_map.height)
+            for x in range(current_map.width)
+            if current_map.get_tile(x, y).type == "floor"
+        ]
+        if walkable_tiles:
+            self.player.x, self.player.y = self.random.choice(walkable_tiles)
+            self.message_log.add_message("You were teleported to a new location.")
+            self._update_fog_of_war_visibility()
+
+    def _handle_damage_item(self, item):
+        """
+        Handles the effects of a damage item.
+        """
+        self.message_log.add_message(f"You can throw the {item.name}.")
+        # The actual throwing logic will be handled by a "throw" command
+        # that is not yet implemented.
+
+    def _handle_invisibility(self):
+        """
+        Handles the player's invisibility status.
+        """
+        if self.player.invisibility_turns > 0:
+            self.player.invisibility_turns -= 1
+            if self.player.invisibility_turns == 0:
+                self.message_log.add_message("You are no longer invisible.")
 
     def _print_full_map_debug(self):
         """

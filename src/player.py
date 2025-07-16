@@ -38,12 +38,18 @@ class Player:
         self.max_health = health
         self.inventory: List[Item] = []
         self.base_attack_power = 2
+        self.base_defense = 0
+        self.base_speed = 1
+        self.invisibility_turns = 0
         self.equipment: Dict[str, Optional[Equippable]] = {
             "head": None,
             "chest": None,
             "legs": None,
             "main_hand": None,
             "off_hand": None,
+            "ring": None,
+            "amulet": None,
+            "boots": None,
         }
 
     def move(self, dx: int, dy: int):
@@ -70,6 +76,32 @@ class Player:
                 total_attack_power += item.attack_bonus
         return total_attack_power
 
+    def get_defense(self) -> int:
+        """
+        Calculates the player's total defense, including equipment bonuses.
+
+        Returns:
+            The total defense.
+        """
+        total_defense = self.base_defense
+        for item in self.equipment.values():
+            if item and hasattr(item, "defense_bonus"):
+                total_defense += item.defense_bonus
+        return total_defense
+
+    def get_speed(self) -> int:
+        """
+        Calculates the player's total speed, including equipment bonuses.
+
+        Returns:
+            The total speed.
+        """
+        total_speed = self.base_speed
+        for item in self.equipment.values():
+            if item and hasattr(item, "speed_bonus"):
+                total_speed += item.speed_bonus
+        return total_speed
+
     def attack_monster(self, monster: Monster) -> dict[str, str | int | bool]:
         """
         Attacks a specified monster.
@@ -90,7 +122,8 @@ class Player:
 
     def take_damage(self, damage: int) -> dict[str, bool | int]:
         """
-        Reduces the player's health by the given amount of damage.
+        Reduces the player's health by the given amount of damage, taking
+        defense into account.
 
         Args:
             damage: The amount of damage to inflict on the player.
@@ -98,10 +131,11 @@ class Player:
         Returns:
             A dictionary containing the results of taking damage.
         """
-        self.health -= damage
+        damage_taken = max(0, damage - self.get_defense())
+        self.health -= damage_taken
         if self.health < 0:
             self.health = 0
-        return {"damage_taken": damage, "is_defeated": self.health <= 0}
+        return {"damage_taken": damage_taken, "is_defeated": self.health <= 0}
 
     def take_item(self, item: Item):
         """
@@ -170,6 +204,12 @@ class Player:
             return self.use_health_potion(item_to_use)
         elif item_type == "cursed":
             return self.use_cursed_item(item_to_use)
+        elif item_type == "damage":
+            return self.use_damage_item(item_to_use)
+        elif item_type == "teleport":
+            return self.use_teleport_scroll(item_to_use)
+        elif item_type == "invisibility":
+            return self.use_invisibility_potion(item_to_use)
         elif item_type == "junk" or item_type is None:
             return f"Cannot use {item_to_use.name}."
 
@@ -250,6 +290,9 @@ class Player:
             unequip_message = self.unequip(slot) + " "
 
         self.equipment[slot] = item
+        if item.properties.get("type") == "amulet":
+            self.max_health += item.properties.get("max_health_bonus", 0)
+            self.health += item.properties.get("max_health_bonus", 0)
         return f"{unequip_message}Equipped {item.name}."
 
     def unequip(self, slot: str) -> str:
@@ -267,4 +310,48 @@ class Player:
 
         item = self.equipment[slot]
         self.equipment[slot] = None
+        if item.properties.get("type") == "amulet":
+            self.max_health -= item.properties.get("max_health_bonus", 0)
+            if self.health > self.max_health:
+                self.health = self.max_health
         return f"You unequip {item.name}."
+
+    def use_damage_item(self, item: Item) -> str:
+        """
+        Uses a damage item, which is consumed.
+
+        Args:
+            item: The damage item.
+
+        Returns:
+            A message describing the outcome.
+        """
+        self.inventory.remove(item)
+        return f"You use the {item.name}, it's now ready to be thrown."
+
+    def use_teleport_scroll(self, item: Item) -> str:
+        """
+        Uses a teleport scroll, which is consumed.
+
+        Args:
+            item: The teleport scroll.
+
+        Returns:
+            A message describing the outcome.
+        """
+        self.inventory.remove(item)
+        return f"You read the {item.name}."
+
+    def use_invisibility_potion(self, item: Item) -> str:
+        """
+        Uses an invisibility potion, which is consumed.
+
+        Args:
+            item: The invisibility potion.
+
+        Returns:
+            A message describing the outcome.
+        """
+        self.inventory.remove(item)
+        self.invisibility_turns += item.properties.get("duration", 0)
+        return f"You drink the {item.name} and become invisible."

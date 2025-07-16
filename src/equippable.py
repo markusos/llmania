@@ -23,3 +23,5 @@ class Equippable(Item):
         super().__init__(name, description, properties)
         self.slot = properties.get("slot")
         self.attack_bonus = properties.get("attack_bonus", 0)
+        self.defense_bonus = properties.get("defense_bonus", 0)
+        self.speed_bonus = properties.get("speed_bonus", 0)
