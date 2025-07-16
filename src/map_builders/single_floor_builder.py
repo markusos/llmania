@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
-from src.item import Item
+from src.item_factory import ItemFactory
 from src.map_algorithms.connectivity import MapConnectivityManager
 from src.map_algorithms.density import FloorDensityAdjuster
 from src.map_algorithms.pathfinding import PathFinder
 from src.map_builders.builder_base import BuilderBase
-from src.monster import Monster
+from src.monster_factory import MonsterFactory
 from src.world_map import WorldMap
 
 if TYPE_CHECKING:
@@ -22,6 +22,8 @@ class SingleFloorBuilder(BuilderBase):
         random_generator: "Random",
         floor_portion: Optional[float] = None,
         existing_map: Optional[WorldMap] = None,
+        item_factory: Optional[ItemFactory] = None,
+        monster_factory: Optional[MonsterFactory] = None,
     ):
         super().__init__(width, height, random_generator)
 
@@ -35,6 +37,16 @@ class SingleFloorBuilder(BuilderBase):
         self.path_finder = PathFinder()
         self.world_map = (
             existing_map if existing_map else self._initialize_map(width, height)
+        )
+        self.item_factory = (
+            item_factory
+            if item_factory is not None
+            else ItemFactory("src/data/items.json")
+        )
+        self.monster_factory = (
+            monster_factory
+            if monster_factory is not None
+            else MonsterFactory("src/data/monsters.json")
         )
         self.portals_on_floor: List[Tuple[int, int]] = []
         self.portal_destinations: dict[Tuple[int, int], Optional[int]] = {}
@@ -309,28 +321,16 @@ class SingleFloorBuilder(BuilderBase):
             or t.is_portal
         ):
             return False
+
         if self.random.random() < 0.25:
             if self.random.random() < 0.6:
-                it = self.random.choice(
-                    [
-                        (
-                            "Health Potion",
-                            "Restores some HP.",
-                            {"type": "heal", "amount": 10},
-                        ),
-                        (
-                            "Dagger",
-                            "A small blade.",
-                            {"type": "weapon", "attack_bonus": 2, "verb": "stabs"},
-                        ),
-                    ]
-                )
-                self.world_map.place_item(Item(it[0], it[1], it[2]), x, y)
+                item = self.item_factory.create_random_item()
+                if item:
+                    self.world_map.place_item(item, x, y)
             else:
-                mt = self.random.choice([("Goblin", 10, 3), ("Bat", 5, 2)])
-                self.world_map.place_monster(
-                    Monster(mt[0], mt[1], mt[2], x=x, y=y), x, y
-                )
+                monster = self.monster_factory.create_random_monster(x, y)
+                if monster:
+                    self.world_map.place_monster(monster, x, y)
             return True
         return False
 

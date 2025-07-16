@@ -1,0 +1,22 @@
+{
+  "health_potion": {
+    "name": "Health Potion",
+    "description": "Restores some HP.",
+    "properties": {
+      "type": "heal",
+      "amount": 10
+    },
+    "rarity": 70
+  },
+  "dagger": {
+    "name": "Dagger",
+    "description": "A small blade.",
+    "properties": {
+      "type": "weapon",
+      "attack_bonus": 2,
+      "verb": "stabs",
+      "slot": "main_hand"
+    },
+    "rarity": 30
+  }
+}

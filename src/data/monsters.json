@@ -1,0 +1,14 @@
+{
+  "goblin": {
+    "name": "Goblin",
+    "health": 10,
+    "attack_power": 3,
+    "rarity": 80
+  },
+  "bat": {
+    "name": "Bat",
+    "health": 5,
+    "attack_power": 2,
+    "rarity": 20
+  }
+}
