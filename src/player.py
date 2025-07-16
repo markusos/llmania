@@ -85,7 +85,7 @@ class Player:
         """
         total_defense = self.base_defense
         for item in self.equipment.values():
-            if item and hasattr(item, "defense_bonus"):
+            if item:
                 total_defense += item.defense_bonus
         return total_defense
 
@@ -98,7 +98,7 @@ class Player:
         """
         total_speed = self.base_speed
         for item in self.equipment.values():
-            if item and hasattr(item, "speed_bonus"):
+            if item:
                 total_speed += item.speed_bonus
         return total_speed
 
@@ -115,7 +115,9 @@ class Player:
         attack_power = self.get_attack_power()
         damage_type = "physical"
         if self.equipment["main_hand"]:
-            damage_type = self.equipment["main_hand"].properties.get("damage_type", "physical")
+            damage_type = self.equipment["main_hand"].properties.get(
+                "damage_type", "physical"
+            )
         monster_take_damage_result = monster.take_damage(attack_power, damage_type)
         return {
             "damage_dealt": monster_take_damage_result["damage_taken"],
@@ -218,6 +220,19 @@ class Player:
 
         return f"You use the {item_to_use.name}."
 
+    def get_max_health(self) -> int:
+        """
+        Calculates the player's maximum health, including equipment bonuses.
+
+        Returns:
+            The maximum health.
+        """
+        total_max_health = self.max_health
+        for item in self.equipment.values():
+            if item:
+                total_max_health += item.properties.get("max_health_bonus", 0)
+        return total_max_health
+
     def use_health_potion(self, item: Item) -> str:
         """
         Uses a health potion to restore health.
@@ -228,11 +243,12 @@ class Player:
         Returns:
             A message describing the outcome.
         """
-        if self.health == self.max_health:
+        max_health = self.get_max_health()
+        if self.health == max_health:
             return f"You use {item.name}, but you are already at full health."
 
         heal_amount = item.properties.get("amount", 0)
-        healed_actually = min(heal_amount, self.max_health - self.health)
+        healed_actually = min(heal_amount, max_health - self.health)
         self.health += healed_actually
 
         if healed_actually > 0:
@@ -293,8 +309,7 @@ class Player:
             unequip_message = self.unequip(slot) + " "
 
         self.equipment[slot] = item
-        if item.properties.get("type") == "amulet":
-            self.max_health += item.properties.get("max_health_bonus", 0)
+        if "max_health_bonus" in item.properties:
             self.health += item.properties.get("max_health_bonus", 0)
         return f"{unequip_message}Equipped {item.name}."
 
@@ -313,10 +328,9 @@ class Player:
 
         item = self.equipment[slot]
         self.equipment[slot] = None
-        if item.properties.get("type") == "amulet":
-            self.max_health -= item.properties.get("max_health_bonus", 0)
-            if self.health > self.max_health:
-                self.health = self.max_health
+        if "max_health_bonus" in item.properties:
+            if self.health > self.get_max_health():
+                self.health = self.get_max_health()
         return f"You unequip {item.name}."
 
     def use_damage_item(self, item: Item) -> str:

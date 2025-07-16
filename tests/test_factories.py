@@ -40,6 +40,7 @@ class TestFactories(unittest.TestCase):
             dagger = factory.create_item("dagger")
             self.assertEqual(dagger.name, "Dagger")
             from src.equippable import Equippable
+
             self.assertTrue(isinstance(dagger, Equippable))
             self.assertEqual(dagger.attack_bonus, 2)
             self.assertEqual(dagger.slot, "main_hand")

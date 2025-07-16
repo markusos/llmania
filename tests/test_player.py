@@ -1,10 +1,8 @@
 import unittest
 from unittest.mock import patch
 
-from src.equippable import Equippable
 from src.item import Item
 from src.item_factory import ItemFactory
-from src.monster import Monster
 from src.monster_factory import MonsterFactory
 from src.player import Player
 
@@ -12,7 +10,7 @@ from src.player import Player
 class TestPlayer(unittest.TestCase):
     def setUp(self):
         self.player = Player(x=1, y=2, health=100, current_floor_id=0)
-        with patch("builtins.open", new=unittest.mock.mock_open(read_data='{}')):
+        with patch("builtins.open", new=unittest.mock.mock_open(read_data="{}")):
             self.item_factory = ItemFactory("dummy/path/items.json")
             self.monster_factory = MonsterFactory("dummy/path/monsters.json")
 
@@ -219,9 +217,9 @@ class TestPlayer(unittest.TestCase):
             self.item_factory = ItemFactory("dummy/path/items.json")
             amulet = self.item_factory.create_item("amulet")
             self.player.take_item(amulet)
-            initial_max_health = self.player.max_health
+            initial_max_health = self.player.get_max_health()
             self.player.use_item("Amulet of Health")
-            self.assertEqual(self.player.max_health, initial_max_health + 10)
+            self.assertEqual(self.player.get_max_health(), initial_max_health + 10)
 
 
 if __name__ == "__main__":
