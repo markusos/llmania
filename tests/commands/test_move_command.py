@@ -121,6 +121,36 @@ class TestMoveCommand(unittest.TestCase):
         )
         self.assertFalse(result.get("game_over", False))
 
+    def test_portal_gets_marked_as_visited_by_ai(self):
+        # Setup AI logic and explorer
+        ai_logic_mock = MagicMock()
+        game_engine_mock = MagicMock()
+        game_engine_mock.ai_logic = ai_logic_mock
+
+        # Player setup
+        self.player.x, self.player.y = 0, 0
+        self.player.current_floor_id = 0
+
+        # Portal setup
+        portal_tile_f0 = Tile(tile_type="portal", portal_to_floor_id=1)
+        self.world_maps[0].grid[0][1] = portal_tile_f0
+        self.world_maps[1] = WorldMap(3, 3)
+
+        move_cmd = MoveCommand(
+            player=self.player,
+            world_map=self.world_maps[0],
+            message_log=self.message_log,
+            winning_position=self.winning_position,
+            argument="east",
+            world_maps=self.world_maps,
+            game_engine=game_engine_mock,
+        )
+
+        move_cmd.execute()
+
+        # Verify that the explorer's method was called
+        ai_logic_mock.explorer.mark_portal_as_visited.assert_called_once_with(1, 0, 0)
+
     def test_move_to_winning_position_on_correct_floor(self):
         self.player.x, self.player.y = 1, 2
         self.player.current_floor_id = 0

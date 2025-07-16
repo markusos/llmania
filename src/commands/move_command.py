@@ -46,6 +46,7 @@ class MoveCommand(Command):
             return {"game_over": current_game_over_state}
 
         new_x, new_y = self.player.x + dx, self.player.y + dy
+        floor_before_move = self.player.current_floor_id
 
         # world_map is the map of the player's current floor.
         if self.world_map.is_valid_move(new_x, new_y):
@@ -67,6 +68,10 @@ class MoveCommand(Command):
                 self.message_log.add_message(
                     f"You step through the portal to floor {new_floor_id}!"
                 )
+                if self.game_engine and self.game_engine.ai_logic:
+                    self.game_engine.ai_logic.explorer.mark_portal_as_visited(
+                        new_x, new_y, floor_before_move
+                    )
                 # GameEngine handles fog of war for the new floor.
                 # CommandProcessor provides the correct map for the next command.
             elif target_tile and target_tile.monster:
