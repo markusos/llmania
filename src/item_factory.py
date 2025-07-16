@@ -1,9 +1,11 @@
 import json
-import random
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from src.equippable import Equippable
 from src.item import Item
+
+if TYPE_CHECKING:
+    from random import Random
 
 
 class ItemFactory:
@@ -48,7 +50,9 @@ class ItemFactory:
             properties=properties,
         )
 
-    def create_random_item(self) -> Optional[Item]:
+    def create_random_item(
+        self, random_generator: "Random"
+    ) -> Optional[Item]:
         """
         Creates a random item from the available item data based on rarity.
 
@@ -62,7 +66,7 @@ class ItemFactory:
         if rarity_sum == 0:
             return None
 
-        roll = random.randint(1, rarity_sum)
+        roll = random_generator.randint(1, rarity_sum)
         current_sum = 0
         for item_id, item_info in self.item_data.items():
             current_sum += item_info.get("rarity", 0)

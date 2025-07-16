@@ -105,12 +105,12 @@ class TestMonster(unittest.TestCase):
         self.assertEqual(monster.health, 20)
         self.assertEqual(result["damage_taken"], 20)
 
-    @patch("random.random", return_value=0.1)
-    def test_take_damage_with_evasion(self, mock_random):
+    def test_take_damage_with_evasion(self):
         monster = Monster("Rogue", 20, 5, evasion=0.5)
-        result = monster.take_damage(10)
-        self.assertEqual(monster.health, 20)
-        self.assertEqual(result["damage_taken"], 0)
+        with patch.object(monster.random, "random", return_value=0.1):
+            result = monster.take_damage(10)
+            self.assertEqual(monster.health, 20)
+            self.assertEqual(result["damage_taken"], 0)
 
 
 if __name__ == "__main__":

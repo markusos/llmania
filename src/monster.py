@@ -1,3 +1,4 @@
+import random
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -27,6 +28,7 @@ class Monster:
         evasion: float = 0.0,
         resistance: str = None,
         vulnerability: str = None,
+        random_generator: random.Random = None,
     ):
         """
         Initializes a Monster instance.
@@ -51,6 +53,7 @@ class Monster:
         self.evasion = evasion
         self.resistance = resistance
         self.vulnerability = vulnerability
+        self.random = random_generator if random_generator else random.Random()
 
     def take_damage(
         self, damage: int, damage_type: str = "physical"
@@ -68,9 +71,7 @@ class Monster:
                 "damage_taken" (int): The amount of damage dealt.
                 "defeated" (bool): True if health is <= 0, False otherwise.
         """
-        import random
-
-        if random.random() < self.evasion:
+        if self.random.random() < self.evasion:
             return {"damage_taken": 0, "defeated": False}
 
         if self.resistance == damage_type:

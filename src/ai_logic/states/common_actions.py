@@ -21,11 +21,12 @@ def use_item(ai_logic: "AILogic", item_type: str) -> Optional[Tuple[str, str]]:
 def equip_better_weapon(ai_logic: "AILogic") -> Optional[Tuple[str, str]]:
     for item in ai_logic.player.inventory:
         if item.properties.get("type") == "weapon":
-            current_attack_bonus = (
-                ai_logic.player.equipped_weapon.properties.get("attack_bonus", 0)
-                if ai_logic.player.equipped_weapon
-                else 0
-            )
+            current_attack_bonus = 0
+            if ai_logic.player.equipped_weapon:
+                current_attack_bonus = ai_logic.player.equipped_weapon.properties.get(
+                    "attack_bonus", 0
+                )
+
             new_weapon_attack_bonus = item.properties.get("attack_bonus", 0)
             if new_weapon_attack_bonus > current_attack_bonus:
                 ai_logic.message_log.add_message(
