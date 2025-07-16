@@ -115,9 +115,7 @@ class Player:
         attack_power = self.get_attack_power()
         damage_type = "physical"
         if self.equipment["main_hand"]:
-            damage_type = self.equipment["main_hand"].properties.get(
-                "damage_type", "physical"
-            )
+            damage_type = self.equipment["main_hand"].properties.get("damage_type", "physical")
         monster_take_damage_result = monster.take_damage(attack_power, damage_type)
         return {
             "damage_dealt": monster_take_damage_result["damage_taken"],

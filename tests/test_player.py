@@ -1,15 +1,20 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import patch
 
 from src.equippable import Equippable
 from src.item import Item
+from src.item_factory import ItemFactory
 from src.monster import Monster
+from src.monster_factory import MonsterFactory
 from src.player import Player
 
 
 class TestPlayer(unittest.TestCase):
     def setUp(self):
         self.player = Player(x=1, y=2, health=100, current_floor_id=0)
+        with patch("builtins.open", new=unittest.mock.mock_open(read_data='{}')):
+            self.item_factory = ItemFactory("dummy/path/items.json")
+            self.monster_factory = MonsterFactory("dummy/path/monsters.json")
 
     def test_player_initialization(self):
         self.assertEqual(self.player.x, 1)
@@ -45,47 +50,93 @@ class TestPlayer(unittest.TestCase):
         self.assertNotIn(potion, self.player.inventory)
 
     def test_equip_and_unequip_item(self):
-        sword = Equippable(
-            "Sword",
-            "A sharp blade",
-            {"type": "weapon", "attack_bonus": 5, "slot": "main_hand"},
-        )
-        self.player.take_item(sword)
-        message = self.player.use_item("Sword")
-        self.assertEqual(message, "Equipped Sword.")
-        self.assertEqual(self.player.equipment["main_hand"], sword)
+        item_data = """
+        {
+            "sword": {
+                "name": "Sword",
+                "description": "A sharp blade",
+                "properties": {
+                    "type": "weapon",
+                    "attack_bonus": 5,
+                    "slot": "main_hand",
+                    "damage_type": "slashing"
+                }
+            }
+        }
+        """
+        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+            self.item_factory = ItemFactory("dummy/path/items.json")
+            sword = self.item_factory.create_item("sword")
+            self.player.take_item(sword)
+            message = self.player.use_item("Sword")
+            self.assertEqual(message, "Equipped Sword.")
+            self.assertEqual(self.player.equipment["main_hand"], sword)
 
-        message = self.player.use_item("Sword")
-        self.assertEqual(message, "You unequip Sword.")
-        self.assertIsNone(self.player.equipment["main_hand"])
+            message = self.player.use_item("Sword")
+            self.assertEqual(message, "You unequip Sword.")
+            self.assertIsNone(self.player.equipment["main_hand"])
 
     def test_get_attack_power(self):
         self.assertEqual(self.player.get_attack_power(), 2)
-        sword = Equippable(
-            "Sword",
-            "A sharp blade",
-            {"type": "weapon", "attack_bonus": 5, "slot": "main_hand"},
-        )
+        item_data = """
+        {
+            "sword": {
+                "name": "Sword",
+                "description": "A sharp blade",
+                "properties": {
+                    "type": "weapon",
+                    "attack_bonus": 5,
+                    "slot": "main_hand"
+                }
+            }
+        }
+        """
+        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+            self.item_factory = ItemFactory("dummy/path/items.json")
+            sword = self.item_factory.create_item("sword")
+            self.player.take_item(sword)
+            self.player.use_item("Sword")
+            self.assertEqual(self.player.get_attack_power(), 7)
+
+    def test_attack_monster_with_damage_type(self):
+        monster_data = """
+        {
+            "goblin": {
+                "name": "Goblin",
+                "health": 10,
+                "attack_power": 2,
+                "rarity": 100,
+                "resistance": "slashing"
+            }
+        }
+        """
+        item_data = """
+        {
+            "sword": {
+                "name": "Sword",
+                "description": "A sharp blade",
+                "properties": {
+                    "type": "weapon",
+                    "attack_bonus": 5,
+                    "slot": "main_hand",
+                    "damage_type": "slashing"
+                }
+            }
+        }
+        """
+        with patch("builtins.open", unittest.mock.mock_open(read_data=monster_data)):
+            self.monster_factory = MonsterFactory("dummy/path/monsters.json")
+        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+            self.item_factory = ItemFactory("dummy/path/items.json")
+
+        monster = self.monster_factory.create_monster("goblin")
+        sword = self.item_factory.create_item("sword")
+
         self.player.take_item(sword)
         self.player.use_item("Sword")
-        self.assertEqual(self.player.get_attack_power(), 7)
+        self.player.attack_monster(monster)
 
-    def test_attack_monster(self):
-        mock_monster = MagicMock(spec=Monster)
-        mock_monster.name = "Goblin"
-        mock_monster.take_damage.return_value = {"defeated": False, "damage_taken": 2}
-        self.player.attack_monster(mock_monster)
-        mock_monster.take_damage.assert_called_once_with(2, "physical")
-
-        sword = Equippable(
-            "Sword",
-            "A sharp blade",
-            {"type": "weapon", "attack_bonus": 5, "slot": "main_hand"},
-        )
-        self.player.take_item(sword)
-        self.player.use_item("Sword")
-        self.player.attack_monster(mock_monster)
-        mock_monster.take_damage.assert_called_with(7, "physical")
+        self.assertEqual(monster.health, 7)
 
     def test_player_take_damage(self):
         result = self.player.take_damage(20)
@@ -98,25 +149,47 @@ class TestPlayer(unittest.TestCase):
 
     def test_get_defense(self):
         self.assertEqual(self.player.get_defense(), 0)
-        helmet = Equippable(
-            "Helmet",
-            "A basic helmet.",
-            {"type": "armor", "defense_bonus": 1, "slot": "head"},
-        )
-        self.player.take_item(helmet)
-        self.player.use_item("Helmet")
-        self.assertEqual(self.player.get_defense(), 1)
+        item_data = """
+        {
+            "helmet": {
+                "name": "Helmet",
+                "description": "A basic helmet.",
+                "properties": {
+                    "type": "armor",
+                    "defense_bonus": 1,
+                    "slot": "head"
+                }
+            }
+        }
+        """
+        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+            self.item_factory = ItemFactory("dummy/path/items.json")
+            helmet = self.item_factory.create_item("helmet")
+            self.player.take_item(helmet)
+            self.player.use_item("Helmet")
+            self.assertEqual(self.player.get_defense(), 1)
 
     def test_get_speed(self):
         self.assertEqual(self.player.get_speed(), 1)
-        boots = Equippable(
-            "Boots of Speed",
-            "Boots that increase your movement speed.",
-            {"type": "boots", "speed_bonus": 1, "slot": "boots"},
-        )
-        self.player.take_item(boots)
-        self.player.use_item("Boots of Speed")
-        self.assertEqual(self.player.get_speed(), 2)
+        item_data = """
+        {
+            "boots": {
+                "name": "Boots of Speed",
+                "description": "Boots that increase your movement speed.",
+                "properties": {
+                    "type": "boots",
+                    "speed_bonus": 1,
+                    "slot": "boots"
+                }
+            }
+        }
+        """
+        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+            self.item_factory = ItemFactory("dummy/path/items.json")
+            boots = self.item_factory.create_item("boots")
+            self.player.take_item(boots)
+            self.player.use_item("Boots of Speed")
+            self.assertEqual(self.player.get_speed(), 2)
 
     def test_use_invisibility_potion(self):
         potion = Item(
@@ -129,15 +202,26 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(self.player.invisibility_turns, 10)
 
     def test_equip_amulet_of_health(self):
-        amulet = Equippable(
-            "Amulet of Health",
-            "Increases max health.",
-            {"type": "amulet", "max_health_bonus": 10, "slot": "amulet"},
-        )
-        self.player.take_item(amulet)
-        initial_max_health = self.player.max_health
-        self.player.use_item("Amulet of Health")
-        self.assertEqual(self.player.max_health, initial_max_health + 10)
+        item_data = """
+        {
+            "amulet": {
+                "name": "Amulet of Health",
+                "description": "Increases max health.",
+                "properties": {
+                    "type": "amulet",
+                    "max_health_bonus": 10,
+                    "slot": "amulet"
+                }
+            }
+        }
+        """
+        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+            self.item_factory = ItemFactory("dummy/path/items.json")
+            amulet = self.item_factory.create_item("amulet")
+            self.player.take_item(amulet)
+            initial_max_health = self.player.max_health
+            self.player.use_item("Amulet of Health")
+            self.assertEqual(self.player.max_health, initial_max_health + 10)
 
 
 if __name__ == "__main__":

@@ -14,13 +14,13 @@
   "sword": {
     "name": "Sword",
     "description": "A basic sword.",
-    "properties": { "type": "weapon", "attack_bonus": 3, "slot": "main_hand" },
+    "properties": { "type": "weapon", "attack_bonus": 3, "slot": "main_hand", "damage_type": "slashing" },
     "rarity": 20
   },
   "greatsword": {
     "name": "Greatsword",
     "description": "A large, two-handed sword.",
-    "properties": { "type": "weapon", "attack_bonus": 5, "slot": "main_hand" },
+    "properties": { "type": "weapon", "attack_bonus": 5, "slot": "main_hand", "damage_type": "slashing" },
     "rarity": 10
   },
   "helmet": {
@@ -50,7 +50,7 @@
   "fire_potion": {
     "name": "Fire Potion",
     "description": "A potion that explodes on impact.",
-    "properties": { "type": "damage", "damage": 15, "radius": 3 },
+    "properties": { "type": "damage", "damage": 15, "radius": 3, "damage_type": "fire" },
     "rarity": 10
   },
   "scroll_of_teleportation": {
@@ -92,31 +92,31 @@
   "dagger": {
     "name": "Dagger",
     "description": "A small blade.",
-    "properties": { "type": "weapon", "attack_bonus": 1, "slot": "main_hand" },
+    "properties": { "type": "weapon", "attack_bonus": 1, "slot": "main_hand", "damage_type": "piercing" },
     "rarity": 30
   },
   "axe": {
     "name": "Axe",
     "description": "A basic axe.",
-    "properties": { "type": "weapon", "attack_bonus": 4, "slot": "main_hand" },
+    "properties": { "type": "weapon", "attack_bonus": 4, "slot": "main_hand", "damage_type": "slashing" },
     "rarity": 15
   },
   "mace": {
     "name": "Mace",
     "description": "A basic mace.",
-    "properties": { "type": "weapon", "attack_bonus": 3, "slot": "main_hand" },
+    "properties": { "type": "weapon", "attack_bonus": 3, "slot": "main_hand", "damage_type": "bludgeoning" },
     "rarity": 20
   },
   "bow": {
     "name": "Bow",
     "description": "A basic bow.",
-    "properties": { "type": "weapon", "attack_bonus": 2, "slot": "main_hand" },
+    "properties": { "type": "weapon", "attack_bonus": 2, "slot": "main_hand", "damage_type": "piercing" },
     "rarity": 20
   },
   "crossbow": {
     "name": "Crossbow",
     "description": "A powerful crossbow.",
-    "properties": { "type": "weapon", "attack_bonus": 4, "slot": "main_hand" },
+    "properties": { "type": "weapon", "attack_bonus": 4, "slot": "main_hand", "damage_type": "piercing" },
     "rarity": 10
   }
 }

@@ -25,3 +25,4 @@ class Equippable(Item):
         self.attack_bonus = properties.get("attack_bonus", 0)
         self.defense_bonus = properties.get("defense_bonus", 0)
         self.speed_bonus = properties.get("speed_bonus", 0)
+        self.properties = properties
