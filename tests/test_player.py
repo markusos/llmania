@@ -1,3 +1,4 @@
+import random
 import unittest
 from unittest.mock import patch
 
@@ -127,7 +128,7 @@ class TestPlayer(unittest.TestCase):
         with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
             self.item_factory = ItemFactory("dummy/path/items.json")
 
-        monster = self.monster_factory.create_monster("goblin")
+        monster = self.monster_factory.create_monster("goblin", random.Random())
         sword = self.item_factory.create_item("sword")
 
         self.player.take_item(sword)

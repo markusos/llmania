@@ -1,3 +1,4 @@
+import random
 import unittest
 from unittest.mock import mock_open, patch
 
@@ -42,10 +43,10 @@ class TestFactories(unittest.TestCase):
             from src.equippable import Equippable
 
             self.assertTrue(isinstance(dagger, Equippable))
-            self.assertEqual(dagger.attack_bonus, 2)
-            self.assertEqual(dagger.slot, "main_hand")
+            self.assertEqual(dagger.properties["attack_bonus"], 2)
+            self.assertEqual(dagger.properties["slot"], "main_hand")
 
-            random_item = factory.create_random_item()
+            random_item = factory.create_random_item(random.Random())
             self.assertIn(random_item.name, ["Health Potion", "Dagger"])
 
     def test_monster_factory(self):
@@ -66,18 +67,19 @@ class TestFactories(unittest.TestCase):
         }
         """
         with patch("builtins.open", mock_open(read_data=monster_data)):
+            rng = random.Random()
             factory = MonsterFactory("dummy/path/monsters.json")
-            goblin = factory.create_monster("goblin")
+            goblin = factory.create_monster("goblin", random_generator=rng)
             self.assertEqual(goblin.name, "Goblin")
             self.assertEqual(goblin.health, 10)
             self.assertEqual(goblin.attack_power, 3)
 
-            bat = factory.create_monster("bat")
+            bat = factory.create_monster("bat", random_generator=rng)
             self.assertEqual(bat.name, "Bat")
             self.assertEqual(bat.health, 5)
             self.assertEqual(bat.attack_power, 2)
 
-            random_monster = factory.create_random_monster()
+            random_monster = factory.create_random_monster(random_generator=rng)
             self.assertIn(random_monster.name, ["Goblin", "Bat"])
 
 

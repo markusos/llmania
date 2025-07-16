@@ -1,8 +1,10 @@
 import json
-import random
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from src.monster import Monster
+
+if TYPE_CHECKING:
+    from random import Random
 
 
 class MonsterFactory:
@@ -21,7 +23,11 @@ class MonsterFactory:
             self.monster_data = json.load(f)
 
     def create_monster(
-        self, monster_id: str, x: int = 0, y: int = 0
+        self,
+        monster_id: str,
+        random_generator: "Random",
+        x: int = 0,
+        y: int = 0,
     ) -> Optional[Monster]:
         """
         Creates a monster instance based on the given monster ID.
@@ -48,9 +54,12 @@ class MonsterFactory:
             evasion=monster_info.get("evasion", 0.0),
             resistance=monster_info.get("resistance"),
             vulnerability=monster_info.get("vulnerability"),
+            random_generator=random_generator,
         )
 
-    def create_random_monster(self, x: int = 0, y: int = 0) -> Optional[Monster]:
+    def create_random_monster(
+        self, random_generator: "Random", x: int = 0, y: int = 0
+    ) -> Optional[Monster]:
         """
         Creates a random monster from the available monster data based on rarity.
 
@@ -65,12 +74,12 @@ class MonsterFactory:
             return None
 
         rarity_sum = sum(monster["rarity"] for monster in self.monster_data.values())
-        roll = random.randint(1, rarity_sum)
+        roll = random_generator.randint(1, rarity_sum)
 
         current_sum = 0
         for monster_id, monster_info in self.monster_data.items():
             current_sum += monster_info["rarity"]
             if roll <= current_sum:
-                return self.create_monster(monster_id, x, y)
+                return self.create_monster(monster_id, random_generator, x, y)
 
         return None
