@@ -82,26 +82,20 @@ class SurvivalState(AIState):
         # 1. Survival: Find health potions if low on health
         targets.extend(
             self.ai_logic.target_finder.find_health_potions(
-                player_pos_xy, player_floor_id
+                player_pos_xy, player_floor_id, same_floor_only=True
             )
         )
         # 2. Quest Items
         targets.extend(
-            self.ai_logic.target_finder.find_quest_items(player_pos_xy, player_floor_id)
-        )
-        # 3. Other targets
-        targets.extend(
-            self.ai_logic.explorer.find_unvisited_portals(
-                player_pos_xy, player_floor_id
+            self.ai_logic.target_finder.find_quest_items(
+                player_pos_xy, player_floor_id, same_floor_only=True
             )
         )
+        # 3. Other items
         targets.extend(
-            self.ai_logic.explorer.find_portal_to_unexplored_floor(
-                player_pos_xy, player_floor_id
+            self.ai_logic.target_finder.find_other_items(
+                player_pos_xy, player_floor_id, same_floor_only=True
             )
-        )
-        targets.extend(
-            self.ai_logic.target_finder.find_other_items(player_pos_xy, player_floor_id)
         )
         return targets
 

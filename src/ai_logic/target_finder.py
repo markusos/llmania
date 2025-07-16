@@ -17,10 +17,13 @@ class TargetFinder:
         player_floor_id: int,
         item_filter: Callable[["Item"], bool],
         target_type: str,
+        same_floor_only: bool = False,
     ) -> List[Tuple[int, int, int, str, int]]:
         targets = []
         for floor_id, ai_map in self.ai_visible_maps.items():
             if not ai_map:
+                continue
+            if same_floor_only and floor_id != player_floor_id:
                 continue
             for y, x in ai_map.iter_coords():
                 tile = ai_map.get_tile(x, y)
@@ -34,17 +37,24 @@ class TargetFinder:
         return targets
 
     def find_quest_items(
-        self, player_pos_xy: Tuple[int, int], player_floor_id: int
+        self,
+        player_pos_xy: Tuple[int, int],
+        player_floor_id: int,
+        same_floor_only: bool = False,
     ) -> List[Tuple[int, int, int, str, int]]:
         return self._find_items(
             player_pos_xy,
             player_floor_id,
             lambda item: item.properties.get("type") == "quest",
             "quest_item",
+            same_floor_only,
         )
 
     def find_health_potions(
-        self, player_pos_xy: Tuple[int, int], player_floor_id: int
+        self,
+        player_pos_xy: Tuple[int, int],
+        player_floor_id: int,
+        same_floor_only: bool = False,
     ) -> List[Tuple[int, int, int, str, int]]:
         low_health_threshold = self.player.max_health * 0.5
         if self.player.health >= low_health_threshold:
@@ -56,10 +66,14 @@ class TargetFinder:
             lambda item: "health potion" in item.name.lower()
             and item.properties.get("type") == "heal",
             "health_potion",
+            same_floor_only,
         )
 
     def find_other_items(
-        self, player_pos_xy: Tuple[int, int], player_floor_id: int
+        self,
+        player_pos_xy: Tuple[int, int],
+        player_floor_id: int,
+        same_floor_only: bool = False,
     ) -> List[Tuple[int, int, int, str, int]]:
         def item_filter(item: "Item") -> bool:
             is_potion_full_health = (
@@ -71,7 +85,7 @@ class TargetFinder:
             return not (is_potion_full_health or is_quest_item)
 
         return self._find_items(
-            player_pos_xy, player_floor_id, item_filter, "other_item"
+            player_pos_xy, player_floor_id, item_filter, "other_item", same_floor_only
         )
 
     def find_monsters(
