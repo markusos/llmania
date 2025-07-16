@@ -3,67 +3,82 @@
     "name": "Goblin",
     "health": 10,
     "attack_power": 2,
-    "rarity": 25
+    "rarity": 25,
+    "defense": 0,
+    "evasion": 0.1
   },
   "orc": {
     "name": "Orc",
     "health": 15,
     "attack_power": 3,
-    "rarity": 20
+    "rarity": 20,
+    "defense": 1
   },
   "troll": {
     "name": "Troll",
     "health": 25,
     "attack_power": 5,
-    "rarity": 10
+    "rarity": 10,
+    "defense": 2,
+    "vulnerability": "fire"
   },
   "skeleton": {
     "name": "Skeleton",
     "health": 12,
     "attack_power": 3,
-    "rarity": 20
+    "rarity": 20,
+    "resistance": "piercing"
   },
   "zombie": {
     "name": "Zombie",
     "health": 20,
     "attack_power": 2,
-    "rarity": 15
+    "rarity": 15,
+    "resistance": "slashing"
   },
   "giant_spider": {
     "name": "Giant Spider",
     "health": 8,
     "attack_power": 4,
-    "rarity": 15
+    "rarity": 15,
+    "evasion": 0.2
   },
   "dire_wolf": {
     "name": "Dire Wolf",
     "health": 14,
     "attack_power": 4,
-    "rarity": 10
+    "rarity": 10,
+    "evasion": 0.1
   },
   "golem": {
     "name": "Golem",
     "health": 30,
     "attack_power": 4,
-    "rarity": 5
+    "rarity": 5,
+    "defense": 3,
+    "resistance": "piercing"
   },
   "dragon": {
     "name": "Dragon",
     "health": 50,
     "attack_power": 8,
-    "rarity": 2
+    "rarity": 2,
+    "defense": 4,
+    "resistance": "fire"
   },
   "lich": {
     "name": "Lich",
     "health": 40,
     "attack_power": 6,
-    "rarity": 3
+    "rarity": 3,
+    "resistance": "necrotic"
   },
   "bat": {
     "name": "Bat",
     "health": 5,
     "attack_power": 1,
-    "rarity": 30
+    "rarity": 30,
+    "evasion": 0.3
   },
   "rat": {
     "name": "Rat",
@@ -75,7 +90,8 @@
     "name": "Slime",
     "health": 8,
     "attack_power": 2,
-    "rarity": 25
+    "rarity": 25,
+    "resistance": "bludgeoning"
   },
   "kobold": {
     "name": "Kobold",
@@ -93,30 +109,37 @@
     "name": "Harpy",
     "health": 11,
     "attack_power": 3,
-    "rarity": 15
+    "rarity": 15,
+    "evasion": 0.2
   },
   "gargoyle": {
     "name": "Gargoyle",
     "health": 18,
     "attack_power": 4,
-    "rarity": 10
+    "rarity": 10,
+    "defense": 2,
+    "resistance": "piercing"
   },
   "minotaur": {
     "name": "Minotaur",
     "health": 28,
     "attack_power": 6,
-    "rarity": 5
+    "rarity": 5,
+    "defense": 1
   },
   "beholder": {
     "name": "Beholder",
     "health": 35,
     "attack_power": 7,
-    "rarity": 2
+    "rarity": 2,
+    "resistance": "magic"
   },
   "demon": {
     "name": "Demon",
     "health": 45,
     "attack_power": 9,
-    "rarity": 1
+    "rarity": 1,
+    "resistance": "fire",
+    "vulnerability": "holy"
   }
 }

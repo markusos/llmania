@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from src.monster import Monster
 
@@ -86,6 +86,31 @@ class TestMonster(unittest.TestCase):
 
         mock_player.take_damage.assert_called_once_with(75)
         self.assertEqual(actual_return, expected_return)
+
+    def test_take_damage_with_defense(self):
+        monster = Monster("Armored Golem", 50, 10, defense=5)
+        result = monster.take_damage(15)
+        self.assertEqual(monster.health, 40)
+        self.assertEqual(result["damage_taken"], 10)
+
+    def test_take_damage_with_resistance(self):
+        monster = Monster("Fire Elemental", 30, 10, resistance="fire")
+        result = monster.take_damage(20, "fire")
+        self.assertEqual(monster.health, 20)
+        self.assertEqual(result["damage_taken"], 10)
+
+    def test_take_damage_with_vulnerability(self):
+        monster = Monster("Ice Golem", 40, 10, vulnerability="fire")
+        result = monster.take_damage(10, "fire")
+        self.assertEqual(monster.health, 20)
+        self.assertEqual(result["damage_taken"], 20)
+
+    @patch("random.random", return_value=0.1)
+    def test_take_damage_with_evasion(self, mock_random):
+        monster = Monster("Rogue", 20, 5, evasion=0.5)
+        result = monster.take_damage(10)
+        self.assertEqual(monster.health, 20)
+        self.assertEqual(result["damage_taken"], 0)
 
 
 if __name__ == "__main__":

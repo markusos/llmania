@@ -73,9 +73,9 @@ class TestPlayer(unittest.TestCase):
     def test_attack_monster(self):
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Goblin"
-        mock_monster.take_damage.return_value = {"defeated": False}
+        mock_monster.take_damage.return_value = {"defeated": False, "damage_taken": 2}
         self.player.attack_monster(mock_monster)
-        mock_monster.take_damage.assert_called_once_with(2)
+        mock_monster.take_damage.assert_called_once_with(2, "physical")
 
         sword = Equippable(
             "Sword",
@@ -85,7 +85,7 @@ class TestPlayer(unittest.TestCase):
         self.player.take_item(sword)
         self.player.use_item("Sword")
         self.player.attack_monster(mock_monster)
-        mock_monster.take_damage.assert_called_with(7)
+        mock_monster.take_damage.assert_called_with(7, "physical")
 
     def test_player_take_damage(self):
         result = self.player.take_damage(20)

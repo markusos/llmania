@@ -44,6 +44,10 @@ class MonsterFactory:
             attack_power=monster_info["attack_power"],
             x=x,
             y=y,
+            defense=monster_info.get("defense", 0),
+            evasion=monster_info.get("evasion", 0.0),
+            resistance=monster_info.get("resistance"),
+            vulnerability=monster_info.get("vulnerability"),
         )
 
     def create_random_monster(self, x: int = 0, y: int = 0) -> Optional[Monster]:
