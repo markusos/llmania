@@ -102,10 +102,15 @@ class AIState:
             return ("look", None)
 
         # Try to avoid the last move if possible
-        if (
-            len(possible_moves) > 1
-            and self.ai_logic.last_move_command in possible_moves
-        ):
-            possible_moves.remove(self.ai_logic.last_move_command)
+        if len(possible_moves) > 1:
+            last_cmd = self.ai_logic.last_move_command
+            # Ensure last_cmd is not None and is a valid move tuple
+            if last_cmd and last_cmd in possible_moves:
+                # Create a new list of moves excluding the last command
+                filtered_moves = [move for move in possible_moves if move != last_cmd]
+                # If there are still moves left after filtering, use them
+                if filtered_moves:
+                    return self.ai_logic.random.choice(filtered_moves)
 
+        # Fallback to choosing any possible move if no other options
         return self.ai_logic.random.choice(possible_moves)

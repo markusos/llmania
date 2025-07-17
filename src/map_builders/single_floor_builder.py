@@ -431,11 +431,13 @@ class SingleFloorBuilder(BuilderBase):
                     floor_start_pos[0], floor_start_pos[1]
                 )
                 if tile_to_restore:
-                    tile_to_restore.type = original_start_pos_info["type"]
-                    tile_to_restore.is_portal = original_start_pos_info["is_portal"]
-                    tile_to_restore.portal_to_floor_id = original_start_pos_info[
-                        "portal_to_floor_id"
-                    ]
+                    tile_to_restore.type = str(original_start_pos_info["type"])
+                    tile_to_restore.is_portal = bool(
+                        original_start_pos_info["is_portal"]
+                    )
+                    tile_to_restore.portal_to_floor_id = int(
+                        original_start_pos_info["portal_to_floor_id"]
+                    )
             return
 
         reachable_floor_set = self.connectivity_manager.get_reachable_floor_tiles(
@@ -459,11 +461,11 @@ class SingleFloorBuilder(BuilderBase):
                 floor_start_pos[0], floor_start_pos[1]
             )
             if tile_to_restore:
-                tile_to_restore.type = original_start_pos_info["type"]
-                tile_to_restore.is_portal = original_start_pos_info["is_portal"]
-                tile_to_restore.portal_to_floor_id = original_start_pos_info[
-                    "portal_to_floor_id"
-                ]
+                tile_to_restore.type = str(original_start_pos_info["type"])
+                tile_to_restore.is_portal = bool(original_start_pos_info["is_portal"])
+                tile_to_restore.portal_to_floor_id = int(
+                    original_start_pos_info["portal_to_floor_id"]
+                )
 
     def build(self) -> Tuple[WorldMap, Tuple[int, int], Tuple[int, int]]:
         if self.width < 10 or self.height < 10:
@@ -492,7 +494,7 @@ class SingleFloorBuilder(BuilderBase):
             original_dest_if_portal = (
                 self.portal_destinations.get(point) if is_target_portal else None
             )
-            current_target_type = target_tile.type if target_tile else "wall"  # type: ignore
+            current_target_type = target_tile.type if target_tile else "wall"
 
             if current_target_type != "floor":
                 self.world_map.set_tile_type(point[0], point[1], "floor")
