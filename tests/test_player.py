@@ -1,6 +1,6 @@
 import random
 import unittest
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 from src.item import Item
 from src.item_factory import ItemFactory
@@ -11,7 +11,7 @@ from src.player import Player
 class TestPlayer(unittest.TestCase):
     def setUp(self):
         self.player = Player(x=1, y=2, health=100, current_floor_id=0)
-        with patch("builtins.open", new=unittest.mock.mock_open(read_data="{}")):
+        with patch("builtins.open", new=mock_open(read_data="{}")):
             self.item_factory = ItemFactory("dummy/path/items.json")
             self.monster_factory = MonsterFactory("dummy/path/monsters.json")
 
@@ -63,7 +63,7 @@ class TestPlayer(unittest.TestCase):
             }
         }
         """
-        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+        with patch("builtins.open", mock_open(read_data=item_data)):
             self.item_factory = ItemFactory("dummy/path/items.json")
             sword = self.item_factory.create_item("sword")
             self.player.take_item(sword)
@@ -90,7 +90,7 @@ class TestPlayer(unittest.TestCase):
             }
         }
         """
-        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+        with patch("builtins.open", mock_open(read_data=item_data)):
             self.item_factory = ItemFactory("dummy/path/items.json")
             sword = self.item_factory.create_item("sword")
             self.player.take_item(sword)
@@ -123,9 +123,9 @@ class TestPlayer(unittest.TestCase):
             }
         }
         """
-        with patch("builtins.open", unittest.mock.mock_open(read_data=monster_data)):
+        with patch("builtins.open", mock_open(read_data=monster_data)):
             self.monster_factory = MonsterFactory("dummy/path/monsters.json")
-        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+        with patch("builtins.open", mock_open(read_data=item_data)):
             self.item_factory = ItemFactory("dummy/path/items.json")
 
         monster = self.monster_factory.create_monster("goblin", random.Random())
@@ -161,7 +161,7 @@ class TestPlayer(unittest.TestCase):
             }
         }
         """
-        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+        with patch("builtins.open", mock_open(read_data=item_data)):
             self.item_factory = ItemFactory("dummy/path/items.json")
             helmet = self.item_factory.create_item("helmet")
             self.player.take_item(helmet)
@@ -183,7 +183,7 @@ class TestPlayer(unittest.TestCase):
             }
         }
         """
-        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+        with patch("builtins.open", mock_open(read_data=item_data)):
             self.item_factory = ItemFactory("dummy/path/items.json")
             boots = self.item_factory.create_item("boots")
             self.player.take_item(boots)
@@ -214,7 +214,7 @@ class TestPlayer(unittest.TestCase):
             }
         }
         """
-        with patch("builtins.open", unittest.mock.mock_open(read_data=item_data)):
+        with patch("builtins.open", mock_open(read_data=item_data)):
             self.item_factory = ItemFactory("dummy/path/items.json")
             amulet = self.item_factory.create_item("amulet")
             self.player.take_item(amulet)

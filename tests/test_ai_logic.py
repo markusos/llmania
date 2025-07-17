@@ -128,9 +128,9 @@ class TestAILogic(unittest.TestCase):
             self.ai_visible_maps[floor_id] = WorldMap(10, 10)
             if floor_id not in self.mock_real_world_maps:
                 self.mock_real_world_maps[floor_id] = MagicMock(spec=WorldMap)
-                self.mock_real_world_maps[floor_id].get_tile.return_value = Tile(
-                    tile_type="floor", is_explored=True
-                )
+                tile = Tile(tile_type="floor")
+                tile.is_explored = True
+                self.mock_real_world_maps[floor_id].get_tile.return_value = tile
 
         target_map = self.ai_visible_maps[floor_id]
         tile = target_map.get_tile(x, y)

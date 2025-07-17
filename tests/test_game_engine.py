@@ -10,7 +10,7 @@ from src.world_map import WorldMap
 class TestGameEngine(unittest.TestCase):
     @patch("src.game_engine.WorldGenerator")
     @patch("src.game_engine.InputHandler")
-    @patch("src.game_engine.Renderer")
+    @patch("src.game_engine.Renderer", spec=True)
     @patch("src.game_engine.CommandProcessor")
     @patch("src.game_engine.Parser")
     @patch("src.game_engine.Player")
@@ -75,6 +75,7 @@ class TestGameEngine(unittest.TestCase):
         self.mock_input_handler_instance.get_input_mode.return_value = "movement"
         self.mock_input_handler_instance.get_command_buffer.return_value = ""
         self.mock_renderer_instance = MockRenderer.return_value
+        self.mock_renderer_instance.cleanup_curses = MagicMock(spec=lambda: None)
         self.mock_command_processor_instance = MockCommandProcessor.return_value
         self.game_engine = GameEngine(map_width=20, map_height=10, debug_mode=False)
 
@@ -259,7 +260,9 @@ class TestGameEngine(unittest.TestCase):
             debug_engine.run()
 
             self.assertTrue(debug_engine.game_over)
-            debug_engine.renderer.cleanup_curses.assert_not_called()
+            renderer = debug_engine.renderer
+            assert renderer is not None
+            renderer.cleanup_curses.assert_not_called()
 
     def test_run_loop_handles_no_command_from_input(self):
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
@@ -326,6 +329,8 @@ class TestGameEngine(unittest.TestCase):
                 for x in range(map1.width):
                     tile1 = map1.get_tile(x, y)
                     tile2 = map2.get_tile(x, y)
+                    assert tile1 is not None
+                    assert tile2 is not None
                     self.assertEqual(tile1.type, tile2.type)
                     self.assertEqual(tile1.is_portal, tile2.is_portal)
                     self.assertEqual(tile1.portal_to_floor_id, tile2.portal_to_floor_id)

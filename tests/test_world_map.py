@@ -41,7 +41,7 @@ def test_set_tile_type_valid():
     w_map = WorldMap(width=3, height=3)
     assert w_map.set_tile_type(1, 1, "wall") is True
     tile = w_map.get_tile(1, 1)
-    assert tile.type == "wall"
+    assert tile is not None and tile.type == "wall"
 
 
 def test_set_tile_type_invalid():
@@ -51,7 +51,7 @@ def test_set_tile_type_invalid():
     # Ensure the type was not changed for an in-bounds tile if an
     # out-of-bounds was attempted
     tile_in_bounds = w_map.get_tile(0, 0)
-    assert tile_in_bounds.type == "floor"
+    assert tile_in_bounds is not None and tile_in_bounds.type == "floor"
 
 
 # Test is_valid_move
@@ -83,8 +83,8 @@ def test_place_item_valid_empty_tile(sample_item):
     w_map = WorldMap(width=5, height=5)
     assert w_map.place_item(sample_item, 2, 2) is True
     tile = w_map.get_tile(2, 2)
-    assert tile.item == sample_item
-    assert tile.item.name == "Potion"
+    assert tile is not None and tile.item == sample_item
+    assert tile.item is not None and tile.item.name == "Potion"
 
 
 def test_place_item_invalid_coordinates(sample_item):
@@ -99,7 +99,9 @@ def test_place_item_tile_already_has_item(sample_item):
     w_map.place_item(sample_item, 2, 2)  # Place first item
     assert w_map.place_item(another_item, 2, 2) is False  # Try to place another
     tile = w_map.get_tile(2, 2)
-    assert tile.item == sample_item  # Original item should still be there
+    # Original item should still be there
+    # Original item should still be there
+    assert tile is not None and tile.item == sample_item
 
 
 def test_remove_item_valid(sample_item):
@@ -108,9 +110,9 @@ def test_remove_item_valid(sample_item):
 
     removed_item = w_map.remove_item(2, 2)
     assert removed_item == sample_item
-    assert removed_item.name == "Potion"
+    assert removed_item is not None and removed_item.name == "Potion"
     tile = w_map.get_tile(2, 2)
-    assert tile.item is None
+    assert tile is not None and tile.item is None
 
 
 def test_remove_item_empty_tile():
@@ -136,8 +138,8 @@ def test_place_monster_valid_empty_tile(sample_monster):
     w_map = WorldMap(width=5, height=5)
     assert w_map.place_monster(sample_monster, 3, 3) is True
     tile = w_map.get_tile(3, 3)
-    assert tile.monster == sample_monster
-    assert tile.monster.name == "Goblin"
+    assert tile is not None and tile.monster == sample_monster
+    assert tile.monster is not None and tile.monster.name == "Goblin"
     assert sample_monster.x == 3
     assert sample_monster.y == 3
 
@@ -154,7 +156,9 @@ def test_place_monster_tile_already_has_monster(sample_monster):
     w_map.place_monster(sample_monster, 3, 3)  # Place first monster
     assert w_map.place_monster(another_monster, 3, 3) is False  # Try to place another
     tile = w_map.get_tile(3, 3)
-    assert tile.monster == sample_monster  # Original monster should still be there
+    # Original monster should still be there
+    # Original monster should still be there
+    assert tile is not None and tile.monster == sample_monster
 
 
 def test_remove_monster_valid(sample_monster):
@@ -163,9 +167,9 @@ def test_remove_monster_valid(sample_monster):
 
     removed_monster = w_map.remove_monster(3, 3)
     assert removed_monster == sample_monster
-    assert removed_monster.name == "Goblin"
+    assert removed_monster is not None and removed_monster.name == "Goblin"
     tile = w_map.get_tile(3, 3)
-    assert tile.monster is None
+    assert tile is not None and tile.monster is None
 
 
 def test_remove_monster_empty_tile():

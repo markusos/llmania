@@ -1,4 +1,5 @@
 import random
+from typing import Optional
 
 import pytest
 
@@ -14,7 +15,7 @@ def single_floor_builder_factory():
         width: int,
         height: int,
         floor_portion: float = 0.5,
-        existing_map: WorldMap = None,
+        existing_map: Optional[WorldMap] = None,
     ):
         return SingleFloorBuilder(
             width,
