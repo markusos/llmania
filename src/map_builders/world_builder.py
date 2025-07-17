@@ -176,7 +176,7 @@ class WorldBuilder:
             (x, y)
             for x in range(1, self.width - 1)
             for y in range(1, self.height - 1)
-            if amulet_map.get_tile(x, y) and amulet_map.get_tile(x, y).type == "floor"
+            if (tile := amulet_map.get_tile(x, y)) and tile.type == "floor"
         ]
 
         if not amulet_floor_tiles:
@@ -187,8 +187,7 @@ class WorldBuilder:
                 (x, y)
                 for x in range(1, self.width - 1)
                 for y in range(1, self.height - 1)
-                if amulet_map.get_tile(x, y)
-                and amulet_map.get_tile(x, y).type == "floor"
+                if (tile := amulet_map.get_tile(x, y)) and tile.type == "floor"
             ]
             if not amulet_floor_tiles:
                 # If player's floor is also solid, place it somewhere, anywhere

@@ -138,7 +138,8 @@ class TestAILogic(unittest.TestCase):
             tile = Tile()
             target_map.grid[y][x] = tile
 
-        tile.item = item
+        if tile:
+            tile.item = item
         tile.monster = monster
         tile.type = tile_type
         tile.is_explored = explored

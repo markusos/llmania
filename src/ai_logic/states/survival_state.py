@@ -24,7 +24,8 @@ class SurvivalState(AIState):
         # 2. Flee from adjacent monsters
         if self.ai_logic._get_adjacent_monsters():
             if self.ai_logic._is_in_loop():
-                return self.ai_logic._break_loop()
+                self.ai_logic._break_loop()
+                return None
 
             safe_moves = self._get_safe_moves()
             if safe_moves:
@@ -40,11 +41,11 @@ class SurvivalState(AIState):
             return action
 
         # 4. Path to the most important target
-        action = self._path_to_best_target(
+        path_action = self._path_to_best_target(
             self._find_best_target, self._target_sort_key
         )
-        if action:
-            return action
+        if path_action:
+            return path_action
 
         # 5. If no other options, explore to find potions
         exploration_path = self.ai_logic.explorer.find_exploration_targets(

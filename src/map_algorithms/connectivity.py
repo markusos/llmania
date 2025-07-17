@@ -20,11 +20,11 @@ class MapConnectivityManager:
         map_height: int,
         visited_overall: set[tuple[int, int]],
     ) -> set[tuple[int, int]]:
-        component_nodes = set()
+        component_nodes: set[tuple[int, int]] = set()
         if start_node in visited_overall:
             return component_nodes
 
-        queue = deque([start_node])
+        queue: deque[tuple[int, int]] = deque([start_node])
         component_visited_this_bfs = {start_node}
 
         while queue:
@@ -56,7 +56,7 @@ class MapConnectivityManager:
         if not start_tile_check or start_tile_check.type != "floor":
             world_map.set_tile_type(player_start_pos[0], player_start_pos[1], "floor")
 
-        main_component_nodes = set()
+        main_component_nodes: set[tuple[int, int]] = set()
         main_component_nodes = self._bfs_collect_component(
             world_map, player_start_pos, map_width, map_height, main_component_nodes
         )
@@ -105,7 +105,7 @@ class MapConnectivityManager:
                         map_height,
                         protected_coords=protected_coords,
                     )
-                updated_main_component_nodes = set()
+                updated_main_component_nodes: set[tuple[int, int]] = set()
                 main_component_nodes = self._bfs_collect_component(
                     world_map,
                     player_start_pos,
@@ -155,9 +155,9 @@ class MapConnectivityManager:
         map_width: int,
         map_height: int,
     ) -> Set[tuple[int, int]]:
-        reachable_tiles = set()
-        queue = deque()
-        visited = set()
+        reachable_tiles: set[tuple[int, int]] = set()
+        queue: deque[tuple[int, int]] = deque()
+        visited: set[tuple[int, int]] = set()
 
         for start_node in start_nodes:
             if not (

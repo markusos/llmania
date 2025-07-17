@@ -37,11 +37,11 @@ class LootingState(AIState):
             return action
 
         # 4. Pathfind to other known items
-        action = self._path_to_best_target(
+        path_action = self._path_to_best_target(
             self.ai_logic.target_finder.find_other_items,
         )
-        if action:
-            return action
+        if path_action:
+            return path_action
 
         # 5. If no items to loot, explore
         return self._explore_randomly()

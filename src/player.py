@@ -180,7 +180,7 @@ class Player:
         if not item_to_drop:
             return None
 
-        if isinstance(item_to_drop, Equippable):
+        if isinstance(item_to_drop, Equippable) and item_to_drop.slot:
             self.unequip(item_to_drop.slot)
 
         self.inventory.remove(item_to_drop)
@@ -285,7 +285,7 @@ class Player:
             A message describing the outcome.
         """
         slot = item.slot
-        if self.equipment.get(slot) == item:
+        if slot and self.equipment.get(slot) == item:
             return self.unequip(slot)
         else:
             return self.equip(item)
@@ -327,11 +327,13 @@ class Player:
             return ""
 
         item = self.equipment[slot]
-        self.equipment[slot] = None
-        if "max_health_bonus" in item.properties:
-            if self.health > self.get_max_health():
-                self.health = self.get_max_health()
-        return f"You unequip {item.name}."
+        if item:
+            self.equipment[slot] = None
+            if "max_health_bonus" in item.properties:
+                if self.health > self.get_max_health():
+                    self.health = self.get_max_health()
+            return f"You unequip {item.name}."
+        return ""
 
     def use_damage_item(self, item: Item) -> str:
         """

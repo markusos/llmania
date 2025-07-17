@@ -61,7 +61,7 @@ class AILogic:
         self.state: "AIState" = ExploringState(self)
         self.last_player_floor_id = player.current_floor_id
         self.last_player_pos = (player.x, player.y)
-        self.player_pos_history = []
+        self.player_pos_history: list[tuple[int, int]] = []
         self.command_history: List[Optional[Tuple[str, Optional[str]]]] = []
         self.loop_breaker_moves_left = 0
 
