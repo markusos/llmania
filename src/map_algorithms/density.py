@@ -125,8 +125,8 @@ class FloorDensityAdjuster:
                 for f_x in range(1, width - 1)
                 for f_y in range(1, height - 1)
                 if (f_x, f_y) not in effective_protected_coords
-                and world_map.get_tile(f_x, f_y)
-                and world_map.get_tile(f_x, f_y).type == "floor"
+                and (tile := world_map.get_tile(f_x, f_y))
+                and tile.type == "floor"
             ]
             self.random.shuffle(candidate_floors_to_wall)
 
@@ -137,7 +137,10 @@ class FloorDensityAdjuster:
                     break
 
                 # Articulation point heuristic
-                original_type = world_map.get_tile(c_x, c_y).type
+                tile = world_map.get_tile(c_x, c_y)
+                if not tile:
+                    continue
+                original_type = tile.type
                 world_map.set_tile_type(c_x, c_y, "wall")
 
                 if not self.connectivity_manager.path_exists_between(

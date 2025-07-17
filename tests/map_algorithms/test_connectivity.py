@@ -176,8 +176,10 @@ def test_ensure_connectivity_on_3x4_map(connectivity_manager):
     world_map.set_tile_type(1, 1, "floor")  # Player start
     pytest.skip("Test assumes old ensure_connectivity behavior with potential_floor")
     connectivity_manager.ensure_connectivity(world_map, (1, 1), 3, 4)
-    assert world_map.get_tile(1, 1).type == "floor"
-    assert world_map.get_tile(1, 2).type == "floor"
+    tile1 = world_map.get_tile(1, 1)
+    tile2 = world_map.get_tile(1, 2)
+    assert tile1 is not None and tile1.type == "floor"
+    assert tile2 is not None and tile2.type == "floor"
 
 
 def test_check_connectivity_on_3x4_map(connectivity_manager):

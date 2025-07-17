@@ -35,10 +35,14 @@ class TestFactories(unittest.TestCase):
         with patch("builtins.open", mock_open(read_data=item_data)):
             factory = ItemFactory("dummy/path/items.json")
             potion = factory.create_item("health_potion")
+            self.assertIsNotNone(potion)
+            assert potion is not None
             self.assertEqual(potion.name, "Health Potion")
             self.assertEqual(potion.properties["amount"], 10)
 
             dagger = factory.create_item("dagger")
+            self.assertIsNotNone(dagger)
+            assert dagger is not None
             self.assertEqual(dagger.name, "Dagger")
             from src.equippable import Equippable
 
@@ -47,6 +51,8 @@ class TestFactories(unittest.TestCase):
             self.assertEqual(dagger.properties["slot"], "main_hand")
 
             random_item = factory.create_random_item(random.Random())
+            self.assertIsNotNone(random_item)
+            assert random_item is not None
             self.assertIn(random_item.name, ["Health Potion", "Dagger"])
 
     def test_monster_factory(self):
@@ -70,16 +76,22 @@ class TestFactories(unittest.TestCase):
             rng = random.Random()
             factory = MonsterFactory("dummy/path/monsters.json")
             goblin = factory.create_monster("goblin", random_generator=rng)
+            self.assertIsNotNone(goblin)
+            assert goblin is not None
             self.assertEqual(goblin.name, "Goblin")
             self.assertEqual(goblin.health, 10)
             self.assertEqual(goblin.attack_power, 3)
 
             bat = factory.create_monster("bat", random_generator=rng)
+            self.assertIsNotNone(bat)
+            assert bat is not None
             self.assertEqual(bat.name, "Bat")
             self.assertEqual(bat.health, 5)
             self.assertEqual(bat.attack_power, 2)
 
             random_monster = factory.create_random_monster(random_generator=rng)
+            self.assertIsNotNone(random_monster)
+            assert random_monster is not None
             self.assertIn(random_monster.name, ["Goblin", "Bat"])
 
 

@@ -67,6 +67,7 @@ def test_world_generation_with_seed_is_deterministic():
             for x in range(width):
                 tile1 = map1.get_tile(x, y)
                 tile2 = map2.get_tile(x, y)
+                assert tile1 is not None and tile2 is not None
                 assert tile1.type == tile2.type
                 assert tile1.is_portal == tile2.is_portal
                 assert tile1.portal_to_floor_id == tile2.portal_to_floor_id

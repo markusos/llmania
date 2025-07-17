@@ -1,5 +1,5 @@
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from src.player import Player  # For type hinting, avoids circular import
@@ -26,9 +26,9 @@ class Monster:
         y: int = 0,
         defense: int = 0,
         evasion: float = 0.0,
-        resistance: str = None,
-        vulnerability: str = None,
-        random_generator: random.Random = None,
+        resistance: str = "",
+        vulnerability: str = "",
+        random_generator: "Optional[random.Random]" = None,
     ):
         """
         Initializes a Monster instance.
