@@ -1,7 +1,9 @@
+import math
 import random
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
+    from src.monster_ai.main import MonsterAILogic
     from src.player import Player  # For type hinting, avoids circular import
 
 
@@ -28,6 +30,8 @@ class Monster:
         evasion: float = 0.0,
         resistance: str = "",
         vulnerability: str = "",
+        line_of_sight: int = 5,
+        attack_range: int = 1,
         random_generator: "Optional[random.Random]" = None,
     ):
         """
@@ -43,6 +47,8 @@ class Monster:
             evasion: The evasion chance of the monster.
             resistance: The damage type the monster is resistant to.
             vulnerability: The damage type the monster is vulnerable to.
+            line_of_sight: The distance the monster can see.
+            attack_range: The distance the monster can attack from.
         """
         self.name = name
         self.health = health
@@ -53,7 +59,10 @@ class Monster:
         self.evasion = evasion
         self.resistance = resistance
         self.vulnerability = vulnerability
+        self.line_of_sight = line_of_sight
+        self.attack_range = attack_range
         self.random = random_generator if random_generator else random.Random()
+        self.ai: "Optional[MonsterAILogic]" = None
 
     def take_damage(
         self, damage: int, damage_type: str = "physical"
@@ -104,3 +113,9 @@ class Monster:
             "damage_dealt_to_player": damage_to_deal,
             "player_is_defeated": player_damage_result["is_defeated"],
         }
+
+    def distance_to(self, x: int, y: int) -> float:
+        """
+        Calculates the distance to a given point.
+        """
+        return math.sqrt((self.x - x) ** 2 + (self.y - y) ** 2)

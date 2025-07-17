@@ -13,6 +13,7 @@ from src.commands import (
     TakeCommand,
     UseCommand,
 )
+from src.monster import Monster
 
 if TYPE_CHECKING:
     from src.game_engine import GameEngine  # Added for game_engine reference
@@ -91,3 +92,44 @@ class CommandProcessor:
         else:
             message_log.add_message(f"Unknown command action: {verb}")
             return {"game_over": False}
+
+    def process_monster_command(
+        self,
+        parsed_command_tuple: tuple[str, str | None] | None,
+        monster: "Monster",
+        player: "Player",
+        world_maps: Dict[int, "WorldMap"],
+        message_log: "MessageLog",
+    ) -> Dict[str, Any]:
+        if parsed_command_tuple is None:
+            return {}
+
+        verb, argument = parsed_command_tuple
+        command_class = self._commands.get(verb.lower())
+
+        if command_class:
+            current_map = world_maps.get(player.current_floor_id)
+            if not current_map:
+                return {}
+
+            if verb == "attack":
+                command_instance = command_class(
+                    player=player,
+                    world_map=current_map,
+                    message_log=message_log,
+                    winning_position=(0, 0, 0),
+                    argument=argument,
+                    entity=monster,
+                )
+                return command_instance.execute()
+            elif verb == "move":
+                command_instance = command_class(
+                    player=player,
+                    world_map=current_map,
+                    message_log=message_log,
+                    winning_position=(0, 0, 0),
+                    argument=argument,
+                    entity=monster,
+                )
+                return command_instance.execute()
+        return {}

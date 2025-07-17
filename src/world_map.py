@@ -1,5 +1,6 @@
 from src.item import Item
 from src.monster import Monster
+from src.player import Player
 from src.tile import Tile
 
 
@@ -181,3 +182,35 @@ class WorldMap:
             tile.monster = None  # Clear the monster from the tile
             return monster_removed
         return None  # No monster to remove or tile not found
+
+    def place_player(self, player: Player, x: int, y: int) -> bool:
+        """
+        Places the Player on the tile at the specified coordinates.
+        """
+        tile = self.get_tile(x, y)
+        if tile and tile.player is None:
+            tile.player = player
+            return True
+        return False
+
+    def remove_player(self, x: int, y: int) -> Player | None:
+        """
+        Removes the Player from the tile at the specified coordinates.
+        """
+        tile = self.get_tile(x, y)
+        if tile and tile.player is not None:
+            player_removed = tile.player
+            tile.player = None
+            return player_removed
+        return None
+
+    def get_monsters(self):
+        """
+        Returns a list of all monsters on the map.
+        """
+        monsters = []
+        for y, x in self.iter_coords():
+            tile = self.get_tile(x, y)
+            if tile and tile.monster:
+                monsters.append(tile.monster)
+        return monsters

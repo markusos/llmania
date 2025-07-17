@@ -54,18 +54,20 @@ class LookCommand(Command):
                 )
                 monster_on_tile = True
 
-        # _get_adjacent_monsters is inherited from Command base class
-        adj_monsters = self._get_adjacent_monsters(self.player.x, self.player.y)
-        adj_monster_seen = False
-        if adj_monsters:
-            for monster, mx, my in adj_monsters:  # monster here is Monster instance
+        # _get_monsters_in_range is inherited from Command base class
+        monsters_in_range = self._get_monsters_in_range(self.player.x, self.player.y, 5)
+        monster_seen = False
+        if monsters_in_range:
+            for monster, mx, my in monsters_in_range:
+                if monster_on_tile and mx == self.player.x and my == self.player.y:
+                    continue
                 self.message_log.add_message(
                     f"You see a {monster.name} at ({mx}, {my})."
                 )
-                adj_monster_seen = True
+                monster_seen = True
 
         is_area_clear = (
-            not item_seen_on_tile and not adj_monster_seen and not monster_on_tile
+            not item_seen_on_tile and not monster_seen and not monster_on_tile
         )
         if is_area_clear:
             self.message_log.add_message("The area is clear.")

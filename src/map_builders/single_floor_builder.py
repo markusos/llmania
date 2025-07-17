@@ -435,8 +435,10 @@ class SingleFloorBuilder(BuilderBase):
                     tile_to_restore.is_portal = bool(
                         original_start_pos_info["is_portal"]
                     )
-                    tile_to_restore.portal_to_floor_id = int(
-                        original_start_pos_info["portal_to_floor_id"]
+                    tile_to_restore.portal_to_floor_id = (
+                        int(original_start_pos_info["portal_to_floor_id"])
+                        if original_start_pos_info["portal_to_floor_id"] is not None
+                        else None
                     )
             return
 
@@ -463,9 +465,10 @@ class SingleFloorBuilder(BuilderBase):
             if tile_to_restore:
                 tile_to_restore.type = str(original_start_pos_info["type"])
                 tile_to_restore.is_portal = bool(original_start_pos_info["is_portal"])
-                tile_to_restore.portal_to_floor_id = int(
-                    original_start_pos_info["portal_to_floor_id"]
-                )
+                if original_start_pos_info["portal_to_floor_id"] is not None:
+                    tile_to_restore.portal_to_floor_id = int(
+                        original_start_pos_info["portal_to_floor_id"]
+                    )
 
     def build(self) -> Tuple[WorldMap, Tuple[int, int], Tuple[int, int]]:
         if self.width < 10 or self.height < 10:
@@ -516,20 +519,21 @@ class SingleFloorBuilder(BuilderBase):
                     restored_tile.portal_to_floor_id = original_dest_if_portal
             elif current_target_type != "floor":
                 tile_at_point = self.world_map.get_tile(point[0], point[1])
-                if (
+                if tile_at_point and (
                     tile_at_point.type == "floor"
                     and current_target_type != "potential_floor"
-                ):  # type: ignore
+                ):
                     pass
                 else:
                     if not (tile_at_point and tile_at_point.is_portal):
-                        self.world_map.set_tile_type(
-                            point[0],
-                            point[1],
-                            current_target_type  # type: ignore
-                            if current_target_type != "potential_floor"  # type: ignore
-                            else "wall",
-                        )
+                        if tile_at_point:
+                            self.world_map.set_tile_type(
+                                point[0],
+                                point[1],
+                                current_target_type
+                                if current_target_type != "potential_floor"
+                                else "wall",
+                            )
 
         self._perform_random_walks_respecting_portals(floor_start)
         self._generate_path_network_respecting_portals(floor_start, floor_poi)

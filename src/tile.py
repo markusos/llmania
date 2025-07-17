@@ -1,5 +1,10 @@
 # Defines the symbols used for rendering different entities and tile types on the map.
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from src.item import Item
+    from src.monster import Monster
+    from src.player import Player
 
 # Defines the symbols used for rendering different entities and tile types on the map.
 ENTITY_SYMBOLS = {
@@ -31,6 +36,7 @@ class Tile:
         type (str): The base type of the tile (e.g., "floor", "wall", "portal").
         monster (Optional[Monster]): The monster occupying this tile, if any.
         item (Optional[Item]): The item on this tile, if any (and no monster).
+        player (Optional[Player]): The player on this tile, if any.
         is_explored (bool): True if this tile has been seen by the player/AI.
         is_portal (bool): True if this tile is a portal.
         portal_to_floor_id (Optional[int]): If is_portal is True, this stores the
@@ -40,8 +46,9 @@ class Tile:
     def __init__(
         self,
         tile_type: str = "floor",
-        monster=None,  # Optional[Monster]
-        item=None,  # Optional[Item]
+        monster: "Optional[Monster]" = None,
+        item: "Optional[Item]" = None,
+        player: "Optional[Player]" = None,
         portal_to_floor_id: Optional[int] = None,
     ):
         """
@@ -51,12 +58,14 @@ class Tile:
             tile_type: The base type of the tile. Defaults to "floor".
             monster: A Monster object if a monster is on this tile. Defaults to None.
             item: An Item object if an item is on this tile. Defaults to None.
+            player: A Player object if the player is on this tile. Defaults to None.
             portal_to_floor_id: If this tile is a portal, the ID of the target floor.
                                 Defaults to None.
         """
         self.type = tile_type
         self.monster = monster
         self.item = item
+        self.player = player
         self.is_explored = False
         self.is_portal = tile_type == "portal"
         self.portal_to_floor_id = portal_to_floor_id
