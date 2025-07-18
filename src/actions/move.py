@@ -70,9 +70,7 @@ def move(
         else:
             if isinstance(entity, Monster):
                 world_map.remove_monster(entity.x, entity.y)
-                entity.x = new_x
-                entity.y = new_y
-                world_map.place_monster(entity, entity.x, entity.y)
+                world_map.place_monster(entity, new_x, new_y)
             elif isinstance(entity, Player):
                 world_map.remove_player(entity.x, entity.y)
                 entity.move(dx, dy)
