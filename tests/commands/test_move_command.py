@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 from src.commands.move_command import MoveCommand
 from src.item import Item  # Added Item import
 from src.message_log import MessageLog
+from src.monster import Monster
 from src.player import Player
 from src.tile import Tile
 from src.world_map import WorldMap
@@ -181,6 +182,31 @@ class TestMoveCommand(unittest.TestCase):
         self.assertFalse(
             result.get("game_over", False)
         )  # Game over not set by move, but by take.
+
+    def test_monster_move(self):
+        monster = Monster(name="Goblin", health=10, attack_power=2, x=1, y=1)
+        self.world_map_f0.place_monster(monster, 1, 1)
+
+        move_cmd = MoveCommand(
+            player=self.player,
+            world_map=self.world_map_f0,
+            message_log=self.message_log,
+            winning_position=self.winning_position,
+            argument="north",
+            entity=monster,
+        )
+        move_cmd.execute()
+
+        self.assertEqual(monster.x, 1)
+        self.assertEqual(monster.y, 0)
+        self.assertIsNone(self.world_map_f0.get_tile(1, 1).monster)
+        self.assertIsNotNone(self.world_map_f0.get_tile(1, 0).monster)
+        self.assertEqual(self.world_map_f0.get_tile(1, 0).monster.name, "Goblin")
+
+        # Check for duplicates
+        monsters_on_map = self.world_map_f0.get_monsters()
+        self.assertEqual(len(monsters_on_map), 1)
+        self.assertEqual(monsters_on_map[0], monster)
 
 
 if __name__ == "__main__":

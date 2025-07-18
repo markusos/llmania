@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 from src.tile import ENTITY_SYMBOLS, TILE_SYMBOLS, Tile
 
 
@@ -16,14 +18,16 @@ def test_tile_initialization_custom():
 
 
 def test_get_display_info_monster():
-    tile = Tile(monster="Goblin")
+    mock_monster = MagicMock()
+    tile = Tile(monster=mock_monster)
     symbol, display_type = tile.get_display_info()
     assert symbol == ENTITY_SYMBOLS["monster"]
     assert display_type == "monster"
 
 
 def test_get_display_info_item():
-    tile = Tile(item="Potion")
+    mock_item = MagicMock()
+    tile = Tile(item=mock_item)
     symbol, display_type = tile.get_display_info()
     assert symbol == ENTITY_SYMBOLS["item"]
     assert display_type == "item"
@@ -52,7 +56,9 @@ def test_get_display_info_unknown():
 
 def test_get_display_info_item_and_monster():
     # Monster should take precedence
-    tile = Tile(monster="Dragon", item="Gold")
+    mock_monster = MagicMock()
+    mock_item = MagicMock()
+    tile = Tile(monster=mock_monster, item=mock_item)
     symbol, display_type = tile.get_display_info()
     assert symbol == ENTITY_SYMBOLS["monster"]
     assert display_type == "monster"

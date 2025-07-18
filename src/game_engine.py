@@ -3,27 +3,18 @@ import random
 import time
 
 from src.ai_logic import AILogic
-from src.command_processor import CommandProcessor  # Import CommandProcessor
+from src.command_processor import CommandProcessor
 from src.input_handler import InputHandler
 from src.message_log import MessageLog
-
-# Assuming these are first-party imports
+from src.monster_ai.main import MonsterAILogic
 from src.parser import Parser
 from src.player import Player
-from src.renderer import Renderer  # Import Renderer
+from src.renderer import Renderer
 from src.world_generator import WorldGenerator
-from src.world_map import WorldMap  # Added for AI visible map
-
-# Monster class is forward-declared as a string literal in type hints
+from src.world_map import WorldMap
 
 
 class GameEngine:
-    """
-    Manages the main game loop, game state, and interactions between different
-    game components like the WorldGenerator, Player, Renderer, InputHandler,
-    and CommandProcessor.
-    """
-
     def __init__(
         self,
         map_width: int = 20,
@@ -34,20 +25,6 @@ class GameEngine:
         seed: int | None = None,
         verbose: int = 0,
     ):
-        """
-        Initializes the game engine and its components.
-
-        Args:
-            map_width: The width of the game map.
-            map_height: The height of the game map.
-            debug_mode: If True, the game runs in a mode suitable for debugging
-                        (e.g., without curses screen initialization).
-            ai_active: If True, AI controls the player.
-            ai_sleep_duration: Time in seconds AI waits between actions.
-            seed: Optional seed for random number generation to ensure
-                  reproducibility.
-            verbose: Verbosity level for debug output.
-        """
         self.world_generator = WorldGenerator()
         self.parser = Parser()
         self.debug_mode = debug_mode
@@ -57,15 +34,9 @@ class GameEngine:
         self.verbose = verbose
         self.random = random.Random(seed)
 
-        # world_map and visible_map will be dictionaries: floor_id -> WorldMap
         self.world_maps: dict[int, WorldMap] = {}
         self.visible_maps: dict[int, WorldMap] = {}
 
-        # Player symbol is defined and passed to Renderer directly.
-
-        # Generate the game world: multiple floors, player start (x,y,floor_id),
-        # and win position (x,y,floor_id).
-        # This will use the new generate_world method.
         (
             self.world_maps,
             player_start_full_pos,
@@ -75,7 +46,6 @@ class GameEngine:
             map_width, map_height, random_generator=self.random
         )
 
-        # Create a visible map for each floor.
         for floor_id, w_map in self.world_maps.items():
             self.visible_maps[floor_id] = WorldMap(
                 width=w_map.width, height=w_map.height
@@ -100,7 +70,6 @@ class GameEngine:
         self.input_handler = InputHandler(self.renderer.stdscr, self.parser)
         self.command_processor = CommandProcessor()
 
-        # Initialize the player with x, y, and current_floor_id.
         self.player = Player(
             x=player_start_full_pos[0],
             y=player_start_full_pos[1],
@@ -120,13 +89,36 @@ class GameEngine:
                 verbose=self.verbose,
             )
 
+        self._initialize_monster_ai()
         self._update_fog_of_war_visibility()
+        self.world_maps[self.player.current_floor_id].place_player(
+            self.player, self.player.x, self.player.y
+        )
+
+    def _initialize_monster_ai(self):
+        for floor_id, world_map in self.world_maps.items():
+            for monster in world_map.get_monsters():
+                monster.ai = MonsterAILogic(
+                    monster=monster,
+                    player=self.player,
+                    world_map=world_map,
+                    random_generator=self.random,
+                )
+
+    def _handle_monster_actions(self):
+        current_map = self.world_maps.get(self.player.current_floor_id)
+        if not current_map:
+            return
+
+        for monster in current_map.get_monsters():
+            if monster.health > 0 and monster.ai:
+                action = monster.ai.get_next_action()
+                if action:
+                    self.command_processor.process_monster_command(
+                        action, monster, self.player, self.world_maps, self.message_log
+                    )
 
     def _update_fog_of_war_visibility(self) -> None:
-        """
-        Updates the player's visible map for the current floor based on their position.
-        Reveals tiles in a 1-tile radius.
-        """
         player_x, player_y = self.player.x, self.player.y
         current_floor_id = self.player.current_floor_id
 
@@ -138,6 +130,12 @@ class GameEngine:
                 f"Error: Invalid floor ID {current_floor_id} for visibility."
             )
             return
+
+        for y in range(current_visible_map.height):
+            for x in range(current_visible_map.width):
+                tile = current_visible_map.get_tile(x, y)
+                if tile:
+                    tile.monster = None
 
         for dy_offset in range(-1, 2):
             for dx_offset in range(-1, 2):
@@ -161,9 +159,6 @@ class GameEngine:
                         visible_tile.is_explored = True
 
     def run(self):
-        """
-        Starts and manages the main game loop.
-        """
         if self.debug_mode:
             self.run_debug_mode()
             return
@@ -238,6 +233,7 @@ class GameEngine:
 
                         self.game_over = results.get("game_over", False)
                         if not self.game_over:
+                            self._handle_monster_actions()
                             self._update_fog_of_war_visibility()
 
                 current_ai_path_loop = (
@@ -293,11 +289,6 @@ class GameEngine:
                 self.renderer.cleanup_curses()
 
     def run_debug_mode(self):
-        """
-        Runs the game in a debug mode without the curses interface.
-        This allows for printing game state and messages directly to the console,
-        which is useful for testing game logic and content generation.
-        """
         print("--- Starting Game in Debug Mode ---")
 
         print("\n--- Initial Player and Map State ---")
@@ -306,7 +297,6 @@ class GameEngine:
         print(f"Winning position: {self.winning_full_pos}")
         self._print_full_map_debug()
 
-        # Run the game loop until the game is over
         start_time = time.time()
         timeout_seconds = 30
         self._update_fog_of_war_visibility()
@@ -317,7 +307,6 @@ class GameEngine:
                 self.game_over = True
                 break
             if self.ai_active and self.ai_logic:
-                # Update visibility before AI action
                 self._update_fog_of_war_visibility()
                 parsed_command_output = self.ai_logic.get_next_action()
                 ai_state = self.ai_logic.state.__class__.__name__
@@ -332,15 +321,15 @@ class GameEngine:
                         game_engine=self,
                     )
                     self.game_over = results.get("game_over", False)
+                    if not self.game_over:
+                        self._handle_monster_actions()
                     floor_after_command = self.player.current_floor_id
                     if floor_before_command != floor_after_command:
                         self.ai_logic.current_path = None
             else:
-                # If not AI, we need a way to end the loop in debug.
                 self.game_over = True
 
         print("\n--- Game Over ---")
-        # Final state output
         final_map = self.renderer.render_all(
             player_x=self.player.x,
             player_y=self.player.y,
@@ -367,9 +356,6 @@ class GameEngine:
         print("\n--- Debug Mode Finished ---")
 
     def _handle_item_use(self, item):
-        """
-        Handles the effects of using an item.
-        """
         item_type = item.properties.get("type")
         if item_type == "teleport":
             self._teleport_player()
@@ -377,9 +363,6 @@ class GameEngine:
             self._handle_damage_item(item)
 
     def _teleport_player(self):
-        """
-        Teleports the player to a random walkable tile on the current floor.
-        """
         current_map = self.world_maps[self.player.current_floor_id]
         walkable_tiles = [
             (x, y)
@@ -393,26 +376,15 @@ class GameEngine:
             self._update_fog_of_war_visibility()
 
     def _handle_damage_item(self, item):
-        """
-        Handles the effects of a damage item.
-        """
         self.message_log.add_message(f"You can throw the {item.name}.")
-        # The actual throwing logic will be handled by a "throw" command
-        # that is not yet implemented.
 
     def _handle_invisibility(self):
-        """
-        Handles the player's invisibility status.
-        """
         if self.player.invisibility_turns > 0:
             self.player.invisibility_turns -= 1
             if self.player.invisibility_turns == 0:
                 self.message_log.add_message("You are no longer invisible.")
 
     def _print_full_map_debug(self):
-        """
-        Prints the full map layout for each floor, including portal connections.
-        """
         print("\n--- World Map Layout ---")
         for floor_id, world_map in sorted(self.world_maps.items()):
             print(f"\n--- Floor {floor_id} ---")
@@ -425,18 +397,17 @@ class GameEngine:
                             f"Portal at ({x}, {y}) -> Floor {tile.portal_to_floor_id}"
                         )
 
-            # Render the map to a list of strings
             map_render = self.renderer.render_all(
-                player_x=-1,  # No player shown
+                player_x=-1,
                 player_y=-1,
                 player_health=0,
                 world_map_to_render=world_map,
                 input_mode="",
                 current_command_buffer="",
-                message_log=self.message_log,  # Empty for this purpose
+                message_log=self.message_log,
                 debug_render_to_list=True,
                 current_floor_id=floor_id,
-                apply_fog=False,  # Render the whole map regardless of exploration
+                apply_fog=False,
             )
             if map_render:
                 for row in map_render:

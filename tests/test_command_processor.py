@@ -62,6 +62,7 @@ class TestCommandProcessor(unittest.TestCase):
         # self.mock_player.y = 1
         tile_mock = MagicMock(spec=Tile)
         tile_mock.monster = None
+        tile_mock.player = None
         tile_mock.is_portal = False  # Added for MoveCommand check
         tile_mock.portal_to_floor_id = None  # Added for MoveCommand check
         self.mock_world_map.get_tile.return_value = tile_mock
@@ -193,6 +194,9 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.x, self.mock_player.y = 1, 1  # Player at (1,1)
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Rat"
+        mock_monster.distance_to.return_value = 1
+        mock_monster.x = 2
+        mock_monster.y = 1
 
         # Setup get_tile to place monster at (2,1) - adjacent to player
         def get_tile_side_effect(x, y):
@@ -204,8 +208,7 @@ class TestCommandProcessor(unittest.TestCase):
                 tile.monster = None
             return tile
 
-        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
-        # self.command_processor._get_adjacent_monsters = MagicMock(...) # Removed
+        self.mock_world_map.get_monsters.return_value = [mock_monster]
 
         self.mock_player.attack_monster.return_value = {
             "damage_dealt": 10,
@@ -225,6 +228,9 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Orc"
+        mock_monster.distance_to.return_value = 1
+        mock_monster.x = 2
+        mock_monster.y = 1
 
         def get_tile_side_effect(x, y):
             tile = MagicMock(spec=Tile)
@@ -235,7 +241,7 @@ class TestCommandProcessor(unittest.TestCase):
                 tile.monster = None
             return tile
 
-        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+        self.mock_world_map.get_monsters.return_value = [mock_monster]
 
         self.mock_player.attack_monster.return_value = {
             "damage_dealt": 5,
@@ -259,6 +265,9 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Dragon"
+        mock_monster.distance_to.return_value = 1
+        mock_monster.x = 2
+        mock_monster.y = 1
 
         def get_tile_side_effect(x, y):
             tile = MagicMock(spec=Tile)
@@ -269,7 +278,7 @@ class TestCommandProcessor(unittest.TestCase):
                 tile.monster = None
             return tile
 
-        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+        self.mock_world_map.get_monsters.return_value = [mock_monster]
 
         self.mock_player.attack_monster.return_value = {
             "damage_dealt": 10,
@@ -296,6 +305,9 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Slime"
+        mock_monster.distance_to.return_value = 1
+        mock_monster.x = 1
+        mock_monster.y = 2
 
         def get_tile_side_effect(x, y):  # Monster at (1,2) - South of player
             tile = MagicMock(spec=Tile)
@@ -306,7 +318,7 @@ class TestCommandProcessor(unittest.TestCase):
                 tile.monster = None
             return tile
 
-        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+        self.mock_world_map.get_monsters.return_value = [mock_monster]
 
         self.mock_player.attack_monster.return_value = {
             "damage_dealt": 1,
@@ -324,8 +336,14 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster1 = MagicMock(spec=Monster)
         mock_monster1.name = "Imp"  # West
+        mock_monster1.distance_to.return_value = 1
+        mock_monster1.x = 0
+        mock_monster1.y = 1
         mock_monster2 = MagicMock(spec=Monster)
         mock_monster2.name = "Bat"  # East
+        mock_monster2.distance_to.return_value = 1
+        mock_monster2.x = 2
+        mock_monster2.y = 1
 
         def get_tile_side_effect(x, y):
             tile = MagicMock(spec=Tile)
@@ -338,7 +356,7 @@ class TestCommandProcessor(unittest.TestCase):
                 tile.monster = None
             return tile
 
-        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
+        self.mock_world_map.get_monsters.return_value = [mock_monster1, mock_monster2]
 
         result = self.common_process_command(("attack", None))
         self.mock_player.attack_monster.assert_not_called()
@@ -356,9 +374,7 @@ class TestCommandProcessor(unittest.TestCase):
             tile.monster = None
             return tile
 
-        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
-        # self.command_processor._get_adjacent_monsters = MagicMock(return_value=[])
-        # # Removed
+        self.mock_world_map.get_monsters.return_value = []
 
         result = self.common_process_command(("attack", None))
         self.message_log.add_message.assert_any_call(
@@ -370,6 +386,9 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster_present = MagicMock(spec=Monster)
         mock_monster_present.name = "Wolf"  # Present at (0,1)
+        mock_monster_present.distance_to.return_value = 1
+        mock_monster_present.x = 0
+        mock_monster_present.y = 1
 
         def get_tile_side_effect(x, y):
             tile = MagicMock(spec=Tile)
@@ -380,8 +399,7 @@ class TestCommandProcessor(unittest.TestCase):
                 tile.monster = None
             return tile
 
-        self.mock_world_map.get_tile.side_effect = get_tile_side_effect
-        # self.command_processor._get_adjacent_monsters = MagicMock(...) # Removed
+        self.mock_world_map.get_monsters.return_value = [mock_monster_present]
 
         result = self.common_process_command(("attack", "Ghost"))
         self.message_log.add_message.assert_any_call("No monster named 'Ghost' nearby.")
@@ -421,8 +439,7 @@ class TestCommandProcessor(unittest.TestCase):
             return adj_tile
 
         self.mock_world_map.get_tile.side_effect = get_tile_side_effect
-        # self.command_processor._get_adjacent_monsters = MagicMock(return_value=[])
-        # # Removed
+        self.mock_world_map.get_monsters.return_value = []
         result = self.common_process_command(("look", None))
         self.message_log.add_message.assert_any_call(
             f"You are at ({self.mock_player.x}, {self.mock_player.y}) "
@@ -438,7 +455,7 @@ class TestCommandProcessor(unittest.TestCase):
         tile_mock.item = mock_item
         tile_mock.monster = None
         self.mock_world_map.get_tile.return_value = tile_mock
-        self.command_processor._get_adjacent_monsters = MagicMock(return_value=[])
+        self.mock_world_map.get_monsters.return_value = []
         self.common_process_command(("look", None))
         self.message_log.add_message.assert_any_call(
             f"You see a {mock_item.name} here."
@@ -451,7 +468,7 @@ class TestCommandProcessor(unittest.TestCase):
         tile_mock.item = None
         tile_mock.monster = mock_monster_on_tile
         self.mock_world_map.get_tile.return_value = tile_mock
-        self.command_processor._get_adjacent_monsters = MagicMock(return_value=[])
+        self.mock_world_map.get_monsters.return_value = []
         self.common_process_command(("look", None))
         self.message_log.add_message.assert_any_call(
             f"There is a {mock_monster_on_tile.name} here!"
@@ -465,8 +482,10 @@ class TestCommandProcessor(unittest.TestCase):
 
         mock_adj_monster = MagicMock(spec=Monster)
         mock_adj_monster.name = "Zombie"
-
-        adj_monster_x, adj_monster_y = 1, 2  # South of player at (1,1)
+        mock_adj_monster.distance_to.return_value = 1
+        adj_monster_x, adj_monster_y = 1, 2
+        mock_adj_monster.x = adj_monster_x
+        mock_adj_monster.y = adj_monster_y
 
         def get_tile_side_effect(x, y):
             if x == self.mock_player.x and y == self.mock_player.y:
@@ -483,7 +502,7 @@ class TestCommandProcessor(unittest.TestCase):
                 return empty_tile
 
         self.mock_world_map.get_tile.side_effect = get_tile_side_effect
-        # self.command_processor._get_adjacent_monsters = MagicMock(...) # Removed
+        self.mock_world_map.get_monsters.return_value = [mock_adj_monster]
 
         self.common_process_command(("look", None))
         self.message_log.add_message.assert_any_call(
