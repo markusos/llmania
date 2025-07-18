@@ -100,6 +100,8 @@ class MoveCommand(Command):
                 if isinstance(self.entity, Monster):
                     self.world_map.remove_monster(self.entity.x, self.entity.y)
                     self.world_map.place_monster(self.entity, new_x, new_y)
+                    self.entity.x = new_x
+                    self.entity.y = new_y
                 elif isinstance(self.entity, Player):
                     self.entity.move(dx, dy)
                     self.message_log.add_message(f"You move {self.argument}.")
