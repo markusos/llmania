@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 from src.tile import ENTITY_SYMBOLS, TILE_SYMBOLS, Tile
 
 
@@ -13,9 +15,6 @@ def test_tile_initialization_custom():
     assert tile.type == "wall"
     assert tile.item is None
     assert tile.monster is None
-
-
-from unittest.mock import MagicMock
 
 
 def test_get_display_info_monster():
