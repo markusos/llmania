@@ -60,31 +60,21 @@ def move(
                 game_engine.ai_logic.explorer.mark_portal_as_visited(
                     new_x, new_y, floor_before_move
                 )
-        elif (
-            target_tile
-            and target_tile.monster
-            and isinstance(entity, Player)
-        ):
+        elif target_tile and target_tile.monster and isinstance(entity, Player):
             msg = f"You bump into a {target_tile.monster.name}!"
             message_log.add_message(msg)
-        elif (
-            target_tile
-            and target_tile.monster
-            and isinstance(entity, Monster)
-        ):
+        elif target_tile and target_tile.monster and isinstance(entity, Monster):
             pass  # Monster bumps into monster, do nothing
-        elif (
-            target_tile
-            and target_tile.player
-            and isinstance(entity, Monster)
-        ):
+        elif target_tile and target_tile.player and isinstance(entity, Monster):
             pass  # Monster bumps into player, do nothing
         else:
             if isinstance(entity, Monster):
+                print(f"Before move: {entity.name} at ({entity.x}, {entity.y})")
                 world_map.remove_monster(entity.x, entity.y)
                 world_map.place_monster(entity, new_x, new_y)
                 entity.x = new_x
                 entity.y = new_y
+                print(f"After move: {entity.name} at ({entity.x}, {entity.y})")
             elif isinstance(entity, Player):
                 world_map.remove_player(entity.x, entity.y)
                 entity.move(dx, dy)

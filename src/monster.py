@@ -64,7 +64,7 @@ class Monster:
         self.line_of_sight = line_of_sight
         self.attack_range = attack_range
         self.move_speed = move_speed
-        self.move_cooldown = 10 - self.move_speed
+        self.move_energy = 0
         self.random = random_generator if random_generator else random.Random()
         self.ai: "Optional[MonsterAILogic]" = None
 
