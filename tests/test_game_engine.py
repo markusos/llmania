@@ -42,6 +42,7 @@ class TestGameEngine(unittest.TestCase):
         self.mock_world_map_instance = MagicMock(spec=WorldMap)
         self.mock_world_map_instance.width = 20
         self.mock_world_map_instance.height = 10
+        self.mock_world_map_instance.place_player = MagicMock()
 
         self.player_start_coords_f0 = (1, 1)
         self.player_start_full_pos_f0 = (1, 1, 0)
