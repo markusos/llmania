@@ -27,6 +27,7 @@ class TestFastMonsterMovement(unittest.TestCase):
         self.game_engine._handle_monster_actions()
         self.assertEqual(monster_fast.y, 2)  # Fast monster moves
 
+
 class TestSlowMonsterMovement(unittest.TestCase):
     def setUp(self):
         self.game_engine = GameEngine(debug_mode=True)
