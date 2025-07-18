@@ -131,6 +131,12 @@ class GameEngine:
             )
             return
 
+        for y in range(current_visible_map.height):
+            for x in range(current_visible_map.width):
+                tile = current_visible_map.get_tile(x, y)
+                if tile:
+                    tile.monster = None
+
         for dy_offset in range(-1, 2):
             for dx_offset in range(-1, 2):
                 map_x, map_y = player_x + dx_offset, player_y + dy_offset
