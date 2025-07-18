@@ -56,6 +56,7 @@ class MonsterFactory:
             vulnerability=monster_info.get("vulnerability"),
             line_of_sight=monster_info.get("line_of_sight", 5),
             attack_range=monster_info.get("attack_range", 1),
+            move_speed=monster_info.get("move_speed", 1),
             random_generator=random_generator,
         )
 

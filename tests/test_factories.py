@@ -62,7 +62,8 @@ class TestFactories(unittest.TestCase):
                 "name": "Goblin",
                 "health": 10,
                 "attack_power": 3,
-                "rarity": 80
+                "rarity": 80,
+                "move_speed": 2
             },
             "bat": {
                 "name": "Bat",
@@ -81,6 +82,7 @@ class TestFactories(unittest.TestCase):
             self.assertEqual(goblin.name, "Goblin")
             self.assertEqual(goblin.health, 10)
             self.assertEqual(goblin.attack_power, 3)
+            self.assertEqual(goblin.move_speed, 2)
 
             bat = factory.create_monster("bat", random_generator=rng)
             self.assertIsNotNone(bat)

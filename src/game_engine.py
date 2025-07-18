@@ -112,10 +112,21 @@ class GameEngine:
 
         for monster in current_map.get_monsters():
             if monster.health > 0 and monster.ai:
+                if monster.move_cooldown > 0:
+                    monster.move_cooldown -= 1
+                    continue
+
                 action = monster.ai.get_next_action()
                 if action:
+                    is_move_action = action[0] == "move"
+                    if is_move_action:
+                        monster.move_cooldown = 10 - monster.move_speed
                     self.command_processor.process_monster_command(
-                        action, monster, self.player, self.world_maps, self.message_log
+                        action,
+                        monster,
+                        self.player,
+                        self.world_maps,
+                        self.message_log,
                     )
 
     def _update_fog_of_war_visibility(self) -> None:
@@ -131,12 +142,15 @@ class GameEngine:
             )
             return
 
+        # At the beginning of the update, clear all monster visibility on the visible map.
+        # This ensures that monsters that move out of sight are no longer drawn.
         for y in range(current_visible_map.height):
             for x in range(current_visible_map.width):
                 tile = current_visible_map.get_tile(x, y)
                 if tile:
                     tile.monster = None
 
+        # This is for revealing the map, items, and portals
         for dy_offset in range(-1, 2):
             for dx_offset in range(-1, 2):
                 map_x, map_y = player_x + dx_offset, player_y + dy_offset
@@ -152,11 +166,18 @@ class GameEngine:
                     visible_tile = current_visible_map.get_tile(map_x, map_y)
                     if visible_tile:
                         visible_tile.type = real_tile.type
-                        visible_tile.monster = real_tile.monster
+                        # Don't update monster here, handle it separately
                         visible_tile.item = real_tile.item
                         visible_tile.is_portal = real_tile.is_portal
                         visible_tile.portal_to_floor_id = real_tile.portal_to_floor_id
                         visible_tile.is_explored = True
+
+        # Now, specifically handle monster visibility based on line of sight.
+        for monster in current_real_map.get_monsters():
+            if monster.distance_to(player_x, player_y) <= monster.line_of_sight:
+                visible_tile = current_visible_map.get_tile(monster.x, monster.y)
+                if visible_tile:
+                    visible_tile.monster = monster
 
     def run(self):
         if self.debug_mode:

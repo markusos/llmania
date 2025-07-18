@@ -32,6 +32,7 @@ class Monster:
         vulnerability: str = "",
         line_of_sight: int = 5,
         attack_range: int = 1,
+        move_speed: int = 1,
         random_generator: "Optional[random.Random]" = None,
     ):
         """
@@ -49,6 +50,7 @@ class Monster:
             vulnerability: The damage type the monster is vulnerable to.
             line_of_sight: The distance the monster can see.
             attack_range: The distance the monster can attack from.
+            move_speed: The speed of the monster.
         """
         self.name = name
         self.health = health
@@ -61,6 +63,8 @@ class Monster:
         self.vulnerability = vulnerability
         self.line_of_sight = line_of_sight
         self.attack_range = attack_range
+        self.move_speed = move_speed
+        self.move_cooldown = 10 - self.move_speed
         self.random = random_generator if random_generator else random.Random()
         self.ai: "Optional[MonsterAILogic]" = None
 
