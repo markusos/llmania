@@ -1,4 +1,3 @@
-```markdown
 # Agent Development Guide for Text-Based Adventure Game
 
 This document provides guidance for AI agents (like Jules) working on this text-based adventure game codebase.
@@ -101,4 +100,3 @@ These can be used for more advanced world generation, AI decision-making, or gam
 -   You can run tests using a test runner like `pytest` (which should be configured via `pyproject.toml` and `uv`).
 
 By following these guidelines, you can effectively contribute to the development of this game.
-```
