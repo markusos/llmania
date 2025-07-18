@@ -86,7 +86,9 @@ def move(
                 entity.x = new_x
                 entity.y = new_y
             elif isinstance(entity, Player):
+                world_map.remove_player(entity.x, entity.y)
                 entity.move(dx, dy)
+                world_map.place_player(entity, entity.x, entity.y)
                 message_log.add_message(f"You move {argument}.")
 
                 if (
