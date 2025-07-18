@@ -17,34 +17,37 @@ class TestMonsterMovement(unittest.TestCase):
             name="Fast", health=10, attack_power=1, x=1, y=1, move_speed=10
         )
         self.world_map.place_monster(monster_fast, 1, 1)
-        monster_fast.ai = MagicMock()
-        monster_fast.ai.get_next_action.return_value = ("move", "south")
-
         # Monster with speed 1, should move every 10 turns
         monster_slow = Monster(
             name="Slow", health=10, attack_power=1, x=2, y=2, move_speed=1
         )
         self.world_map.place_monster(monster_slow, 2, 2)
-        monster_slow.ai = MagicMock()
-        monster_slow.ai.get_next_action.return_value = ("move", "north")
+        self.game_engine._initialize_monster_ai()
+
+        monsters = self.world_map.get_monsters()
+        fast_monster = next(m for m in monsters if m.name == "Fast")
+        slow_monster = next(m for m in monsters if m.name == "Slow")
+
+        fast_monster.ai.get_next_action = MagicMock(return_value=("move", "south"))
+        slow_monster.ai.get_next_action = MagicMock(return_value=("move", "north"))
 
         # Initial positions
-        self.assertEqual(monster_fast.y, 1)
-        self.assertEqual(monster_slow.y, 2)
+        self.assertEqual(fast_monster.y, 1)
+        self.assertEqual(slow_monster.y, 2)
 
         # Turn 1
         self.game_engine._handle_monster_actions()
-        self.assertEqual(monster_fast.y, 2)  # Fast monster moves
-        self.assertEqual(monster_slow.y, 2)  # Slow monster does not move
+        self.assertEqual(fast_monster.y, 2)  # Fast monster moves
+        self.assertEqual(slow_monster.y, 2)  # Slow monster does not move
 
         # Turns 2-9
         for _ in range(8):
             self.game_engine._handle_monster_actions()
-            self.assertEqual(monster_slow.y, 2)  # Slow monster does not move
+            self.assertEqual(slow_monster.y, 2)  # Slow monster does not move
 
         # Turn 10
         self.game_engine._handle_monster_actions()
-        self.assertEqual(monster_slow.y, 1)  # Slow monster moves
+        self.assertEqual(slow_monster.y, 1)  # Slow monster moves
 
 
 if __name__ == "__main__":
