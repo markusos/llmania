@@ -69,9 +69,7 @@ class AttackCommand(Command):
             return None
 
         if not target_monster:
-            self.message_log.add_message(
-                "Error: Could not select a target monster."
-            )
+            self.message_log.add_message("Error: Could not select a target monster.")
             return None
 
         return target_monster, target_m_x, target_m_y

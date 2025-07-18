@@ -16,7 +16,7 @@ class TestMonster(unittest.TestCase):
         self.assertEqual(monster.x, 0)
         self.assertEqual(monster.y, 0)
         self.assertEqual(monster.move_speed, 1)
-        self.assertEqual(monster.move_cooldown, 9)
+        self.assertEqual(monster.move_energy, 0)
 
     def test_monster_initialization_custom_coords(self):
         monster = Monster(name="Orc", health=50, attack_power=10, x=5, y=10)
@@ -31,7 +31,7 @@ class TestMonster(unittest.TestCase):
             name="Goblin", health=10, attack_power=3, x=5, y=5, move_speed=5
         )
         self.assertEqual(monster.move_speed, 5)
-        self.assertEqual(monster.move_cooldown, 5)
+        self.assertEqual(monster.move_energy, 0)
 
     # Test take_damage Method
     def test_take_damage_reduces_health_and_returns_correct_dict(self):

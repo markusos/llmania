@@ -112,22 +112,20 @@ class GameEngine:
 
         for monster in current_map.get_monsters():
             if monster.health > 0 and monster.ai:
-                if monster.move_cooldown > 0:
-                    monster.move_cooldown -= 1
-                    continue
-
-                action = monster.ai.get_next_action()
-                if action:
-                    is_move_action = action[0] == "move"
-                    if is_move_action:
-                        monster.move_cooldown = 10 - monster.move_speed
-                    self.command_processor.process_monster_command(
-                        action,
-                        monster,
-                        self.player,
-                        self.world_maps,
-                        self.message_log,
-                    )
+                monster.move_energy += monster.move_speed
+                if monster.move_energy >= 10:
+                    action = monster.ai.get_next_action()
+                    if action:
+                        is_move_action = action[0] == "move"
+                        if is_move_action:
+                            monster.move_energy -= 10
+                        self.command_processor.process_monster_command(
+                            action,
+                            monster,
+                            self.player,
+                            self.world_maps,
+                            self.message_log,
+                        )
 
     def _update_fog_of_war_visibility(self) -> None:
         player_x, player_y = self.player.x, self.player.y
@@ -142,8 +140,9 @@ class GameEngine:
             )
             return
 
-        # At the beginning of the update, clear all monster visibility on the visible map.
-        # This ensures that monsters that move out of sight are no longer drawn.
+        # At the beginning of the update, clear all monster visibility on the
+        # visible map. This ensures that monsters that move out of sight are no
+        # longer drawn.
         for y in range(current_visible_map.height):
             for x in range(current_visible_map.width):
                 tile = current_visible_map.get_tile(x, y)
@@ -341,6 +340,8 @@ class GameEngine:
                         self.winning_full_pos,
                         game_engine=self,
                     )
+                    if "used_item" in results:
+                        self._handle_item_use(results["used_item"])
                     self.game_over = results.get("game_over", False)
                     if not self.game_over:
                         self._handle_monster_actions()
