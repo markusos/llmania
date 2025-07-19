@@ -1,3 +1,4 @@
+import random
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -8,8 +9,16 @@ from src.monster import Monster
 
 
 class TestMonster(unittest.TestCase):
+    def setUp(self):
+        self.random_generator = random.Random(12345)
+
     def test_monster_initialization_default_coords(self):
-        monster = Monster(name="Goblin", health=30, attack_power=5)
+        monster = Monster(
+            "Goblin",
+            30,
+            5,
+            self.random_generator,
+        )
         self.assertEqual(monster.name, "Goblin")
         self.assertEqual(monster.health, 30)
         self.assertEqual(monster.attack_power, 5)
@@ -19,7 +28,7 @@ class TestMonster(unittest.TestCase):
         self.assertEqual(monster.move_energy, 0)
 
     def test_monster_initialization_custom_coords(self):
-        monster = Monster(name="Orc", health=50, attack_power=10, x=5, y=10)
+        monster = Monster("Orc", 50, 10, self.random_generator, x=5, y=10)
         self.assertEqual(monster.name, "Orc")
         self.assertEqual(monster.health, 50)
         self.assertEqual(monster.attack_power, 10)
@@ -28,14 +37,25 @@ class TestMonster(unittest.TestCase):
 
     def test_monster_initialization_with_move_speed(self):
         monster = Monster(
-            name="Goblin", health=10, attack_power=3, x=5, y=5, move_speed=5
+            "Goblin",
+            10,
+            3,
+            self.random_generator,
+            x=5,
+            y=5,
+            move_speed=5,
         )
         self.assertEqual(monster.move_speed, 5)
         self.assertEqual(monster.move_energy, 0)
 
     # Test take_damage Method
     def test_take_damage_reduces_health_and_returns_correct_dict(self):
-        monster = Monster(name="Slime", health=20, attack_power=2)
+        monster = Monster(
+            "Slime",
+            20,
+            2,
+            self.random_generator,
+        )
 
         result1 = monster.take_damage(5)
         self.assertEqual(monster.health, 15)
@@ -46,19 +66,34 @@ class TestMonster(unittest.TestCase):
         self.assertEqual(result2, {"damage_taken": 10, "defeated": False})
 
     def test_take_damage_health_not_below_zero_and_defeated_true(self):
-        monster = Monster(name="Zombie", health=10, attack_power=3)
+        monster = Monster(
+            "Zombie",
+            10,
+            3,
+            self.random_generator,
+        )
         result = monster.take_damage(15)
         self.assertEqual(monster.health, 0)
         self.assertEqual(result, {"damage_taken": 15, "defeated": True})
 
     def test_take_damage_exact_kill(self):
-        monster = Monster(name="Skeleton", health=10, attack_power=3)
+        monster = Monster(
+            "Skeleton",
+            10,
+            3,
+            self.random_generator,
+        )
         result = monster.take_damage(10)
         self.assertEqual(monster.health, 0)
         self.assertEqual(result, {"damage_taken": 10, "defeated": True})
 
     def test_take_damage_zero_damage(self):
-        monster = Monster(name="Ghost", health=25, attack_power=4)
+        monster = Monster(
+            "Ghost",
+            25,
+            4,
+            self.random_generator,
+        )
         result = monster.take_damage(0)
         self.assertEqual(monster.health, 25)
         self.assertEqual(result, {"damage_taken": 0, "defeated": False})
@@ -67,7 +102,12 @@ class TestMonster(unittest.TestCase):
     def test_attack_calls_player_take_damage_and_returns_correct_dict_player_survives(
         self,
     ):
-        monster = Monster(name="Dragon", health=100, attack_power=20)
+        monster = Monster(
+            "Dragon",
+            100,
+            20,
+            self.random_generator,
+        )
 
         # Mock the player object
         mock_player = MagicMock()
@@ -83,7 +123,12 @@ class TestMonster(unittest.TestCase):
     def test_attack_calls_player_take_damage_and_returns_correct_dict_player_defeated(
         self,
     ):
-        monster = Monster(name="Lich", health=100, attack_power=75)
+        monster = Monster(
+            "Lich",
+            100,
+            75,
+            self.random_generator,
+        )
 
         mock_player = MagicMock()
         mock_player.take_damage.return_value = {
@@ -97,25 +142,37 @@ class TestMonster(unittest.TestCase):
         self.assertEqual(actual_return, expected_return)
 
     def test_take_damage_with_defense(self):
-        monster = Monster("Armored Golem", 50, 10, defense=5)
+        monster = Monster("Armored Golem", 50, 10, self.random_generator, defense=5)
         result = monster.take_damage(15)
         self.assertEqual(monster.health, 40)
         self.assertEqual(result["damage_taken"], 10)
 
     def test_take_damage_with_resistance(self):
-        monster = Monster("Fire Elemental", 30, 10, resistance="fire")
+        monster = Monster(
+            "Fire Elemental",
+            30,
+            10,
+            self.random_generator,
+            resistance="fire",
+        )
         result = monster.take_damage(20, "fire")
         self.assertEqual(monster.health, 20)
         self.assertEqual(result["damage_taken"], 10)
 
     def test_take_damage_with_vulnerability(self):
-        monster = Monster("Ice Golem", 40, 10, vulnerability="fire")
+        monster = Monster(
+            "Ice Golem",
+            40,
+            10,
+            self.random_generator,
+            vulnerability="fire",
+        )
         result = monster.take_damage(10, "fire")
         self.assertEqual(monster.health, 20)
         self.assertEqual(result["damage_taken"], 20)
 
     def test_take_damage_with_evasion(self):
-        monster = Monster("Rogue", 20, 5, evasion=0.5)
+        monster = Monster("Rogue", 20, 5, self.random_generator, evasion=0.5)
         with patch.object(monster.random, "random", return_value=0.1):
             result = monster.take_damage(10)
             self.assertEqual(monster.health, 20)

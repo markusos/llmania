@@ -184,7 +184,9 @@ class TestMoveCommand(unittest.TestCase):
         )  # Game over not set by move, but by take.
 
     def test_monster_move(self):
-        monster = Monster(name="Goblin", health=10, attack_power=2, x=1, y=1)
+        import random
+
+        monster = Monster("Goblin", 10, 2, random.Random(12345), x=1, y=1)
         self.world_map_f0.place_monster(monster, 1, 1)
 
         move_cmd = MoveCommand(

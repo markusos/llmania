@@ -32,9 +32,11 @@ class TestPathFinderMultiFloor(unittest.TestCase):
                 elif char == "G":
                     tile_type = "floor"
                 elif char == "M":
+                    import random
+
                     tile_type = "floor"
                     monster = Monster(
-                        name="TestMonster", health=10, attack_power=2, x=c, y=r
+                        "TestMonster", 10, 2, random.Random(12345), x=c, y=r
                     )
                 elif char.isdigit():
                     tile_type = "portal"

@@ -8,7 +8,7 @@ from src.world_map import WorldMap
 
 
 def test_monster_ai_initial_state():
-    monster = Monster("test", 10, 1)
+    monster = Monster("test", 10, 1, random.Random(12345))
     player = Player(x=10, y=10, current_floor_id=0, health=100)
     world_map = WorldMap(20, 20)
     rng = random.Random()
@@ -17,7 +17,7 @@ def test_monster_ai_initial_state():
 
 
 def test_monster_ai_idle_to_attacking_transition():
-    monster = Monster("test", 10, 1, x=5, y=5, line_of_sight=5)
+    monster = Monster("test", 10, 1, random.Random(12345), x=5, y=5, line_of_sight=5)
     player = Player(x=6, y=6, current_floor_id=0, health=100)
     world_map = WorldMap(20, 20)
     rng = random.Random()
@@ -31,7 +31,7 @@ def test_monster_ai_idle_to_attacking_transition():
 
 
 def test_monster_ai_attacking_to_idle_transition():
-    monster = Monster("test", 10, 1, x=5, y=5, line_of_sight=5)
+    monster = Monster("test", 10, 1, random.Random(12345), x=5, y=5, line_of_sight=5)
     player = Player(x=15, y=15, current_floor_id=0, health=100)
     world_map = WorldMap(20, 20)
     rng = random.Random()
@@ -43,7 +43,7 @@ def test_monster_ai_attacking_to_idle_transition():
 
 
 def test_monster_ai_attack_when_in_range():
-    monster = Monster("test", 10, 1, x=5, y=5, attack_range=1)
+    monster = Monster("test", 10, 1, random.Random(12345), x=5, y=5, attack_range=1)
     player = Player(x=5, y=6, current_floor_id=0, health=100)
     world_map = WorldMap(20, 20)
     rng = random.Random()
@@ -54,7 +54,9 @@ def test_monster_ai_attack_when_in_range():
 
 
 def test_monster_ai_move_when_in_los_but_not_in_range():
-    monster = Monster("test", 10, 1, x=5, y=5, line_of_sight=5, attack_range=1)
+    monster = Monster(
+        "test", 10, 1, random.Random(12345), x=5, y=5, line_of_sight=5, attack_range=1
+    )
     player = Player(x=7, y=7, current_floor_id=0, health=100)
     world_map = WorldMap(20, 20)
     pathfinder_mock = MagicMock()

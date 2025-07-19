@@ -45,9 +45,10 @@ class MonsterFactory:
             return None
 
         return Monster(
-            name=monster_info["name"],
-            health=monster_info["health"],
-            attack_power=monster_info["attack_power"],
+            monster_info["name"],
+            monster_info["health"],
+            monster_info["attack_power"],
+            random_generator,
             x=x,
             y=y,
             defense=monster_info.get("defense", 0),
@@ -57,7 +58,6 @@ class MonsterFactory:
             line_of_sight=monster_info.get("line_of_sight", 5),
             attack_range=monster_info.get("attack_range", 1),
             move_speed=monster_info.get("move_speed", 1),
-            random_generator=random_generator,
         )
 
     def create_random_monster(

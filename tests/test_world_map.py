@@ -129,8 +129,10 @@ def test_remove_item_invalid_coordinates():
 # Test place_monster and remove_monster
 @pytest.fixture
 def sample_monster():
+    import random
+
     return Monster(
-        "Goblin", health=30, attack_power=5
+        "Goblin", 30, 5, random.Random(12345)
     )  # x,y will be set by place_monster
 
 
@@ -152,7 +154,9 @@ def test_place_monster_invalid_coordinates(sample_monster):
 
 def test_place_monster_tile_already_has_monster(sample_monster):
     w_map = WorldMap(width=5, height=5)
-    another_monster = Monster("Orc", health=50, attack_power=10)
+    import random
+
+    another_monster = Monster("Orc", 50, 10, random.Random(12345))
     w_map.place_monster(sample_monster, 3, 3)  # Place first monster
     assert w_map.place_monster(another_monster, 3, 3) is False  # Try to place another
     tile = w_map.get_tile(3, 3)
