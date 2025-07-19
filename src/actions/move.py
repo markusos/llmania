@@ -40,7 +40,6 @@ class MoveAction:
         return {"game_over": False}
 
     def _handle_player_move(self) -> Dict[str, Any]:
-
         current_game_over_state = False
         dx, dy = 0, 0
         if self.argument == "north":
@@ -109,7 +108,6 @@ class MoveAction:
         return {"game_over": current_game_over_state}
 
     def _handle_monster_move(self) -> Dict[str, Any]:
-
         current_game_over_state = False
         dx, dy = 0, 0
         if self.argument == "north":
