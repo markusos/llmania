@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 if TYPE_CHECKING:
@@ -39,7 +40,6 @@ class MoveAction:
         return {"game_over": False}
 
     def _handle_player_move(self) -> Dict[str, Any]:
-        from src.player import Player
 
         current_game_over_state = False
         dx, dy = 0, 0
@@ -109,7 +109,6 @@ class MoveAction:
         return {"game_over": current_game_over_state}
 
     def _handle_monster_move(self) -> Dict[str, Any]:
-        from src.monster import Monster
 
         current_game_over_state = False
         dx, dy = 0, 0

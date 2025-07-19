@@ -24,6 +24,7 @@ class Monster:
         name: str,
         health: int,
         attack_power: int,
+        random_generator: "random.Random",
         x: int = 0,
         y: int = 0,
         defense: int = 0,
@@ -33,7 +34,6 @@ class Monster:
         line_of_sight: int = 5,
         attack_range: int = 1,
         move_speed: int = 1,
-        random_generator: "Optional[random.Random]" = None,
     ):
         """
         Initializes a Monster instance.
@@ -51,6 +51,7 @@ class Monster:
             line_of_sight: The distance the monster can see.
             attack_range: The distance the monster can attack from.
             move_speed: The speed of the monster.
+            random_generator: The random number generator.
         """
         self.name = name
         self.health = health
@@ -65,7 +66,7 @@ class Monster:
         self.attack_range = attack_range
         self.move_speed = move_speed
         self.move_energy = 0
-        self.random = random_generator if random_generator else random.Random()
+        self.random = random_generator
         self.ai: "Optional[MonsterAILogic]" = None
 
     def take_damage(

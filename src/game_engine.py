@@ -24,6 +24,9 @@ class GameEngine:
         ai_sleep_duration: float = 0.5,
         seed: int | None = None,
         verbose: int = 0,
+        world_maps: dict[int, WorldMap] | None = None,
+        player_start_pos: tuple[int, int, int] | None = None,
+        winning_pos: tuple[int, int, int] | None = None,
     ):
         self.world_generator = WorldGenerator()
         self.parser = Parser()
@@ -34,17 +37,25 @@ class GameEngine:
         self.verbose = verbose
         self.random = random.Random(seed)
 
-        self.world_maps: dict[int, WorldMap] = {}
         self.visible_maps: dict[int, WorldMap] = {}
 
-        (
-            self.world_maps,
-            player_start_full_pos,
-            self.winning_full_pos,
-            _floor_details_list,
-        ) = self.world_generator.generate_world(
-            map_width, map_height, random_generator=self.random
-        )
+        if world_maps:
+            self.world_maps = world_maps
+            player_start_full_pos = player_start_pos or (
+                map_width // 2,
+                map_height // 2,
+                0,
+            )
+            self.winning_full_pos = winning_pos or (0, 0, -1)
+        else:
+            (
+                self.world_maps,
+                player_start_full_pos,
+                self.winning_full_pos,
+                _floor_details_list,
+            ) = self.world_generator.generate_world(
+                map_width, map_height, random_generator=self.random
+            )
 
         for floor_id, w_map in self.world_maps.items():
             self.visible_maps[floor_id] = WorldMap(

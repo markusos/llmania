@@ -71,7 +71,12 @@ class TestAILogic(unittest.TestCase):
                 elif char == "M":
                     tile_type = "floor"
                     monster = Monster(
-                        name="TestMonster", health=10, attack_power=2, x=c, y=r
+                        "TestMonster",
+                        10,
+                        2,
+                        random.Random(),
+                        x=c,
+                        y=r,
                     )
                 elif char.isdigit():
                     tile_type = "portal"
@@ -192,9 +197,10 @@ class TestAILogic(unittest.TestCase):
     def test_ai_transitions_to_attacking_state(self):
         self.mock_player.current_floor_id = 0
         monster_mock = Monster(
-            name="Goblin",
-            health=10,
-            attack_power=3,
+            "Goblin",
+            10,
+            3,
+            random.Random(),
             x=self.mock_player.x + 1,
             y=self.mock_player.y,
         )
