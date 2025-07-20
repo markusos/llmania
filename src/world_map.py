@@ -215,7 +215,7 @@ class WorldMap:
                 monsters.append(tile.monster)
         return monsters
 
-    def get_map_as_string(self, renderer) -> list[str]:
+    def get_map_as_string(self, renderer, message_log) -> list[str]:
         """
         Returns a string representation of the map for debugging.
         """
@@ -226,7 +226,7 @@ class WorldMap:
             world_map_to_render=self,
             input_mode="",
             current_command_buffer="",
-            message_log=None,
+            message_log=message_log,
             debug_render_to_list=True,
             current_floor_id=0,  # Floor ID doesn't matter for this
             apply_fog=False,
