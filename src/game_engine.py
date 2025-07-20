@@ -201,60 +201,78 @@ class GameEngine:
 
     def run(self):
         if self.debug_mode:
-            print("--- Starting Game in Debug Mode ---")
-            print(f"\nPlayer initial position: ({self.player.x}, {self.player.y})")
-            print(f"Player initial health: {self.player.health}")
-            print(f"Winning position: {self.winning_full_pos}")
-            self._print_full_map_debug()
+            self._setup_debug_mode()
 
         try:
-            start_time = time.time()
-            timeout_seconds = 30
-            ai_state = None
-
-            self._update_fog_of_war_visibility()
-            if not self.debug_mode:
-                self._render()
-
-            while self.game_state != GameState.QUIT:
-                if self.game_state == GameState.PLAYING:
-                    if self.debug_mode and time.time() - start_time > timeout_seconds:
-                        print("--- Debug Mode Timeout ---")
-                        self.game_state = GameState.GAME_OVER
-                        continue
-
-                    self._handle_invisibility()
-                    self._update_fog_of_war_visibility()
-
-                    parsed_command_output = self._get_next_command()
-                    if parsed_command_output:
-                        self._process_command(parsed_command_output)
-                        ai_state = (
-                            self.ai_logic.state.__class__.__name__
-                            if self.ai_active and self.ai_logic
-                            else None
-                        )
-
-                    if self.game_state == GameState.PLAYING and not self.debug_mode:
-                        self._render(ai_state=ai_state)
-                elif self.game_state == GameState.GAME_OVER:
-                    if self.debug_mode:
-                        break
-                    else:
-                        # In non-debug mode, wait for input to exit
-                        self.input_handler.handle_input_and_get_command()
-                        self.game_state = GameState.QUIT
-                        continue
-
-            if self.debug_mode:
-                self._render_debug_end_screen(ai_state=ai_state)
-            elif self.game_state == GameState.GAME_OVER:
-                self._render(ai_state=ai_state)
-                curses.napms(2000)
-
+            self._main_game_loop()
+            self._handle_game_over()
         finally:
             if not self.debug_mode:
                 self.renderer.cleanup_curses()
+
+    def _setup_debug_mode(self):
+        print("--- Starting Game in Debug Mode ---")
+        print(f"\nPlayer initial position: ({self.player.x}, {self.player.y})")
+        print(f"Player initial health: {self.player.health}")
+        print(f"Winning position: {self.winning_full_pos}")
+        self._print_full_map_debug()
+
+    def _main_game_loop(self):
+        start_time = time.time()
+        timeout_seconds = 30
+        ai_state = None
+
+        self._update_fog_of_war_visibility()
+        if not self.debug_mode:
+            self._render()
+
+        while self.game_state == GameState.PLAYING:
+            if self.debug_mode and time.time() - start_time > timeout_seconds:
+                print("--- Debug Mode Timeout ---")
+                self.game_state = GameState.GAME_OVER
+                break
+
+            self._handle_invisibility()
+            self._update_fog_of_war_visibility()
+
+            parsed_command_output = self._get_next_command()
+            if parsed_command_output == "NO_COMMAND":
+                self.game_state = GameState.QUIT
+                break
+
+            if parsed_command_output:
+                self._process_command(parsed_command_output)
+                ai_state = (
+                    self.ai_logic.state.__class__.__name__
+                    if self.ai_active and self.ai_logic
+                    else None
+                )
+
+            if self.game_state == GameState.PLAYING and not self.debug_mode:
+                self._render(ai_state=ai_state)
+
+            if self.player.health <= 0:
+                self.game_state = GameState.GAME_OVER
+
+
+    def _handle_game_over(self):
+        if self.game_state == GameState.GAME_OVER:
+            if self.player.health <= 0:
+                self.message_log.add_message("You have been defeated. Game Over.")
+
+            ai_state = self.ai_logic.state.__class__.__name__ if self.ai_active and self.ai_logic else None
+
+            if self.debug_mode:
+                self._render_debug_end_screen(ai_state=ai_state)
+            else:
+                self._render(ai_state=ai_state)
+                curses.napms(2000)
+                self.input_handler.handle_input_and_get_command()
+                self.game_state = GameState.QUIT
+
+        elif self.game_state == GameState.QUIT and self.debug_mode:
+            ai_state = self.ai_logic.state.__class__.__name__ if self.ai_active and self.ai_logic else None
+            self._render_debug_end_screen(ai_state=ai_state)
 
     def _get_next_command(self):
         if self.ai_active and self.ai_logic:
@@ -264,8 +282,11 @@ class GameEngine:
         elif not self.debug_mode:
             return self.input_handler.handle_input_and_get_command()
         else:
-            self.game_state = GameState.GAME_OVER
-            return None
+            # In debug mode, if not AI-controlled, we assume commands are fed in
+            # and we should not block on input. If no more commands, exit.
+            if hasattr(self, "_debug_commands") and self._debug_commands:
+                return self._debug_commands.pop(0)
+            return "NO_COMMAND"
 
     def _process_command(self, parsed_command_output):
         if self.game_state != GameState.PLAYING:

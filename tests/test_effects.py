@@ -14,11 +14,7 @@ class TestEffects(unittest.TestCase):
             "src.game_engine.InputHandler"
         ), patch("src.game_engine.Renderer"), patch(
             "src.game_engine.CommandProcessor"
-        ), patch(
-            "src.game_engine.Parser"
-        ), patch(
-            "src.game_engine.curses"
-        ):
+        ), patch("src.game_engine.Parser"), patch("src.game_engine.curses"):
             mock_map = MagicMock()
             mock_map.width = 20
             mock_map.height = 10
@@ -42,9 +38,7 @@ class TestEffects(unittest.TestCase):
 
     def test_teleport_effect(self):
         effect = TeleportEffect()
-        with patch.object(
-            self.game_engine.world_maps[0], "get_tile"
-        ) as mock_get_tile:
+        with patch.object(self.game_engine.world_maps[0], "get_tile") as mock_get_tile:
             mock_tile = MagicMock()
             mock_tile.type = "floor"
             mock_get_tile.return_value = mock_tile
@@ -55,9 +49,7 @@ class TestEffects(unittest.TestCase):
     def test_damage_effect(self):
         effect = DamageEffect(damage_amount=10)
         message = effect.apply(self.player, self.game_engine)
-        self.assertEqual(
-            message, "The item crackles with power, ready to be thrown."
-        )
+        self.assertEqual(message, "The item crackles with power, ready to be thrown.")
 
 
 if __name__ == "__main__":
