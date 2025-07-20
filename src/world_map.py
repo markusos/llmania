@@ -214,3 +214,20 @@ class WorldMap:
             if tile and tile.monster:
                 monsters.append(tile.monster)
         return monsters
+
+    def get_map_as_string(self, renderer) -> list[str]:
+        """
+        Returns a string representation of the map for debugging.
+        """
+        return renderer.render_all(
+            player_x=-1,
+            player_y=-1,
+            player_health=0,
+            world_map_to_render=self,
+            input_mode="",
+            current_command_buffer="",
+            message_log=None,
+            debug_render_to_list=True,
+            current_floor_id=0,  # Floor ID doesn't matter for this
+            apply_fog=False,
+        )
