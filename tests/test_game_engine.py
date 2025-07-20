@@ -282,9 +282,7 @@ class TestGameEngine(unittest.TestCase):
     def test_run_loop_debug_mode_no_curses_cleanup(self, mock_curses_for_debug_engine):
         with patch("src.game_engine.WorldGenerator") as MockWG_debug, patch(
             "src.game_engine.InputHandler"
-        ) as MockIH_debug, patch(
-            "src.game_engine.Renderer"
-        ) as MockRenderer_debug, patch(
+        ), patch("src.game_engine.Renderer") as MockRenderer_debug, patch(
             "src.game_engine.CommandProcessor"
         ) as MockCP_debug, patch("src.game_engine.Parser"), patch(
             "src.game_engine.Player"
@@ -315,7 +313,6 @@ class TestGameEngine(unittest.TestCase):
 
             debug_engine = GameEngine(map_width=10, map_height=5, debug_mode=True)
             debug_engine._debug_commands = [("quit", None)]
-
 
             def process_command_side_effect(*args, **kwargs):
                 debug_engine.game_state = GameState.QUIT
