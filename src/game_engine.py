@@ -39,6 +39,7 @@ class GameEngine:
         self.ai_logic = None
         self.verbose = verbose
         self.random = random.Random(seed)
+        self._debug_commands: list[tuple[str, str | None]] | None = None
 
         self.visible_maps: dict[int, WorldMap] = {}
 
@@ -254,13 +255,16 @@ class GameEngine:
             if self.player.health <= 0:
                 self.game_state = GameState.GAME_OVER
 
-
     def _handle_game_over(self):
         if self.game_state == GameState.GAME_OVER:
             if self.player.health <= 0:
                 self.message_log.add_message("You have been defeated. Game Over.")
 
-            ai_state = self.ai_logic.state.__class__.__name__ if self.ai_active and self.ai_logic else None
+            ai_state = (
+                self.ai_logic.state.__class__.__name__
+                if self.ai_active and self.ai_logic
+                else None
+            )
 
             if self.debug_mode:
                 self._render_debug_end_screen(ai_state=ai_state)
@@ -271,7 +275,11 @@ class GameEngine:
                 self.game_state = GameState.QUIT
 
         elif self.game_state == GameState.QUIT and self.debug_mode:
-            ai_state = self.ai_logic.state.__class__.__name__ if self.ai_active and self.ai_logic else None
+            ai_state = (
+                self.ai_logic.state.__class__.__name__
+                if self.ai_active and self.ai_logic
+                else None
+            )
             self._render_debug_end_screen(ai_state=ai_state)
 
     def _get_next_command(self):
