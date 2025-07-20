@@ -32,4 +32,6 @@ class QuitCommand(Command):
 
     def execute(self) -> Dict[str, Any]:
         self.message_log.add_message("Quitting game.")
-        return {"game_over": True}  # Quitting the game ends the game
+        if self.game_engine:
+            self.game_engine.game_state = self.game_engine.game_state.QUIT
+        return {"game_over": True}

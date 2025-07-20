@@ -233,6 +233,24 @@ class Player:
                 total_max_health += item.properties.get("max_health_bonus", 0)
         return total_max_health
 
+    def heal(self, amount: int) -> int:
+        """
+        Heals the player by a given amount.
+
+        Args:
+            amount: The amount of health to restore.
+
+        Returns:
+            The amount of health actually restored.
+        """
+        new_health = self.health + amount
+        if new_health > self.max_health:
+            new_health = self.max_health
+
+        healed_amount = new_health - self.health
+        self.health = new_health
+        return healed_amount
+
     def use_health_potion(self, item: Item) -> str:
         """
         Uses a health potion to restore health.

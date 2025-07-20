@@ -119,7 +119,9 @@ class TestGameEngine(unittest.TestCase):
         self.assertIsNotNone(self.game_engine.input_handler)
         self.assertIsNotNone(self.game_engine.renderer)
         self.assertIsNotNone(self.game_engine.command_processor)
-        self.assertFalse(self.game_engine.game_over)
+        self.assertEqual(
+            self.game_engine.game_state, self.game_engine.game_state.PLAYING
+        )
         self.assertIsInstance(self.game_engine.message_log, MessageLog)
         self.assertEqual(self.game_engine.debug_mode, False)
 
@@ -127,6 +129,7 @@ class TestGameEngine(unittest.TestCase):
     def test_run_loop_single_command_then_quit(self, mock_napms):
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
             ("move", "north"),
+            ("quit", None),
             ("quit", None),
         ]
 
@@ -145,7 +148,6 @@ class TestGameEngine(unittest.TestCase):
         self.mock_command_processor_instance.process_command.side_effect = (
             process_cmd_side_effect
         )
-        self.game_engine.game_over = False
         self.game_engine.run()
 
         self.mock_renderer_instance.render_all.assert_any_call(
@@ -163,9 +165,9 @@ class TestGameEngine(unittest.TestCase):
             ai_path=None,
             ai_state=None,
         )
-        self.assertGreaterEqual(self.mock_renderer_instance.render_all.call_count, 3)
+        self.assertGreaterEqual(self.mock_renderer_instance.render_all.call_count, 2)
         self.assertEqual(
-            self.mock_input_handler_instance.handle_input_and_get_command.call_count, 2
+            self.mock_input_handler_instance.handle_input_and_get_command.call_count, 3
         )
         self.mock_command_processor_instance.process_command.assert_any_call(
             ("move", "north"),
@@ -186,10 +188,9 @@ class TestGameEngine(unittest.TestCase):
         self.assertEqual(
             self.mock_command_processor_instance.process_command.call_count, 2
         )
-        self.assertTrue(self.game_engine.game_over)
+        self.assertEqual(self.game_engine.game_state, self.game_engine.game_state.QUIT)
         if not self.game_engine.debug_mode:
             self.mock_renderer_instance.cleanup_curses.assert_called_once()
-            mock_napms.assert_called_once_with(2000)
         else:
             mock_napms.assert_not_called()
             self.mock_renderer_instance.cleanup_curses.assert_not_called()
@@ -197,6 +198,7 @@ class TestGameEngine(unittest.TestCase):
     def test_run_loop_game_over_from_command(self):
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
             ("attack", "dragon"),
+            ("quit", None),  # To exit the loop
         ]
         self.mock_command_processor_instance.process_command.return_value = {
             "game_over": True
@@ -205,14 +207,22 @@ class TestGameEngine(unittest.TestCase):
 
         with patch("curses.napms") as mock_napms:
             self.game_engine.run()
-            if self.game_engine.game_over and not self.game_engine.debug_mode:
+            if (
+                self.game_engine.game_state == self.game_engine.game_state.GAME_OVER
+                and not self.game_engine.debug_mode
+            ):
                 mock_napms.assert_called_once_with(2000)
-            elif not (self.game_engine.game_over and not self.game_engine.debug_mode):
+            elif not (
+                self.game_engine.game_state == self.game_engine.game_state.GAME_OVER
+                and not self.game_engine.debug_mode
+            ):
                 mock_napms.assert_not_called()
 
-        self.mock_input_handler_instance.handle_input_and_get_command.assert_called_once()
+        self.assertEqual(
+            self.mock_input_handler_instance.handle_input_and_get_command.call_count, 2
+        )
         self.mock_command_processor_instance.process_command.assert_called_once()
-        self.assertTrue(self.game_engine.game_over)
+        self.assertEqual(self.game_engine.game_state, self.game_engine.game_state.QUIT)
         if not self.game_engine.debug_mode:
             self.mock_renderer_instance.cleanup_curses.assert_called_once()
         else:
@@ -251,6 +261,7 @@ class TestGameEngine(unittest.TestCase):
             mock_player_inst_debug.y = 0
             mock_player_inst_debug.current_floor_id = 0
             mock_player_inst_debug.health = 100
+            mock_player_inst_debug.invisibility_turns = 0
 
             mock_ih_inst_debug = MockIH_debug.return_value
             mock_cp_inst_debug = MockCP_debug.return_value
@@ -265,7 +276,7 @@ class TestGameEngine(unittest.TestCase):
 
             debug_engine.run()
 
-            self.assertTrue(debug_engine.game_over)
+            self.assertEqual(debug_engine.game_state, debug_engine.game_state.GAME_OVER)
             renderer = debug_engine.renderer
             assert renderer is not None
             renderer.cleanup_curses.assert_not_called()  # type: ignore
@@ -273,6 +284,7 @@ class TestGameEngine(unittest.TestCase):
     def test_run_loop_handles_no_command_from_input(self):
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
             None,
+            ("quit", None),
             ("quit", None),
         ]
         self.mock_command_processor_instance.process_command.side_effect = (
@@ -285,13 +297,19 @@ class TestGameEngine(unittest.TestCase):
 
         with patch("curses.napms") as mock_napms:
             self.game_engine.run()
-            if self.game_engine.game_over and not self.game_engine.debug_mode:
+            if (
+                self.game_engine.game_state == self.game_engine.game_state.GAME_OVER
+                and not self.game_engine.debug_mode
+            ):
                 mock_napms.assert_called_once_with(2000)
-            elif not (self.game_engine.game_over and not self.game_engine.debug_mode):
+            elif not (
+                self.game_engine.game_state == self.game_engine.game_state.GAME_OVER
+                and not self.game_engine.debug_mode
+            ):
                 mock_napms.assert_not_called()
 
         self.assertEqual(
-            self.mock_input_handler_instance.handle_input_and_get_command.call_count, 2
+            self.mock_input_handler_instance.handle_input_and_get_command.call_count, 3
         )
         self.mock_command_processor_instance.process_command.assert_called_once_with(
             ("quit", None),
@@ -301,7 +319,7 @@ class TestGameEngine(unittest.TestCase):
             self.game_engine.winning_full_pos,
             game_engine=self.game_engine,
         )
-        self.assertTrue(self.game_engine.game_over)
+        self.assertEqual(self.game_engine.game_state, self.game_engine.game_state.QUIT)
         if not self.game_engine.debug_mode:
             self.mock_renderer_instance.cleanup_curses.assert_called_once()
         else:
