@@ -385,7 +385,7 @@ class GameEngine:
         print("\n--- World Map Layout ---")
         for floor_id, world_map in sorted(self.world_maps.items()):
             print(f"\n--- Floor {floor_id} ---")
-            map_render = world_map.get_map_as_string(self.renderer)
+            map_render = world_map.get_map_as_string(self.renderer, self.message_log)
             if map_render:
                 for row in map_render:
                     print(row)
