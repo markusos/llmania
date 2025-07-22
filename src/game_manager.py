@@ -191,7 +191,7 @@ class GameManager:
             player_health=self.player.health,
             world_map_to_render=current_visible_map,
             input_mode=self.input_handler.current_mode,
-            current_command_buffer=self.input_handler.command_buffer,
+            current_command_buffer=self.input_handler.get_command_buffer(),
             message_log=self.message_log,
             current_floor_id=self.player.current_floor_id,
             ai_path=self.ai_logic.current_path if self.ai_logic else None,
