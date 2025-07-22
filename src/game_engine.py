@@ -120,6 +120,7 @@ class GameEngine:
         self.game_manager = GameManager(
             player=self.player,
             world_maps=self.world_maps,
+            visible_maps=self.visible_maps,
             message_log=self.message_log,
             renderer=self.renderer,
             input_handler=self.input_handler,

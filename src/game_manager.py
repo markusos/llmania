@@ -39,6 +39,7 @@ class GameManager:
         self,
         player: Player,
         world_maps: dict[int, WorldMap],
+        visible_maps: dict[int, WorldMap],
         message_log: MessageLog,
         renderer: Renderer,
         input_handler: InputHandler,
@@ -48,6 +49,7 @@ class GameManager:
     ):
         self.player = player
         self.world_maps = world_maps
+        self.visible_maps = visible_maps
         self.message_log = message_log
         self.renderer = renderer
         self.input_handler = input_handler
@@ -177,33 +179,45 @@ class GameManager:
             self._render_debug_end_screen(ai_state=ai_state)
 
     def _render(self, ai_state=None):
-        # current_visible_map = self.visible_maps.get(self.player.current_floor_id)
-        # if not current_visible_map:
-        #     current_visible_map = WorldMap(
-        #         self.renderer.map_width, self.renderer.map_height
-        #     )
-        pass
+        current_visible_map = self.visible_maps.get(self.player.current_floor_id)
+        if not current_visible_map:
+            current_visible_map = WorldMap(
+                self.renderer.map_width, self.renderer.map_height
+            )
+
+        self.renderer.render_all(
+            player_x=self.player.x,
+            player_y=self.player.y,
+            player_health=self.player.health,
+            world_map_to_render=current_visible_map,
+            input_mode=self.input_handler.current_mode,
+            current_command_buffer=self.input_handler.command_buffer,
+            message_log=self.message_log,
+            current_floor_id=self.player.current_floor_id,
+            ai_path=self.ai_logic.current_path if self.ai_logic else None,
+            ai_state=ai_state,
+        )
 
     def _render_debug_end_screen(self, ai_state=None):
         print("\n--- Game Over ---")
-        # final_map_render = self.renderer.render_all(
-        #     player_x=self.player.x,
-        #     player_y=self.player.y,
-        #     player_health=self.player.health,
-        #     world_map_to_render=self.visible_maps.get(
-        #         self.player.current_floor_id, self.world_maps.get(0)
-        #     ),
-        #     input_mode="",
-        #     current_command_buffer="",
-        #     message_log=self.message_log,
-        #     debug_render_to_list=True,
-        #     ai_path=self.ai_logic.current_path if self.ai_logic else None,
-        #     current_floor_id=self.player.current_floor_id,
-        #     ai_state=ai_state,
-        # )
-        # if final_map_render:
-        #     for row in final_map_render:
-        #         print(row)
+        final_map_render = self.renderer.render_all(
+            player_x=self.player.x,
+            player_y=self.player.y,
+            player_health=self.player.health,
+            world_map_to_render=self.visible_maps.get(
+                self.player.current_floor_id, self.world_maps.get(0)
+            ),
+            input_mode="",
+            current_command_buffer="",
+            message_log=self.message_log,
+            debug_render_to_list=True,
+            ai_path=self.ai_logic.current_path if self.ai_logic else None,
+            current_floor_id=self.player.current_floor_id,
+            ai_state=ai_state,
+        )
+        if final_map_render:
+            for row in final_map_render:
+                print(row)
 
         print("\n--- Final Messages ---")
         for msg in self.message_log.messages:
