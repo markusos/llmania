@@ -110,7 +110,8 @@ class InputHandler:
 
         return None  # Default: key did not result in an action or full command
 
-    def get_input_mode(self) -> str:
+    @property
+    def current_mode(self) -> str:
         """
         Returns the current input mode.
 
