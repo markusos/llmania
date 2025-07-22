@@ -38,7 +38,7 @@ class TestFastMonsterMovement(unittest.TestCase):
         self.assertEqual(monster_fast.y, 1)
 
         # Turn 1
-        self.game_engine._handle_monster_actions()
+        self.game_engine.game_manager._handle_monster_actions()
         self.assertEqual(monster_fast.y, 2)  # Fast monster moves
 
 
@@ -74,11 +74,11 @@ class TestSlowMonsterMovement(unittest.TestCase):
 
         # Turns 1-9
         for _ in range(9):
-            self.game_engine._handle_monster_actions()
+            self.game_engine.game_manager._handle_monster_actions()
             self.assertEqual(monster_slow.y, 2)  # Slow monster does not move
 
         # Turn 10
-        self.game_engine._handle_monster_actions()
+        self.game_engine.game_manager._handle_monster_actions()
         self.assertEqual(monster_slow.y, 1)  # Slow monster moves
 
 

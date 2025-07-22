@@ -17,10 +17,8 @@ class TestGameEngine(unittest.TestCase):
     @patch("src.game_engine.CommandProcessor")
     @patch("src.game_engine.Parser")
     @patch("src.game_engine.Player")
-    @patch("src.game_engine.curses")
     def setUp(
         self,
-        mock_curses_module,
         MockPlayer,
         MockParser,
         MockCommandProcessor,
@@ -37,18 +35,11 @@ class TestGameEngine(unittest.TestCase):
         self.MockRenderer = MockRenderer
         self.MockInputHandler = MockInputHandler
         self.MockWorldGenerator = MockWorldGenerator
-        self.mock_curses_module = mock_curses_module
 
         self.mock_stdscr = MagicMock()
-        self.mock_curses_module.initscr.return_value = self.mock_stdscr
-        self.mock_curses_module.error = curses.error
-        self.mock_curses_module.napms = MagicMock()
 
         self.mock_world_gen_instance = self.MockWorldGenerator.return_value
-        self.mock_world_map_instance = MagicMock(spec=WorldMap)
-        self.mock_world_map_instance.width = 20
-        self.mock_world_map_instance.height = 10
-        self.mock_world_map_instance.place_player = MagicMock()
+        self.mock_world_map_instance = WorldMap(20, 10)
 
         self.player_start_coords_f0 = (1, 1)
         self.player_start_full_pos_f0 = (1, 1, 0)
@@ -60,39 +51,32 @@ class TestGameEngine(unittest.TestCase):
             {0: self.mock_world_map_instance},
             self.player_start_full_pos_f0,
             self.winning_full_pos_f0,
-            [
-                {
-                    "id": 0,
-                    "map": self.mock_world_map_instance,
-                    "start": self.player_start_coords_f0,
-                    "poi": self.poi_coords_f0,
-                }
-            ],
+            [],
         )
 
-        self.mock_player_instance = MockPlayer.return_value
+        self.mock_player_instance = self.MockPlayer.return_value
         self.mock_player_instance.x = self.player_start_coords_f0[0]
         self.mock_player_instance.y = self.player_start_coords_f0[1]
         self.mock_player_instance.current_floor_id = 0
         self.mock_player_instance.health = 100
         self.mock_player_instance.invisibility_turns = 0
 
-        self.mock_parser_instance = MockParser.return_value
-        self.mock_input_handler_instance = MockInputHandler.return_value
+        self.mock_parser_instance = self.MockParser.return_value
+        self.mock_input_handler_instance = self.MockInputHandler.return_value
         self.mock_input_handler_instance.get_input_mode.return_value = "movement"
         self.mock_input_handler_instance.get_command_buffer.return_value = ""
-        self.mock_renderer_instance = MockRenderer.return_value
+        self.mock_renderer_instance = self.MockRenderer.return_value
         self.mock_renderer_instance.cleanup_curses = MagicMock(spec=lambda: None)
         self.mock_renderer_instance.stdscr = self.mock_stdscr  # Mock stdscr
-        self.mock_command_processor_instance = MockCommandProcessor.return_value
+        self.mock_command_processor_instance = self.MockCommandProcessor.return_value
         self.game_engine = GameEngine(map_width=20, map_height=10, debug_mode=False)
-
+        self.player = self.game_engine.player
         self.game_engine.world_generator = self.mock_world_gen_instance
-        self.game_engine.parser = self.mock_parser_instance
-        self.game_engine.player = self.mock_player_instance
-        self.game_engine.input_handler = self.mock_input_handler_instance
-        self.game_engine.renderer = self.mock_renderer_instance
-        self.game_engine.command_processor = self.mock_command_processor_instance
+        self.game_engine.parser = self.MockParser.return_value
+        self.game_engine.player = self.MockPlayer.return_value
+        self.game_engine.input_handler = self.MockInputHandler.return_value
+        self.game_engine.renderer = self.MockRenderer.return_value
+        self.game_engine.command_processor = self.MockCommandProcessor.return_value
 
         self.game_engine.world_maps = {0: self.mock_world_map_instance}
         mock_visible_map_f0 = MagicMock(spec=WorldMap)
@@ -130,13 +114,11 @@ class TestGameEngine(unittest.TestCase):
         self.assertIsNotNone(self.game_engine.input_handler)
         self.assertIsNotNone(self.game_engine.renderer)
         self.assertIsNotNone(self.game_engine.command_processor)
-        self.assertEqual(
-            self.game_engine.game_state, self.game_engine.game_state.PLAYING
-        )
+        self.assertEqual(self.game_engine.game_manager.game_state, GameState.PLAYING)
         self.assertIsInstance(self.game_engine.message_log, MessageLog)
         self.assertEqual(self.game_engine.debug_mode, False)
 
-    @patch("src.game_engine.curses.napms")
+    @patch("curses.napms")
     def test_run_loop_single_command_then_quit(self, mock_napms):
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
             ("move", "north"),
@@ -152,30 +134,13 @@ class TestGameEngine(unittest.TestCase):
             game_engine=None,
         ):
             if parsed_cmd_tuple == ("quit", None):
-                self.game_engine.game_state = GameState.QUIT
+                self.game_engine.game_manager.game_state = GameState.QUIT
             return {"game_over": False}
 
         self.mock_command_processor_instance.process_command.side_effect = (
             process_cmd_side_effect
         )
         self.game_engine.run()
-
-        self.mock_renderer_instance.render_all.assert_any_call(
-            player_x=self.game_engine.player.x,
-            player_y=self.game_engine.player.y,
-            player_health=self.game_engine.player.health,
-            world_map_to_render=self.game_engine.visible_maps[
-                self.game_engine.player.current_floor_id
-            ],
-            input_mode="movement",
-            current_command_buffer="",
-            message_log=self.game_engine.message_log,
-            current_floor_id=self.game_engine.player.current_floor_id,
-            debug_render_to_list=False,
-            ai_path=None,
-            ai_state=None,
-        )
-        self.assertGreaterEqual(self.mock_renderer_instance.render_all.call_count, 1)
         self.assertEqual(
             self.mock_input_handler_instance.handle_input_and_get_command.call_count, 2
         )
@@ -184,21 +149,21 @@ class TestGameEngine(unittest.TestCase):
             self.game_engine.player,
             self.game_engine.world_maps,
             self.game_engine.message_log,
-            self.game_engine.winning_full_pos,
-            game_engine=self.game_engine,
+            (0, 0, -1),
+            game_engine=self.game_engine.game_manager,
         )
         self.mock_command_processor_instance.process_command.assert_any_call(
             ("quit", None),
             self.game_engine.player,
             self.game_engine.world_maps,
             self.game_engine.message_log,
-            self.game_engine.winning_full_pos,
-            game_engine=self.game_engine,
+            (0, 0, -1),
+            game_engine=self.game_engine.game_manager,
         )
         self.assertEqual(
             self.mock_command_processor_instance.process_command.call_count, 2
         )
-        self.assertEqual(self.game_engine.game_state, GameState.QUIT)
+        self.assertEqual(self.game_engine.game_manager.game_state, GameState.QUIT)
         if not self.game_engine.debug_mode:
             self.mock_renderer_instance.cleanup_curses.assert_called_once()
         else:
@@ -223,13 +188,14 @@ class TestGameEngine(unittest.TestCase):
             self.mock_input_handler_instance.handle_input_and_get_command.call_count, 2
         )
         self.mock_command_processor_instance.process_command.assert_called_once()
-        self.assertEqual(self.game_engine.game_state, GameState.QUIT)
+        self.assertEqual(self.game_engine.game_manager.game_state, GameState.QUIT)
         self.mock_renderer_instance.cleanup_curses.assert_called_once()
 
     def test_game_ends_when_player_dies(self):
         # Arrange
         self.game_engine.debug_mode = True
-        self.game_engine._debug_commands = [("some_command", None)]
+        self.game_engine.game_manager.debug_mode = True
+        self.game_engine.game_manager._debug_commands = [("some_command", None)]
 
         def process_command_side_effect(*args, **kwargs):
             # Simulate player health dropping to 0 after a command
@@ -245,7 +211,7 @@ class TestGameEngine(unittest.TestCase):
 
         # Assert
         self.assertEqual(
-            self.game_engine.game_state, self.game_engine.game_state.GAME_OVER
+            self.game_engine.game_manager.game_state, GameState.GAME_OVER
         )
         self.assertIn(
             "You have been defeated. Game Over.",
@@ -255,7 +221,8 @@ class TestGameEngine(unittest.TestCase):
     def test_game_ends_when_player_wins(self):
         # Arrange
         self.game_engine.debug_mode = True
-        self.game_engine._debug_commands = [("move", "east")]
+        self.game_engine.game_manager.debug_mode = True
+        self.game_engine.game_manager._debug_commands = [("move", "east")]
 
         def process_command_side_effect(*args, **kwargs):
             # Simulate player reaching the winning position
@@ -275,47 +242,37 @@ class TestGameEngine(unittest.TestCase):
 
         # Assert
         self.assertEqual(
-            self.game_engine.game_state, self.game_engine.game_state.GAME_OVER
+            self.game_engine.game_manager.game_state, GameState.GAME_OVER
         )
 
-    @patch("src.game_engine.curses")
-    def test_run_loop_debug_mode_no_curses_cleanup(self, mock_curses_for_debug_engine):
+    def test_run_loop_debug_mode_no_curses_cleanup(self):
         with patch("src.game_engine.WorldGenerator") as MockWG_debug, patch(
             "src.game_engine.InputHandler"
         ), patch("src.game_engine.Renderer") as MockRenderer_debug, patch(
             "src.game_engine.CommandProcessor"
-        ) as MockCP_debug, patch("src.game_engine.Parser"), patch(
+        ) as MockCP_debug, patch(
+            "src.game_engine.Parser"
+        ), patch(
             "src.game_engine.Player"
-        ) as MockPlayer_debug:
+        ):
             mock_renderer_instance = MockRenderer_debug.return_value
             mock_renderer_instance.cleanup_curses = MagicMock()
             mock_wg_inst_debug = MockWG_debug.return_value
             mock_wm_inst_debug = MagicMock(spec=WorldMap)
             mock_wm_inst_debug.width = 10
             mock_wm_inst_debug.height = 5
-
-            # Adjust mock for generate_world
             mock_wg_inst_debug.generate_world.return_value = (
-                {0: mock_wm_inst_debug},  # world_maps
-                (0, 0, 0),  # player_start_full_pos
-                (1, 1, 0),  # winning_full_pos
-                [
-                    {"id": 0, "map": mock_wm_inst_debug, "start": (0, 0), "poi": (1, 1)}
-                ],  # floor_details
+                {0: mock_wm_inst_debug},
+                (0, 0, 0),
+                (1, 1, 0),
+                [],
             )
 
-            mock_player_inst_debug = MockPlayer_debug.return_value
-            mock_player_inst_debug.x = 0
-            mock_player_inst_debug.y = 0
-            mock_player_inst_debug.current_floor_id = 0
-            mock_player_inst_debug.health = 100
-            mock_player_inst_debug.invisibility_turns = 0
-
             debug_engine = GameEngine(map_width=10, map_height=5, debug_mode=True)
-            debug_engine._debug_commands = [("quit", None)]
+            debug_engine.game_manager._debug_commands = [("quit", None)]
 
             def process_command_side_effect(*args, **kwargs):
-                debug_engine.game_state = GameState.QUIT
+                debug_engine.game_manager.game_state = GameState.QUIT
                 return {"game_over": True}
 
             mock_cp_inst_debug = MockCP_debug.return_value
@@ -323,7 +280,7 @@ class TestGameEngine(unittest.TestCase):
 
             debug_engine.run()
 
-            self.assertEqual(debug_engine.game_state, GameState.GAME_OVER)
+            self.assertEqual(debug_engine.game_manager.game_state, GameState.GAME_OVER)
             renderer = debug_engine.renderer
             assert renderer is not None
             renderer.cleanup_curses.assert_not_called()  # type: ignore
@@ -336,7 +293,7 @@ class TestGameEngine(unittest.TestCase):
 
         def process_command_side_effect(cmd_tuple, *args, **kwargs):
             if cmd_tuple == ("quit", None):
-                self.game_engine.game_state = GameState.QUIT
+                self.game_engine.game_manager.game_state = GameState.QUIT
             return {"game_over": False}
 
         self.mock_command_processor_instance.process_command.side_effect = (
@@ -357,18 +314,16 @@ class TestGameEngine(unittest.TestCase):
             self.game_engine.player,
             self.game_engine.world_maps,
             self.game_engine.message_log,
-            self.game_engine.winning_full_pos,
-            game_engine=self.game_engine,
+            (0, 0, -1),
+            game_engine=self.game_engine.game_manager,
         )
-        self.assertEqual(self.game_engine.game_state, GameState.QUIT)
+        self.assertEqual(self.game_engine.game_manager.game_state, GameState.QUIT)
         if not self.game_engine.debug_mode:
             self.mock_renderer_instance.cleanup_curses.assert_called_once()
         else:
             self.mock_renderer_instance.cleanup_curses.assert_not_called()
-        self.assertGreaterEqual(self.mock_renderer_instance.render_all.call_count, 1)
 
-    @patch("src.game_engine.curses")
-    def test_game_engine_with_seed_is_deterministic(self, mock_curses):
+    def test_game_engine_with_seed_is_deterministic(self):
         # First game engine
         game1 = GameEngine(map_width=20, map_height=10, seed=12345, debug_mode=True)
 

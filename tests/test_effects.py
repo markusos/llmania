@@ -14,7 +14,9 @@ class TestEffects(unittest.TestCase):
             "src.game_engine.InputHandler"
         ), patch("src.game_engine.Renderer"), patch(
             "src.game_engine.CommandProcessor"
-        ), patch("src.game_engine.Parser"), patch("src.game_engine.curses"):
+        ), patch(
+            "src.game_engine.Parser"
+        ):
             mock_map = MagicMock()
             mock_map.width = 20
             mock_map.height = 10

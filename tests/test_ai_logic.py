@@ -32,9 +32,10 @@ class TestAILogic(unittest.TestCase):
 
         self.message_log = MagicMock(spec=MessageLog)
 
-        with patch("src.ai_logic.main.TargetFinder") as self.mock_target_finder, patch(
-            "src.ai_logic.main.Explorer"
-        ) as self.mock_explorer:
+        with (
+            patch("src.ai_logic.main.TargetFinder") as self.mock_target_finder,
+            patch("src.ai_logic.main.Explorer") as self.mock_explorer,
+        ):
             self.ai = AILogic(
                 player=self.mock_player,
                 real_world_maps=self.mock_real_world_maps,

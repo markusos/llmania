@@ -24,6 +24,6 @@ class TeleportEffect(Effect):
             current_map.remove_player(player.x, player.y)
             player.x, player.y = new_x, new_y
             current_map.place_player(player, new_x, new_y)
-            game_engine._update_fog_of_war_visibility()
+            game_engine.fog_of_war.update_visibility()
             return "You were teleported to a new location."
         return "The scroll fizzles, but nothing happens."
