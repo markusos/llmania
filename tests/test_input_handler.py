@@ -30,7 +30,7 @@ class TestInputHandler(unittest.TestCase):
         self.input_handler = InputHandler(self.mock_stdscr, self.mock_parser)
 
     def test_initial_state(self):
-        self.assertEqual(self.input_handler.get_input_mode(), "movement")
+        self.assertEqual(self.input_handler.current_mode, "movement")
         self.assertEqual(self.input_handler.get_command_buffer(), "")
         # curses.curs_set called to hide cursor in movement mode if constructor sets it.
         # Current InputHandler constructor does not explicitly call curs_set.
@@ -64,7 +64,7 @@ class TestInputHandler(unittest.TestCase):
         self.mock_stdscr.getkey.return_value = "`"
         command = self.input_handler.handle_input_and_get_command()
         self.assertIsNone(command)  # Mode switch doesn't return a command
-        self.assertEqual(self.input_handler.get_input_mode(), "command")
+        self.assertEqual(self.input_handler.current_mode, "command")
         self.assertEqual(self.input_handler.get_command_buffer(), "")
         self.mock_curs_set.assert_called_with(1)  # Cursor visible in command mode
 
@@ -81,7 +81,7 @@ class TestInputHandler(unittest.TestCase):
 
         self.assertEqual(command, parsed_cmd_mock)
         self.mock_parser.parse_command.assert_called_once_with("test cmd")
-        self.assertEqual(self.input_handler.get_input_mode(), "movement")
+        self.assertEqual(self.input_handler.current_mode, "movement")
         self.assertEqual(self.input_handler.get_command_buffer(), "")
         self.mock_curs_set.assert_called_with(
             0
@@ -96,7 +96,7 @@ class TestInputHandler(unittest.TestCase):
         self.assertIsNone(command)  # No command parsed or returned
         self.mock_parser.parse_command.assert_not_called()  # Parser not called
         self.assertEqual(
-            self.input_handler.get_input_mode(), "movement"
+            self.input_handler.current_mode, "movement"
         )  # Switch to movement
         self.mock_curs_set.assert_called_with(0)
 
@@ -117,7 +117,7 @@ class TestInputHandler(unittest.TestCase):
 
         command = self.input_handler.handle_input_and_get_command()
         self.assertIsNone(command)
-        self.assertEqual(self.input_handler.get_input_mode(), "movement")
+        self.assertEqual(self.input_handler.current_mode, "movement")
         self.assertEqual(self.input_handler.get_command_buffer(), "")
         self.mock_curs_set.assert_called_with(0)
 
@@ -128,7 +128,7 @@ class TestInputHandler(unittest.TestCase):
 
         command = self.input_handler.handle_input_and_get_command()
         self.assertIsNone(command)
-        self.assertEqual(self.input_handler.get_input_mode(), "movement")
+        self.assertEqual(self.input_handler.current_mode, "movement")
         self.mock_curs_set.assert_called_with(0)
 
     def test_command_mode_tilde_key_non_empty_buffer(self):
@@ -139,7 +139,7 @@ class TestInputHandler(unittest.TestCase):
         command = self.input_handler.handle_input_and_get_command()
         self.assertIsNone(command)
         self.assertEqual(
-            self.input_handler.get_input_mode(), "command"
+            self.input_handler.current_mode, "command"
         )  # Stays in command mode
         self.assertEqual(
             self.input_handler.get_command_buffer(), "test`"
