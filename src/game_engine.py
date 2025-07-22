@@ -145,9 +145,6 @@ class GameEngine:
                 )
 
     def run(self):
-        if self.debug_mode:
-            self.debug_manager.setup_debug_mode()
-
         try:
             self.game_manager.run(self.fog_of_war)
             self.game_manager._handle_game_over()

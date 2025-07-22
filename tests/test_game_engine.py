@@ -1,4 +1,3 @@
-import curses
 import os
 import sys
 import unittest
@@ -254,13 +253,21 @@ class TestGameEngine(unittest.TestCase):
             "src.game_engine.Parser"
         ), patch(
             "src.game_engine.Player"
-        ):
+        ) as MockPlayer_debug:
+            mock_player_instance = MockPlayer_debug.return_value
+            mock_player_instance.current_floor_id = 0  # Set the attribute
+            mock_player_instance.x = 0
+            mock_player_instance.y = 0
+            mock_player_instance.invisibility_turns = 0
+            mock_player_instance.health = 100
+
             mock_renderer_instance = MockRenderer_debug.return_value
             mock_renderer_instance.cleanup_curses = MagicMock()
             mock_wg_inst_debug = MockWG_debug.return_value
             mock_wm_inst_debug = MagicMock(spec=WorldMap)
             mock_wm_inst_debug.width = 10
             mock_wm_inst_debug.height = 5
+            mock_wm_inst_debug.get_tile.return_value = MagicMock()
             mock_wg_inst_debug.generate_world.return_value = (
                 {0: mock_wm_inst_debug},
                 (0, 0, 0),
