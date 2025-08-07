@@ -25,6 +25,7 @@ class Player:
         self.base_attack_power = 2
         self.base_defense = 0
         self.base_speed = 1
+        self.base_attack_speed = 5
         self.invisibility_turns = 0
 
     def move(self, dx: int, dy: int):
@@ -51,6 +52,16 @@ class Player:
         Calculates the player's total speed, including equipment bonuses.
         """
         return self.base_speed + self.equipment.get_total_bonus("speed")
+
+    def get_attack_speed(self) -> int:
+        """
+        Calculates the player's total attack speed, including equipment bonuses.
+        """
+        total_attack_speed = self.base_attack_speed
+        for item in self.equipment.values():
+            if item:
+                total_attack_speed += item.attack_speed_bonus
+        return total_attack_speed
 
     def attack_monster(self, monster: Monster) -> dict[str, str | int | bool]:
         """

@@ -22,6 +22,7 @@ class TestCommandProcessor(unittest.TestCase):
             "main_hand": None,
             "off_hand": None,
         }
+        self.mock_player.get_attack_speed = MagicMock(return_value=5)
 
         self.mock_world_map = MagicMock(spec=WorldMap)
         self.mock_world_map.get_tile = MagicMock()
@@ -36,7 +37,8 @@ class TestCommandProcessor(unittest.TestCase):
         self.message_log = MagicMock(spec=MessageLog)
         self.win_pos = (10, 10, 0)  # Now a 3-tuple (x,y,floor_id)
 
-        self.mock_game_engine = MagicMock()  # For the game_engine argument
+        self.mock_game_engine = MagicMock()
+        self.mock_game_engine.random.random.return_value = 0.0
 
     def common_process_command(self, command_tuple):
         # Reset mocks for player's position before each command if necessary,
@@ -196,6 +198,7 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.x, self.mock_player.y = 1, 1  # Player at (1,1)
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Rat"
+        mock_monster.attack_speed = 5
         mock_monster.distance_to.return_value = 1
         mock_monster.x = 2
         mock_monster.y = 1
@@ -211,6 +214,7 @@ class TestCommandProcessor(unittest.TestCase):
             return tile
 
         self.mock_world_map.get_monsters.return_value = [mock_monster]
+        self.mock_world_map.get_tile_by_monster.return_value = MagicMock(x=2, y=1)
 
         self.mock_player.attack_monster.return_value = {
             "damage_dealt": 10,
@@ -230,6 +234,7 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Orc"
+        mock_monster.attack_speed = 5
         mock_monster.distance_to.return_value = 1
         mock_monster.x = 2
         mock_monster.y = 1
@@ -267,6 +272,7 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Dragon"
+        mock_monster.attack_speed = 5
         mock_monster.distance_to.return_value = 1
         mock_monster.x = 2
         mock_monster.y = 1
@@ -307,6 +313,7 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.x, self.mock_player.y = 1, 1
         mock_monster = MagicMock(spec=Monster)
         mock_monster.name = "Slime"
+        mock_monster.attack_speed = 5
         mock_monster.distance_to.return_value = 1
         mock_monster.x = 1
         mock_monster.y = 2
@@ -321,6 +328,7 @@ class TestCommandProcessor(unittest.TestCase):
             return tile
 
         self.mock_world_map.get_monsters.return_value = [mock_monster]
+        self.mock_world_map.get_tile_by_monster.return_value = MagicMock(x=1, y=2)
 
         self.mock_player.attack_monster.return_value = {
             "damage_dealt": 1,
