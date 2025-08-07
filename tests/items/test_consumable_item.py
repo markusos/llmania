@@ -30,12 +30,13 @@ class TestConsumableItem(unittest.TestCase):
             effects=[effect1, effect2],
         )
         player = MagicMock()
-        player.inventory = [item]
+        inventory = MagicMock()
+        player.inventory = inventory
         game_engine = Mock()
         message = item.apply(player, game_engine)
         effect1.apply.assert_called_once_with(player, game_engine)
         effect2.apply.assert_called_once_with(player, game_engine)
-        self.assertNotIn(item, player.inventory)
+        inventory.remove_item.assert_called_once_with(item)
         self.assertEqual(message, "Effect 1 Effect 2")
 
 

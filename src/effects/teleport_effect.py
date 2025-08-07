@@ -17,7 +17,7 @@ class TeleportEffect(Effect):
             (x, y)
             for y in range(current_map.height)
             for x in range(current_map.width)
-            if current_map.get_tile(x, y).type == "floor"
+            if current_map.get_tile(x, y) and current_map.get_tile(x, y).type == "floor"
         ]
         if walkable_tiles:
             new_x, new_y = random.choice(walkable_tiles)

@@ -84,6 +84,8 @@ class GameEngine:
 
         self.input_handler = InputHandler(self.renderer.stdscr, self.parser)
         self.command_processor = CommandProcessor()
+        self.input_mode = "normal"  # Added this line
+        self.command_buffer = ""  # Added this line
 
         self.player = Player(
             x=player_start_full_pos[0],
@@ -283,18 +285,23 @@ class GameEngine:
             self._render_debug_end_screen(ai_state=ai_state)
 
     def _get_next_command(self):
-        if self.ai_active and self.ai_logic:
-            if self.ai_sleep_duration > 0 and not self.debug_mode:
-                time.sleep(self.ai_sleep_duration)
-            return self.ai_logic.get_next_action()
-        elif not self.debug_mode:
-            return self.input_handler.handle_input_and_get_command()
-        else:
-            # In debug mode, if not AI-controlled, we assume commands are fed in
-            # and we should not block on input. If no more commands, exit.
-            if hasattr(self, "_debug_commands") and self._debug_commands:
-                return self._debug_commands.pop(0)
-            return "NO_COMMAND"
+        command = self.input_handler.handle_input_and_get_command(self.input_mode)
+
+        if command == "command_mode":
+            self.input_mode = "command"
+            return None
+        elif command == "movement_mode":
+            self.input_mode = "normal"
+            return None
+        elif command == "inventory":
+            if self.input_mode == "inventory":
+                self.input_mode = "normal"
+            else:
+                self.input_mode = "inventory"
+            return None
+
+        self.command_buffer = self.input_handler.get_command_buffer()
+        return command
 
     def _process_command(self, parsed_command_output):
         if self.game_state != GameState.PLAYING:
@@ -340,19 +347,22 @@ class GameEngine:
         if self.ai_active and self.ai_logic:
             ai_path = self.ai_logic.current_path
 
-        self.renderer.render_all(
-            player_x=self.player.x,
-            player_y=self.player.y,
-            player_health=self.player.health,
-            world_map_to_render=current_visible_map,
-            input_mode=self.input_handler.get_input_mode(),
-            current_command_buffer=self.input_handler.get_command_buffer(),
-            message_log=self.message_log,
-            debug_render_to_list=self.debug_mode,
-            ai_path=ai_path,
-            current_floor_id=self.player.current_floor_id,
-            ai_state=ai_state,
-        )
+        if self.input_mode == "inventory":
+            self.renderer.render_inventory(self.player)
+        else:
+            self.renderer.render_all(
+                player_x=self.player.x,
+                player_y=self.player.y,
+                player_health=self.player.health,
+                world_map_to_render=current_visible_map,
+                input_mode=self.input_mode,
+                current_command_buffer=self.command_buffer,
+                message_log=self.message_log,
+                debug_render_to_list=self.debug_mode,
+                ai_path=ai_path,
+                current_floor_id=self.player.current_floor_id,
+                ai_state=ai_state,
+            )
 
     def _render_debug_end_screen(self, ai_state=None):
         print("\n--- Game Over ---")

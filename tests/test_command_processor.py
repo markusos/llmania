@@ -17,7 +17,7 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.x = 1
         self.mock_player.y = 1
         self.mock_player.health = 100
-        self.mock_player.inventory = []
+        self.mock_player.inventory = MagicMock()
         self.mock_player.equipment = {
             "main_hand": None,
             "off_hand": None,
@@ -412,15 +412,13 @@ class TestCommandProcessor(unittest.TestCase):
         item1.name = "Dagger"
         item2 = MagicMock(spec=Item)
         item2.name = "Rope"
-        self.mock_player.inventory = [item1, item2]
+        self.mock_player.inventory.items = [item1, item2]
         result = self.common_process_command(("inventory", None))
-        self.message_log.add_message.assert_any_call("Inventory: Dagger, Rope")
         self.assertFalse(result["game_over"])
 
     def test_process_command_inventory_empty(self):
-        self.mock_player.inventory = []
+        self.mock_player.inventory.items = []
         result = self.common_process_command(("inventory", None))
-        self.message_log.add_message.assert_any_call("Your inventory is empty.")
         self.assertFalse(result["game_over"])
 
     def test_process_command_look_clear_area(self):

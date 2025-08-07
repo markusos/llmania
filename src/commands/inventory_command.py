@@ -7,7 +7,6 @@ if TYPE_CHECKING:
     from src.message_log import MessageLog
     from src.player import Player
     from src.world_map import WorldMap
-    # from src.item import Item
 
 
 class InventoryCommand(Command):
@@ -32,14 +31,25 @@ class InventoryCommand(Command):
         )
 
     def execute(self) -> Dict[str, Any]:
-        if not self.player.inventory:
-            self.message_log.add_message("Your inventory is empty.")
+        if not self.game_engine:
+            return {"game_over": False}
+
+        # Toggle inventory mode
+        if self.game_engine.input_mode == "inventory":
+            self.game_engine.input_mode = "normal"
+            if self.game_engine.renderer:
+                self.game_engine.renderer.render_all(
+                    player_x=self.player.x,
+                    player_y=self.player.y,
+                    player_health=self.player.health,
+                    world_map_to_render=self.world_map,
+                    input_mode=self.game_engine.input_mode,
+                    current_command_buffer=self.game_engine.command_buffer,
+                    message_log=self.message_log,
+                    current_floor_id=self.player.current_floor_id,
+                )
         else:
-            inventory_display = []
-            for item_obj in self.player.inventory:
-                display_name = item_obj.name
-                if item_obj in self.player.equipment.values():
-                    display_name += " (equipped)"
-                inventory_display.append(display_name)
-            self.message_log.add_message(f"Inventory: {', '.join(inventory_display)}")
-        return {"game_over": False}  # Viewing inventory does not end the game
+            self.game_engine.input_mode = "inventory"
+            # The renderer will handle drawing the inventory screen
+            # based on the new input_mode.
+        return {"game_over": False}

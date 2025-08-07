@@ -33,5 +33,5 @@ class ConsumableItem(Item):
         messages = []
         for effect in self.effects:
             messages.append(effect.apply(player, game_engine))
-        player.inventory.remove(self)
+        player.inventory.remove_item(self)
         return " ".join(messages)
