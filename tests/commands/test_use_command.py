@@ -42,7 +42,7 @@ class TestUseCommand(unittest.TestCase):
         # Arrange
         self.player.health = 50
         health_potion = self.item_factory.create_item("health_potion")
-        self.player.inventory.append(health_potion)
+        self.player.inventory.add_item(health_potion)
         command = UseCommand(
             self.player,
             self.world_map,
@@ -64,7 +64,7 @@ class TestUseCommand(unittest.TestCase):
     def test_use_scroll_of_teleportation(self):
         # Arrange
         scroll = self.item_factory.create_item("scroll_of_teleportation")
-        self.player.inventory.append(scroll)
+        self.player.inventory.add_item(scroll)
         initial_pos = (self.player.x, self.player.y)
         command = UseCommand(
             self.player,
@@ -87,7 +87,7 @@ class TestUseCommand(unittest.TestCase):
     def test_toggle_equip_item(self):
         # Arrange
         sword = self.item_factory.create_item("sword")
-        self.player.inventory.append(sword)
+        self.player.inventory.add_item(sword)
         command = UseCommand(
             self.player,
             self.world_map,
@@ -101,20 +101,20 @@ class TestUseCommand(unittest.TestCase):
         command.execute()
 
         # Assert: Equip
-        self.assertEqual(self.player.equipment["main_hand"], sword)
+        self.assertEqual(self.player.equipment.slots["main_hand"], sword)
         self.assertIn("Equipped Sword.", self.message_log.messages[-1])
 
         # Act: Unequip
         command.execute()
 
         # Assert: Unequip
-        self.assertIsNone(self.player.equipment["main_hand"])
+        self.assertIsNone(self.player.equipment.slots["main_hand"])
         self.assertIn("You unequip Sword.", self.message_log.messages[-1])
 
     def test_use_fire_potion(self):
         # Arrange
         fire_potion = self.item_factory.create_item("fire_potion")
-        self.player.inventory.append(fire_potion)
+        self.player.inventory.add_item(fire_potion)
         command = UseCommand(
             self.player,
             self.world_map,
@@ -138,7 +138,7 @@ class TestUseCommand(unittest.TestCase):
     def test_use_invisibility_potion(self):
         # Arrange
         invisibility_potion = self.item_factory.create_item("invisibility_potion")
-        self.player.inventory.append(invisibility_potion)
+        self.player.inventory.add_item(invisibility_potion)
         command = UseCommand(
             self.player,
             self.world_map,
@@ -161,7 +161,7 @@ class TestUseCommand(unittest.TestCase):
     def test_equip_amulet_of_health(self):
         # Arrange
         amulet = self.item_factory.create_item("amulet_of_health")
-        self.player.inventory.append(amulet)
+        self.player.inventory.add_item(amulet)
         initial_max_health = self.player.get_max_health()
         command = UseCommand(
             self.player,
@@ -176,7 +176,7 @@ class TestUseCommand(unittest.TestCase):
         command.execute()
 
         # Assert
-        self.assertEqual(self.player.equipment["amulet"], amulet)
+        self.assertEqual(self.player.equipment.slots["amulet"], amulet)
         self.assertGreater(self.player.get_max_health(), initial_max_health)
         self.assertIn("Equipped Amulet of Health.", self.message_log.messages[-1])
 

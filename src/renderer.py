@@ -1,9 +1,12 @@
 import curses  # Changed from shutil to curses for terminal size
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from src.message_log import MessageLog
 from src.tile import TILE_SYMBOLS
 from src.world_map import WorldMap
+
+if TYPE_CHECKING:
+    from src.player import Player
 
 
 class Renderer:
@@ -314,6 +317,62 @@ class Renderer:
                         break
                 else:
                     break
+
+        self.stdscr.refresh()
+        return None
+
+    def render_inventory(self, player: "Player") -> Optional[List[str]]:
+        if self.debug_mode:
+            output_buffer = ["--- Inventory ---"]
+            output_buffer.append(f"Health: {player.health}/{player.get_max_health()}")
+            output_buffer.append(f"Attack: {player.get_attack_power()}")
+            output_buffer.append(f"Defense: {player.get_defense()}")
+            output_buffer.append(f"Speed: {player.get_speed()}")
+            output_buffer.append("\n--- Equipment ---")
+            for slot, item in player.equipment.slots.items():
+                item_name = item.name if item else "Empty"
+                output_buffer.append(f"{slot.capitalize()}: {item_name}")
+            output_buffer.append("\n--- Items ---")
+            if not player.inventory.items:
+                output_buffer.append("Your inventory is empty.")
+            else:
+                for item in player.inventory.items:
+                    output_buffer.append(f"- {item.name}")
+            return output_buffer
+
+        if not self.stdscr:
+            return None
+
+        self.stdscr.clear()
+        height, width = self.stdscr.getmaxyx()
+
+        # Title
+        self.stdscr.addstr(1, 2, "--- Inventory ---", curses.A_BOLD)
+
+        # Stats
+        self.stdscr.addstr(3, 2, "Stats", curses.A_UNDERLINE)
+        self.stdscr.addstr(4, 2, f"Health: {player.health}/{player.get_max_health()}")
+        self.stdscr.addstr(5, 2, f"Attack: {player.get_attack_power()}")
+        self.stdscr.addstr(6, 2, f"Defense: {player.get_defense()}")
+        self.stdscr.addstr(7, 2, f"Speed: {player.get_speed()}")
+
+        # Equipment
+        self.stdscr.addstr(9, 2, "Equipment", curses.A_UNDERLINE)
+        row = 10
+        for slot, item in player.equipment.slots.items():
+            item_name = item.name if item else "Empty"
+            self.stdscr.addstr(row, 2, f"{slot.capitalize()}: {item_name}")
+            row += 1
+
+        # Inventory
+        self.stdscr.addstr(row + 1, 2, "Items", curses.A_UNDERLINE)
+        row += 2
+        if not player.inventory.items:
+            self.stdscr.addstr(row, 2, "Your inventory is empty.")
+        else:
+            for item in player.inventory.items:
+                self.stdscr.addstr(row, 2, f"- {item.name}")
+                row += 1
 
         self.stdscr.refresh()
         return None

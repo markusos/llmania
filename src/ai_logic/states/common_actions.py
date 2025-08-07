@@ -11,7 +11,7 @@ def use_item(ai_logic: "AILogic", item_type: str) -> Optional[Tuple[str, str]]:
         # Do not use healing items if health is full
         if ai_logic.player.health >= ai_logic.player.max_health:
             return None
-    for item in ai_logic.player.inventory:
+    for item in ai_logic.player.inventory.items:
         if item.properties.get("type") == item_type:
             ai_logic.message_log.add_message(f"AI: Using {item.name}.")
             return ("use", item.name)
@@ -19,11 +19,11 @@ def use_item(ai_logic: "AILogic", item_type: str) -> Optional[Tuple[str, str]]:
 
 
 def equip_better_weapon(ai_logic: "AILogic") -> Optional[Tuple[str, str]]:
-    for item in ai_logic.player.inventory:
+    for item in ai_logic.player.inventory.items:
         if item.properties.get("type") == "weapon":
             current_attack_bonus = 0
-            if ai_logic.player.equipment["main_hand"]:
-                current_attack_bonus = ai_logic.player.equipment[
+            if ai_logic.player.equipment.slots["main_hand"]:
+                current_attack_bonus = ai_logic.player.equipment.slots[
                     "main_hand"
                 ].properties.get("attack_bonus", 0)
 

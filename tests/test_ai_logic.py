@@ -23,7 +23,7 @@ class TestAILogic(unittest.TestCase):
         self.mock_player.current_floor_id = 0
         self.mock_player.health = 100
         self.mock_player.max_health = 100
-        self.mock_player.inventory = []
+        self.mock_player.inventory = MagicMock()
 
         self.ai_visible_maps: Dict[int, WorldMap] = {0: WorldMap(10, 10)}
         self.mock_real_world_maps: Dict[int, MagicMock] = {0: MagicMock(spec=WorldMap)}

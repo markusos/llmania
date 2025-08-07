@@ -19,9 +19,9 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(self.player.x, 1)
         self.assertEqual(self.player.y, 2)
         self.assertEqual(self.player.health, 100)
-        self.assertEqual(self.player.inventory, [])
+        self.assertEqual(self.player.inventory.items, [])
         self.assertEqual(self.player.base_attack_power, 2)
-        self.assertIsNone(self.player.equipment["main_hand"])
+        self.assertIsNone(self.player.equipment.slots["main_hand"])
 
     def test_player_move(self):
         self.player.move(1, -1)
@@ -32,7 +32,7 @@ class TestPlayer(unittest.TestCase):
         potion = self.item_factory.create_item("health_potion")
         if potion:
             self.player.take_item(potion)
-            self.assertIn(potion, self.player.inventory)
+            self.assertIn(potion, self.player.inventory.items)
 
     def test_player_drop_item(self):
         item_data = (
@@ -47,7 +47,7 @@ class TestPlayer(unittest.TestCase):
                 self.player.take_item(potion)
                 dropped_item = self.player.drop_item("Health Potion")
                 self.assertEqual(dropped_item, potion)
-                self.assertNotIn(potion, self.player.inventory)
+                self.assertNotIn(potion, self.player.inventory.items)
 
     def test_player_use_item_heal(self):
         self.player.health = 50
@@ -63,7 +63,7 @@ class TestPlayer(unittest.TestCase):
                 self.player.take_item(potion)
                 self.player.use_item("Health Potion", self.game_engine)
                 self.assertEqual(self.player.health, 60)
-                self.assertNotIn(potion, self.player.inventory)
+                self.assertNotIn(potion, self.player.inventory.items)
 
     def test_equip_and_unequip_item(self):
         item_data = (
@@ -78,11 +78,11 @@ class TestPlayer(unittest.TestCase):
                 self.player.take_item(sword)
                 message = self.player.use_item("Sword", self.game_engine)
                 self.assertEqual(message, "Equipped Sword.")
-                self.assertEqual(self.player.equipment["main_hand"], sword)
+                self.assertEqual(self.player.equipment.slots["main_hand"], sword)
 
                 message = self.player.use_item("Sword", self.game_engine)
                 self.assertEqual(message, "You unequip Sword.")
-                self.assertIsNone(self.player.equipment["main_hand"])
+                self.assertIsNone(self.player.equipment.slots["main_hand"])
 
     def test_get_attack_power(self):
         self.assertEqual(self.player.get_attack_power(), 2)

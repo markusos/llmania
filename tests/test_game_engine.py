@@ -79,13 +79,13 @@ class TestGameEngine(unittest.TestCase):
 
         self.mock_parser_instance = MockParser.return_value
         self.mock_input_handler_instance = MockInputHandler.return_value
-        self.mock_input_handler_instance.get_input_mode.return_value = "movement"
         self.mock_input_handler_instance.get_command_buffer.return_value = ""
         self.mock_renderer_instance = MockRenderer.return_value
         self.mock_renderer_instance.cleanup_curses = MagicMock(spec=lambda: None)
         self.mock_renderer_instance.stdscr = self.mock_stdscr  # Mock stdscr
         self.mock_command_processor_instance = MockCommandProcessor.return_value
         self.game_engine = GameEngine(map_width=20, map_height=10, debug_mode=False)
+        self.game_engine.input_mode = "normal"
 
         self.game_engine.world_generator = self.mock_world_gen_instance
         self.game_engine.parser = self.mock_parser_instance
@@ -167,7 +167,7 @@ class TestGameEngine(unittest.TestCase):
             world_map_to_render=self.game_engine.visible_maps[
                 self.game_engine.player.current_floor_id
             ],
-            input_mode="movement",
+            input_mode="normal",
             current_command_buffer="",
             message_log=self.game_engine.message_log,
             current_floor_id=self.game_engine.player.current_floor_id,

@@ -10,7 +10,7 @@ class TestCommonActions(unittest.TestCase):
     def test_equip_better_weapon_no_weapon_equipped(self):
         # Arrange
         player = Player(x=0, y=0, current_floor_id=0, health=10)
-        player.equipment = {"main_hand": None}
+        player.equipment.slots["main_hand"] = None
 
         weapon = Equippable(
             name="Sword",
@@ -21,7 +21,7 @@ class TestCommonActions(unittest.TestCase):
                 "slot": "main_hand",
             },
         )
-        player.inventory.append(weapon)
+        player.inventory.add_item(weapon)
 
         ai_logic = MagicMock()
         type(ai_logic).player = PropertyMock(return_value=player)
