@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import mock_open, patch
 
 from src.item_factory import ItemFactory
+from src.items import ConsumableItem, EquippableItem
 from src.monster_factory import MonsterFactory
 
 
@@ -14,8 +15,8 @@ class TestFactories(unittest.TestCase):
                 "name": "Health Potion",
                 "description": "Restores some HP.",
                 "properties": {
-                    "type": "heal",
-                    "amount": 10
+                    "type": "consumable",
+                    "effects": [{ "type": "healing", "amount": 10 }]
                 },
                 "rarity": 70
             },
@@ -23,9 +24,8 @@ class TestFactories(unittest.TestCase):
                 "name": "Dagger",
                 "description": "A small blade.",
                 "properties": {
-                    "type": "weapon",
+                    "type": "equippable",
                     "attack_bonus": 2,
-                    "verb": "stabs",
                     "slot": "main_hand"
                 },
                 "rarity": 30
@@ -38,17 +38,18 @@ class TestFactories(unittest.TestCase):
             self.assertIsNotNone(potion)
             assert potion is not None
             self.assertEqual(potion.name, "Health Potion")
-            self.assertEqual(potion.properties["amount"], 10)
+            self.assertIsInstance(potion, ConsumableItem)
+            assert isinstance(potion, ConsumableItem)
+            self.assertEqual(len(potion.effects), 1)
 
             dagger = factory.create_item("dagger")
             self.assertIsNotNone(dagger)
             assert dagger is not None
             self.assertEqual(dagger.name, "Dagger")
-            from src.equippable import Equippable
-
-            self.assertTrue(isinstance(dagger, Equippable))
-            self.assertEqual(dagger.properties["attack_bonus"], 2)
-            self.assertEqual(dagger.properties["slot"], "main_hand")
+            self.assertIsInstance(dagger, EquippableItem)
+            assert isinstance(dagger, EquippableItem)
+            self.assertEqual(dagger.attack_bonus, 2)
+            self.assertEqual(dagger.slot, "main_hand")
 
             random_item = factory.create_random_item(random.Random())
             self.assertIsNotNone(random_item)

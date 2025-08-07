@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Callable, Dict, List, Tuple
 
 if TYPE_CHECKING:
-    from src.item import Item
+    from src.items import Item
     from src.player import Player
     from src.world_map import WorldMap
 
@@ -42,10 +42,12 @@ class TargetFinder:
         player_floor_id: int,
         same_floor_only: bool = False,
     ) -> List[Tuple[int, int, int, str, int]]:
+        from src.items import QuestItem
+
         return self._find_items(
             player_pos_xy,
             player_floor_id,
-            lambda item: item.properties.get("type") == "quest",
+            lambda item: isinstance(item, QuestItem),
             "quest_item",
             same_floor_only,
         )
@@ -56,15 +58,22 @@ class TargetFinder:
         player_floor_id: int,
         same_floor_only: bool = False,
     ) -> List[Tuple[int, int, int, str, int]]:
+        from src.items import ConsumableItem
+        from src.effects import HealingEffect
+
         low_health_threshold = self.player.max_health * 0.5
         if self.player.health >= low_health_threshold:
             return []
 
+        def item_filter(item: "Item") -> bool:
+            if not isinstance(item, ConsumableItem):
+                return False
+            return any(isinstance(e, HealingEffect) for e in item.effects)
+
         return self._find_items(
             player_pos_xy,
             player_floor_id,
-            lambda item: "health potion" in item.name.lower()
-            and item.properties.get("type") == "heal",
+            item_filter,
             "health_potion",
             same_floor_only,
         )
@@ -75,14 +84,17 @@ class TargetFinder:
         player_floor_id: int,
         same_floor_only: bool = False,
     ) -> List[Tuple[int, int, int, str, int]]:
+        from src.items import ConsumableItem, QuestItem
+        from src.effects import HealingEffect
+
         def item_filter(item: "Item") -> bool:
-            is_potion_full_health = (
-                item.properties.get("type") == "heal"
-                and "health potion" in item.name.lower()
-                and self.player.health >= self.player.max_health
-            )
-            is_quest_item = item.properties.get("type") == "quest"
-            return not (is_potion_full_health or is_quest_item)
+            if isinstance(item, QuestItem):
+                return False
+            if isinstance(item, ConsumableItem) and any(
+                isinstance(e, HealingEffect) for e in item.effects
+            ):
+                return self.player.health >= self.player.max_health
+            return True
 
         return self._find_items(
             player_pos_xy, player_floor_id, item_filter, "other_item", same_floor_only

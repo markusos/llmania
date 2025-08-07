@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from src.command_processor import CommandProcessor
-from src.item import Item
+from src.items import Item
 from src.message_log import MessageLog
 from src.monster import Monster
 from src.player import Player

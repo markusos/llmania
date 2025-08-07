@@ -280,13 +280,14 @@ class TestGameEngine(unittest.TestCase):
 
     @patch("src.game_engine.curses")
     def test_run_loop_debug_mode_no_curses_cleanup(self, mock_curses_for_debug_engine):
-        with patch("src.game_engine.WorldGenerator") as MockWG_debug, patch(
-            "src.game_engine.InputHandler"
-        ), patch("src.game_engine.Renderer") as MockRenderer_debug, patch(
-            "src.game_engine.CommandProcessor"
-        ) as MockCP_debug, patch("src.game_engine.Parser"), patch(
-            "src.game_engine.Player"
-        ) as MockPlayer_debug:
+        with (
+            patch("src.game_engine.WorldGenerator") as MockWG_debug,
+            patch("src.game_engine.InputHandler"),
+            patch("src.game_engine.Renderer") as MockRenderer_debug,
+            patch("src.game_engine.CommandProcessor") as MockCP_debug,
+            patch("src.game_engine.Parser"),
+            patch("src.game_engine.Player") as MockPlayer_debug,
+        ):
             mock_renderer_instance = MockRenderer_debug.return_value
             mock_renderer_instance.cleanup_curses = MagicMock()
             mock_wg_inst_debug = MockWG_debug.return_value

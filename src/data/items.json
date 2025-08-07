@@ -2,121 +2,201 @@
   "health_potion": {
     "name": "Health Potion",
     "description": "Restores 10 HP.",
-    "properties": { "type": "heal", "amount": 10 },
+    "properties": {
+      "type": "consumable",
+      "effects": [{ "type": "healing", "amount": 10 }]
+    },
     "rarity": 35
   },
   "great_health_potion": {
     "name": "Great Health Potion",
     "description": "Restores 25 HP.",
-    "properties": { "type": "heal", "amount": 25 },
+    "properties": {
+      "type": "consumable",
+      "effects": [{ "type": "healing", "amount": 25 }]
+    },
     "rarity": 15
   },
   "sword": {
     "name": "Sword",
     "description": "A basic sword.",
-    "properties": { "type": "weapon", "attack_bonus": 3, "slot": "main_hand", "damage_type": "slashing" },
+    "properties": {
+      "type": "equippable",
+      "slot": "main_hand",
+      "attack_bonus": 3,
+      "damage_type": "slashing"
+    },
     "rarity": 20
   },
   "greatsword": {
     "name": "Greatsword",
     "description": "A large, two-handed sword.",
-    "properties": { "type": "weapon", "attack_bonus": 5, "slot": "main_hand", "damage_type": "slashing" },
+    "properties": {
+      "type": "equippable",
+      "slot": "main_hand",
+      "attack_bonus": 5,
+      "damage_type": "slashing"
+    },
     "rarity": 10
   },
   "helmet": {
     "name": "Helmet",
     "description": "A basic helmet.",
-    "properties": { "type": "armor", "defense_bonus": 1, "slot": "head" },
+    "properties": {
+      "type": "equippable",
+      "slot": "head",
+      "defense_bonus": 1
+    },
     "rarity": 20
   },
   "chestplate": {
     "name": "Chestplate",
     "description": "A basic chestplate.",
-    "properties": { "type": "armor", "defense_bonus": 2, "slot": "chest" },
+    "properties": {
+      "type": "equippable",
+      "slot": "chest",
+      "defense_bonus": 2
+    },
     "rarity": 15
   },
   "leggings": {
     "name": "Leggings",
     "description": "Basic leggings.",
-    "properties": { "type": "armor", "defense_bonus": 1, "slot": "legs" },
+    "properties": {
+      "type": "equippable",
+      "slot": "legs",
+      "defense_bonus": 1
+    },
     "rarity": 15
   },
   "shield": {
     "name": "Shield",
     "description": "A basic shield.",
-    "properties": { "type": "armor", "defense_bonus": 1, "slot": "off_hand" },
+    "properties": {
+      "type": "equippable",
+      "slot": "off_hand",
+      "defense_bonus": 1
+    },
     "rarity": 20
   },
   "fire_potion": {
     "name": "Fire Potion",
     "description": "A potion that explodes on impact.",
-    "properties": { "type": "damage", "damage": 15, "radius": 3, "damage_type": "fire" },
+    "properties": {
+      "type": "consumable",
+      "effects": [
+        { "type": "damage", "damage": 15, "radius": 3, "damage_type": "fire" }
+      ]
+    },
     "rarity": 10
   },
   "scroll_of_teleportation": {
     "name": "Scroll of Teleportation",
     "description": "Teleports you to a random location on the floor.",
-    "properties": { "type": "teleport" },
+    "properties": {
+      "type": "consumable",
+      "effects": [{ "type": "teleport" }]
+    },
     "rarity": 5
   },
   "ring_of_strength": {
     "name": "Ring of Strength",
     "description": "A ring that increases your attack power.",
-    "properties": { "type": "ring", "attack_bonus": 1 },
+    "properties": {
+      "type": "equippable",
+      "slot": "ring",
+      "attack_bonus": 1
+    },
     "rarity": 5
   },
   "ring_of_protection": {
     "name": "Ring of Protection",
     "description": "A ring that increases your defense.",
-    "properties": { "type": "ring", "defense_bonus": 1 },
+    "properties": {
+      "type": "equippable",
+      "slot": "ring",
+      "defense_bonus": 1
+    },
     "rarity": 5
   },
   "amulet_of_health": {
     "name": "Amulet of Health",
     "description": "An amulet that increases your maximum health.",
-    "properties": { "type": "amulet", "max_health_bonus": 10 },
+    "properties": {
+      "type": "equippable",
+      "slot": "amulet",
+      "max_health_bonus": 10
+    },
     "rarity": 5
   },
   "boots_of_speed": {
     "name": "Boots of Speed",
     "description": "Boots that increase your movement speed.",
-    "properties": { "type": "boots", "speed_bonus": 1 },
+    "properties": { "type": "equippable", "slot": "boots", "speed_bonus": 1 },
     "rarity": 5
   },
   "invisibility_potion": {
     "name": "Invisibility Potion",
     "description": "Makes you invisible for a short time.",
-    "properties": { "type": "invisibility", "duration": 10 },
+    "properties": {
+      "type": "consumable",
+      "effects": [{ "type": "invisibility", "duration": 10 }]
+    },
     "rarity": 5
   },
   "dagger": {
     "name": "Dagger",
     "description": "A small blade.",
-    "properties": { "type": "weapon", "attack_bonus": 1, "slot": "main_hand", "damage_type": "piercing" },
+    "properties": {
+      "type": "equippable",
+      "slot": "main_hand",
+      "attack_bonus": 1,
+      "damage_type": "piercing"
+    },
     "rarity": 30
   },
   "axe": {
     "name": "Axe",
     "description": "A basic axe.",
-    "properties": { "type": "weapon", "attack_bonus": 4, "slot": "main_hand", "damage_type": "slashing" },
+    "properties": {
+      "type": "equippable",
+      "slot": "main_hand",
+      "attack_bonus": 4,
+      "damage_type": "slashing"
+    },
     "rarity": 15
   },
   "mace": {
     "name": "Mace",
     "description": "A basic mace.",
-    "properties": { "type": "weapon", "attack_bonus": 3, "slot": "main_hand", "damage_type": "bludgeoning" },
+    "properties": {
+      "type": "equippable",
+      "slot": "main_hand",
+      "attack_bonus": 3,
+      "damage_type": "bludgeoning"
+    },
     "rarity": 20
   },
   "bow": {
     "name": "Bow",
     "description": "A basic bow.",
-    "properties": { "type": "weapon", "attack_bonus": 2, "slot": "main_hand", "damage_type": "piercing" },
+    "properties": {
+      "type": "equippable",
+      "slot": "main_hand",
+      "attack_bonus": 2,
+      "damage_type": "piercing"
+    },
     "rarity": 20
   },
   "crossbow": {
     "name": "Crossbow",
     "description": "A powerful crossbow.",
-    "properties": { "type": "weapon", "attack_bonus": 4, "slot": "main_hand", "damage_type": "piercing" },
+    "properties": {
+      "type": "equippable",
+      "slot": "main_hand",
+      "attack_bonus": 4,
+      "damage_type": "piercing"
+    },
     "rarity": 10
   }
 }

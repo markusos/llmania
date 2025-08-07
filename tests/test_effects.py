@@ -3,18 +3,24 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from src.effects import DamageEffect, HealingEffect, TeleportEffect
+from src.effects.damage_effect import DamageEffect
+from src.effects.healing_effect import HealingEffect
+from src.effects.invisibility_effect import InvisibilityEffect
+from src.effects.teleport_effect import TeleportEffect
 from src.game_engine import GameEngine
 from src.player import Player
 
 
 class TestEffects(unittest.TestCase):
     def setUp(self):
-        with patch("src.game_engine.WorldGenerator") as mock_world_gen, patch(
-            "src.game_engine.InputHandler"
-        ), patch("src.game_engine.Renderer"), patch(
-            "src.game_engine.CommandProcessor"
-        ), patch("src.game_engine.Parser"), patch("src.game_engine.curses"):
+        with (
+            patch("src.game_engine.WorldGenerator") as mock_world_gen,
+            patch("src.game_engine.InputHandler"),
+            patch("src.game_engine.Renderer"),
+            patch("src.game_engine.CommandProcessor"),
+            patch("src.game_engine.Parser"),
+            patch("src.game_engine.curses"),
+        ):
             mock_map = MagicMock()
             mock_map.width = 20
             mock_map.height = 10
@@ -50,6 +56,15 @@ class TestEffects(unittest.TestCase):
         effect = DamageEffect(damage_amount=10)
         message = effect.apply(self.player, self.game_engine)
         self.assertEqual(message, "The item crackles with power, ready to be thrown.")
+
+    def test_invisibility_effect(self):
+        player = Player(x=1, y=1, health=100, current_floor_id=0)
+        effect = InvisibilityEffect(duration=10)
+        message = effect.apply(player, self.game_engine)
+        self.assertEqual(player.invisibility_turns, 10)
+        self.assertEqual(
+            message, "You drink the potion and become invisible for 10 turns."
+        )
 
 
 if __name__ == "__main__":

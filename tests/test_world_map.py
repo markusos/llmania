@@ -1,6 +1,6 @@
 import pytest
 
-from src.item import Item
+from src.items import ConsumableItem
 from src.monster import Monster
 from src.tile import Tile
 from src.world_map import WorldMap
@@ -76,7 +76,9 @@ def test_is_valid_move_out_of_bounds():
 # Test place_item and remove_item
 @pytest.fixture
 def sample_item():
-    return Item("Potion", "Heals 10 HP", {"type": "heal", "amount": 10})
+    return ConsumableItem(
+        "Potion", "Heals 10 HP", {"type": "heal", "amount": 10}, effects=[]
+    )
 
 
 def test_place_item_valid_empty_tile(sample_item):
@@ -95,7 +97,7 @@ def test_place_item_invalid_coordinates(sample_item):
 
 def test_place_item_tile_already_has_item(sample_item):
     w_map = WorldMap(width=5, height=5)
-    another_item = Item("Key", "Opens a door", {})
+    another_item = ConsumableItem("Key", "Opens a door", {}, effects=[])
     w_map.place_item(sample_item, 2, 2)  # Place first item
     assert w_map.place_item(another_item, 2, 2) is False  # Try to place another
     tile = w_map.get_tile(2, 2)
