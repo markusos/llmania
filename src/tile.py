@@ -2,7 +2,7 @@
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from src.item import Item
+    from src.items import Item
     from src.monster import Monster
     from src.player import Player
 

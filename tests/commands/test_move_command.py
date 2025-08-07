@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from src.commands.move_command import MoveCommand
-from src.item import Item  # Added Item import
+from src.items import QuestItem
 from src.message_log import MessageLog
 from src.monster import Monster
 from src.player import Player
@@ -161,7 +161,7 @@ class TestMoveCommand(unittest.TestCase):
         # Place a quest item at the winning position on floor 0
         win_tile = self.world_maps[0].get_tile(2, 2)
         if win_tile:
-            win_tile.item = Item("Amulet", "Quest item", {"type": "quest"})
+            win_tile.item = QuestItem("Amulet", "Quest item", {"type": "quest"})
 
         move_cmd = MoveCommand(
             player=self.player,

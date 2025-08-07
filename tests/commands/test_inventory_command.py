@@ -2,8 +2,8 @@ import unittest
 from unittest.mock import MagicMock
 
 from src.commands.inventory_command import InventoryCommand
-from src.equippable import Equippable
-from src.item import Item
+from src.items import ConsumableItem
+from src.items import EquippableItem as Equippable
 from src.message_log import MessageLog
 from src.player import Player
 from src.world_map import WorldMap
@@ -28,8 +28,12 @@ class TestInventoryCommand(unittest.TestCase):
         self.assertFalse(result.get("game_over", False))
 
     def test_inventory_with_items_not_equipped(self):
-        self.player.inventory.append(Item("Potion", "A healing potion", {}))
-        self.player.inventory.append(Item("Scroll", "A magic scroll", {}))
+        self.player.inventory.append(
+            ConsumableItem("Potion", "A healing potion", {}, effects=[])
+        )
+        self.player.inventory.append(
+            ConsumableItem("Scroll", "A magic scroll", {}, effects=[])
+        )
         cmd = InventoryCommand(
             player=self.player,
             world_map=self.world_map,

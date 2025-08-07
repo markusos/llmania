@@ -7,7 +7,7 @@ from src.ai_logic.main import AILogic
 from src.ai_logic.states.attacking_state import AttackingState
 from src.ai_logic.states.exploring_state import ExploringState
 from src.ai_logic.states.looting_state import LootingState
-from src.item import Item
+from src.items import Item
 from src.message_log import MessageLog
 from src.monster import Monster
 from src.player import Player
@@ -32,9 +32,10 @@ class TestAILogic(unittest.TestCase):
 
         self.message_log = MagicMock(spec=MessageLog)
 
-        with patch("src.ai_logic.main.TargetFinder") as self.mock_target_finder, patch(
-            "src.ai_logic.main.Explorer"
-        ) as self.mock_explorer:
+        with (
+            patch("src.ai_logic.main.TargetFinder") as self.mock_target_finder,
+            patch("src.ai_logic.main.Explorer") as self.mock_explorer,
+        ):
             self.ai = AILogic(
                 player=self.mock_player,
                 real_world_maps=self.mock_real_world_maps,

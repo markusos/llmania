@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, List, Tuple
 
-from src.item import Item
+from src.items import QuestItem
 from src.map_builders.single_floor_builder import SingleFloorBuilder
 from src.world_map import WorldMap
 
@@ -195,7 +195,9 @@ class WorldBuilder:
                 amulet_floor_tiles.append((self.width // 2, self.height // 2))
 
         amulet_pos = self.random.choice(amulet_floor_tiles)
-        amulet_item = Item("Amulet of Yendor", "Object of quest!", {"type": "quest"})
+        amulet_item = QuestItem(
+            "Amulet of Yendor", "Object of quest!", {"type": "quest"}
+        )
         amulet_map.place_item(amulet_item, amulet_pos[0], amulet_pos[1])
 
         return amulet_pos[0], amulet_pos[1], amulet_floor_id

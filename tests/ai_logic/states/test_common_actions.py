@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock, PropertyMock
 
 from src.ai_logic.states import common_actions
-from src.equippable import Equippable
+from src.items import EquippableItem as Equippable
 from src.player import Player
 
 

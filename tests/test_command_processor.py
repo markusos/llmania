@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from src.command_processor import CommandProcessor
-from src.item import Item
+from src.items import Item
 from src.message_log import MessageLog
 from src.monster import Monster
 from src.player import Player
@@ -186,7 +186,9 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.use_item.return_value = use_message
         self.mock_player.health = 50
         result = self.common_process_command(("use", item_name))
-        self.mock_player.use_item.assert_called_once_with(item_name)
+        self.mock_player.use_item.assert_called_once_with(
+            item_name, self.mock_game_engine
+        )
         self.message_log.add_message.assert_any_call(use_message)
         self.assertFalse(result["game_over"])
 

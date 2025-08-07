@@ -1,10 +1,5 @@
-# Type hinting imports
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, TypeAlias
 
-# Define type aliases for better readability
-WorldMaps: TypeAlias = Dict[int, "WorldMap"]
-
-# Local imports for command classes
 from src.commands import (
     AttackCommand,
     Command,
@@ -17,6 +12,10 @@ from src.commands import (
     UseCommand,
 )
 from src.monster import Monster
+
+# Define type aliases for better readability
+WorldMaps: TypeAlias = Dict[int, "WorldMap"]
+
 
 if TYPE_CHECKING:
     from src.game_engine import GameEngine  # Added for game_engine reference
