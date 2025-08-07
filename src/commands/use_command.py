@@ -35,7 +35,7 @@ class UseCommand(Command):
             self.message_log.add_message("Use what?")
             return {"game_over": False}
 
-        use_message = self.player.use_item(self.argument)
+        use_message = self.player.use_item(self.argument, self.game_engine)
         self.message_log.add_message(use_message)
 
         # Check if using the item resulted in player's death

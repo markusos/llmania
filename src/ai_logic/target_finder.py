@@ -58,8 +58,8 @@ class TargetFinder:
         player_floor_id: int,
         same_floor_only: bool = False,
     ) -> List[Tuple[int, int, int, str, int]]:
-        from src.items import ConsumableItem
         from src.effects import HealingEffect
+        from src.items import ConsumableItem
 
         low_health_threshold = self.player.max_health * 0.5
         if self.player.health >= low_health_threshold:
@@ -84,8 +84,8 @@ class TargetFinder:
         player_floor_id: int,
         same_floor_only: bool = False,
     ) -> List[Tuple[int, int, int, str, int]]:
-        from src.items import ConsumableItem, QuestItem
         from src.effects import HealingEffect
+        from src.items import ConsumableItem, QuestItem
 
         def item_filter(item: "Item") -> bool:
             if isinstance(item, QuestItem):
