@@ -34,6 +34,7 @@ class Monster:
         line_of_sight: int = 5,
         attack_range: int = 1,
         move_speed: int = 1,
+        attack_speed: int = 1,
     ):
         """
         Initializes a Monster instance.
@@ -51,6 +52,7 @@ class Monster:
             line_of_sight: The distance the monster can see.
             attack_range: The distance the monster can attack from.
             move_speed: The speed of the monster.
+            attack_speed: The attack speed of the monster.
             random_generator: The random number generator.
         """
         self.name = name
@@ -65,6 +67,7 @@ class Monster:
         self.line_of_sight = line_of_sight
         self.attack_range = attack_range
         self.move_speed = move_speed
+        self.attack_speed = attack_speed
         self.move_energy = 0
         self.random = random_generator
         self.ai: "Optional[MonsterAILogic]" = None

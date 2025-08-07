@@ -23,6 +23,7 @@ class EquippableItem(Item):
         self.attack_bonus: int = properties.get("attack_bonus", 0)
         self.defense_bonus: int = properties.get("defense_bonus", 0)
         self.speed_bonus: int = properties.get("speed_bonus", 0)
+        self.attack_speed_bonus: int = properties.get("attack_speed_bonus", 0)
         self.max_health_bonus: int = properties.get("max_health_bonus", 0)
 
     def apply(self, player: "Player", game_engine: "GameEngine") -> str:

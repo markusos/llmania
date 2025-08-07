@@ -205,6 +205,16 @@ class WorldMap:
             return player_removed
         return None
 
+    def get_tile_by_monster(self, monster: Monster) -> Tile | None:
+        """
+        Returns the tile that contains the given monster.
+        """
+        for y, x in self.iter_coords():
+            tile = self.get_tile(x, y)
+            if tile and tile.monster == monster:
+                return tile
+        return None
+
     def get_monsters(self):
         """
         Returns a list of all monsters on the map.

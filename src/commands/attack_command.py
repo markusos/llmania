@@ -1,12 +1,13 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
+from src.monster import Monster
+from src.player import Player
+
 from .base_command import Command
 
 if TYPE_CHECKING:
     from src.game_engine import GameEngine
     from src.message_log import MessageLog
-    from src.monster import Monster
-    from src.player import Player
     from src.world_map import WorldMap
 
 
@@ -74,10 +75,51 @@ class AttackCommand(Command):
 
         return target_monster, target_m_x, target_m_y
 
-    def execute(self) -> Dict[str, Any]:
-        from src.monster import Monster
-        from src.player import Player
+    def _perform_attack(
+        self, attacker: Union[Player, Monster], defender: Union[Player, Monster]
+    ) -> bool:
+        if isinstance(attacker, Player):
+            attacker_name = "You"
+            attacker_speed = attacker.get_attack_speed()
+        else:
+            attacker_name = f"The {attacker.name}"
+            attacker_speed = attacker.attack_speed
 
+        if isinstance(defender, Player):
+            defender_name = "you"
+            defender_speed = defender.get_attack_speed()
+        else:
+            defender_name = f"the {defender.name}"
+            defender_speed = defender.attack_speed
+
+        hit_chance = 0.5 + (attacker_speed - defender_speed) * 0.1
+        hit_chance = max(0.1, min(0.9, hit_chance))  # Clamp between 10% and 90%
+
+        if self.game_engine.random.random() > hit_chance:
+            self.message_log.add_message(f"{attacker_name} miss {defender_name}.")
+            return False
+
+        if isinstance(attacker, Player) and isinstance(defender, Monster):
+            attack_res = attacker.attack_monster(defender)
+            self.message_log.add_message(
+                f"You attack the {defender.name} "
+                f"for {attack_res['damage_dealt']} damage."
+            )
+            if attack_res["monster_defeated"]:
+                self.message_log.add_message(f"You defeated the {defender.name}!")
+                return True
+        elif isinstance(attacker, Monster) and isinstance(defender, Player):
+            monster_attack_res = attacker.attack(defender)
+            self.message_log.add_message(
+                f"The {attacker.name} attacks you for "
+                f"{monster_attack_res['damage_dealt_to_player']} damage."
+            )
+            if monster_attack_res["player_is_defeated"]:
+                self.message_log.add_message("You have been defeated. Game Over.")
+                return True
+        return False
+
+    def execute(self) -> Dict[str, Any]:
         if isinstance(self.entity, Player):
             monsters_in_range = self._get_monsters_in_range(
                 self.player.x, self.player.y, 1
@@ -89,36 +131,20 @@ class AttackCommand(Command):
 
             target_monster, target_m_x, target_m_y = target_info
 
-            attack_res = self.player.attack_monster(target_monster)
-            self.message_log.add_message(
-                f"You attack the {target_monster.name} "
-                f"for {attack_res['damage_dealt']} damage."
-            )
-
-            if attack_res["monster_defeated"]:
-                self.message_log.add_message(f"You defeated the {target_monster.name}!")
+            if self._perform_attack(self.player, target_monster):
                 self.world_map.remove_monster(target_m_x, target_m_y)
                 return {"game_over": False}
 
-            monster_attack_res = target_monster.attack(self.player)
-            self.message_log.add_message(
-                f"The {target_monster.name} attacks you for "
-                f"{monster_attack_res['damage_dealt_to_player']} damage."
-            )
-
-            if monster_attack_res["player_is_defeated"]:
-                self.message_log.add_message("You have been defeated. Game Over.")
+            if self._perform_attack(target_monster, self.player):
                 return {"game_over": True}
 
         elif isinstance(self.entity, Monster):
-            monster_attack_res = self.entity.attack(self.player)
-            self.message_log.add_message(
-                f"The {self.entity.name} attacks you for "
-                f"{monster_attack_res['damage_dealt_to_player']} damage."
-            )
-
-            if monster_attack_res["player_is_defeated"]:
-                self.message_log.add_message("You have been defeated. Game Over.")
+            if self._perform_attack(self.entity, self.player):
                 return {"game_over": True}
+
+            if self._perform_attack(self.player, self.entity):
+                monster_tile = self.world_map.get_tile_by_monster(self.entity)
+                if monster_tile:
+                    self.world_map.remove_monster(monster_tile.x, monster_tile.y)
 
         return {"game_over": False}

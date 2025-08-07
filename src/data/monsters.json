@@ -8,7 +8,8 @@
     "evasion": 0.1,
     "line_of_sight": 5,
     "attack_range": 1,
-    "move_speed": 2
+    "move_speed": 2,
+    "attack_speed": 6
   },
   "orc": {
     "name": "Orc",
@@ -18,7 +19,8 @@
     "defense": 1,
     "line_of_sight": 6,
     "attack_range": 1,
-    "move_speed": 3
+    "move_speed": 3,
+    "attack_speed": 4
   },
   "troll": {
     "name": "Troll",
@@ -29,7 +31,8 @@
     "vulnerability": "fire",
     "line_of_sight": 7,
     "attack_range": 1,
-    "move_speed": 2
+    "move_speed": 2,
+    "attack_speed": 2
   },
   "skeleton": {
     "name": "Skeleton",
@@ -39,7 +42,8 @@
     "resistance": "piercing",
     "line_of_sight": 5,
     "attack_range": 1,
-    "move_speed": 4
+    "move_speed": 4,
+    "attack_speed": 5
   },
   "zombie": {
     "name": "Zombie",
@@ -49,7 +53,8 @@
     "resistance": "slashing",
     "line_of_sight": 4,
     "attack_range": 1,
-    "move_speed": 1
+    "move_speed": 1,
+    "attack_speed": 1
   },
   "giant_spider": {
     "name": "Giant Spider",
@@ -59,7 +64,8 @@
     "evasion": 0.2,
     "line_of_sight": 8,
     "attack_range": 2,
-    "move_speed": 5
+    "move_speed": 5,
+    "attack_speed": 8
   },
   "dire_wolf": {
     "name": "Dire Wolf",
@@ -69,7 +75,8 @@
     "evasion": 0.1,
     "line_of_sight": 7,
     "attack_range": 1,
-    "move_speed": 6
+    "move_speed": 6,
+    "attack_speed": 7
   },
   "golem": {
     "name": "Golem",
@@ -80,7 +87,8 @@
     "resistance": "piercing",
     "line_of_sight": 5,
     "attack_range": 1,
-    "move_speed": 2
+    "move_speed": 2,
+    "attack_speed": 2
   },
   "dragon": {
     "name": "Dragon",
@@ -91,7 +99,8 @@
     "resistance": "fire",
     "line_of_sight": 10,
     "attack_range": 3,
-    "move_speed": 7
+    "move_speed": 7,
+    "attack_speed": 3
   },
   "lich": {
     "name": "Lich",
@@ -101,7 +110,8 @@
     "resistance": "necrotic",
     "line_of_sight": 8,
     "attack_range": 4,
-    "move_speed": 4
+    "move_speed": 4,
+    "attack_speed": 5
   },
   "bat": {
     "name": "Bat",
@@ -111,7 +121,8 @@
     "evasion": 0.3,
     "line_of_sight": 10,
     "attack_range": 1,
-    "move_speed": 8
+    "move_speed": 8,
+    "attack_speed": 9
   },
   "rat": {
     "name": "Rat",
@@ -120,7 +131,8 @@
     "rarity": 30,
     "line_of_sight": 5,
     "attack_range": 1,
-    "move_speed": 9
+    "move_speed": 9,
+    "attack_speed": 9
   },
   "slime": {
     "name": "Slime",
@@ -130,7 +142,8 @@
     "resistance": "bludgeoning",
     "line_of_sight": 3,
     "attack_range": 1,
-    "move_speed": 1
+    "move_speed": 1,
+    "attack_speed": 1
   },
   "kobold": {
     "name": "Kobold",
@@ -139,7 +152,8 @@
     "rarity": 25,
     "line_of_sight": 6,
     "attack_range": 1,
-    "move_speed": 4
+    "move_speed": 4,
+    "attack_speed": 6
   },
   "gnoll": {
     "name": "Gnoll",
@@ -148,7 +162,8 @@
     "rarity": 20,
     "line_of_sight": 7,
     "attack_range": 1,
-    "move_speed": 5
+    "move_speed": 5,
+    "attack_speed": 5
   },
   "harpy": {
     "name": "Harpy",
@@ -158,7 +173,8 @@
     "evasion": 0.2,
     "line_of_sight": 8,
     "attack_range": 2,
-    "move_speed": 6
+    "move_speed": 6,
+    "attack_speed": 7
   },
   "gargoyle": {
     "name": "Gargoyle",
@@ -169,7 +185,8 @@
     "resistance": "piercing",
     "line_of_sight": 5,
     "attack_range": 1,
-    "move_speed": 3
+    "move_speed": 3,
+    "attack_speed": 3
   },
   "minotaur": {
     "name": "Minotaur",
@@ -179,7 +196,8 @@
     "defense": 1,
     "line_of_sight": 7,
     "attack_range": 1,
-    "move_speed": 4
+    "move_speed": 4,
+    "attack_speed": 4
   },
   "beholder": {
     "name": "Beholder",
@@ -189,7 +207,8 @@
     "resistance": "magic",
     "line_of_sight": 8,
     "attack_range": 5,
-    "move_speed": 2
+    "move_speed": 2,
+    "attack_speed": 2
   },
   "demon": {
     "name": "Demon",
@@ -200,6 +219,7 @@
     "vulnerability": "holy",
     "line_of_sight": 9,
     "attack_range": 2,
-    "move_speed": 10
+    "move_speed": 10,
+    "attack_speed": 8
   }
 }
