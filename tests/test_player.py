@@ -189,9 +189,7 @@ class TestPlayer(unittest.TestCase):
                 self.player.take_item(amulet)
                 initial_max_health = self.player.get_max_health()
                 self.player.use_item("Amulet of Health", self.game_engine)
-                self.assertEqual(
-                    self.player.get_max_health(), initial_max_health + 10
-                )
+                self.assertEqual(self.player.get_max_health(), initial_max_health + 10)
 
 
 if __name__ == "__main__":
