@@ -277,7 +277,7 @@ class GameEngine:
             else:
                 self._render(ai_state=ai_state)
                 curses.napms(2000)
-                self.input_handler.handle_input_and_get_command()
+                self.input_handler.handle_input_and_get_command(InputMode.GAME_OVER)
                 self.game_state = GameState.QUIT
 
         elif self.game_state == GameState.QUIT and self.debug_mode:

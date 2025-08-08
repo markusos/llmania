@@ -46,6 +46,9 @@ class InputHandler:
         except curses.error:
             return None
 
+        if input_mode == InputMode.GAME_OVER:
+            return None
+
         if input_mode == InputMode.INVENTORY:
             if key in ["`", "~", "i", "I"]:
                 return "inventory"  # Special command to toggle inventory
