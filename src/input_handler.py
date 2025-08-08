@@ -1,4 +1,5 @@
 import curses
+from typing import Optional
 
 from src.parser import Parser
 
@@ -10,13 +11,14 @@ class InputHandler:
     and uses a Parser to interpret commands.
     """
 
-    def __init__(self, stdscr, parser: Parser):
+    def __init__(self, stdscr: Optional[object], parser: Parser, debug_mode: bool = False):
         """
         Initializes the InputHandler.
         """
         self.stdscr = stdscr
         self.parser = parser
         self.current_command_buffer = ""
+        self.debug_mode = debug_mode
 
     def handle_input_and_get_command(
         self, input_mode: str
@@ -24,6 +26,18 @@ class InputHandler:
         """
         Captures a key press and processes it based on the current input mode.
         """
+        if self.debug_mode:
+            try:
+                command_line = input("> ")
+                if not command_line:
+                    return None
+                return self.parser.parse_command(command_line)
+            except EOFError:
+                return "NO_COMMAND"
+
+        if not self.stdscr:
+            return None
+
         try:
             key = self.stdscr.getkey()
         except curses.error:
