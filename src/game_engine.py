@@ -287,23 +287,29 @@ class GameEngine:
             self._render_debug_end_screen(ai_state=ai_state)
 
     def _get_next_command(self):
-        command = self.input_handler.handle_input_and_get_command(self.input_mode)
+        if self.ai_active and self.ai_logic:
+            # AI is active, get command from AI logic
+            time.sleep(self.ai_sleep_duration)
+            return self.ai_logic.get_next_action()
+        else:
+            # AI is not active, get command from player input
+            command = self.input_handler.handle_input_and_get_command(self.input_mode)
 
-        if command == "command_mode":
-            self.input_mode = "command"
-            return None
-        elif command == "movement_mode":
-            self.input_mode = "normal"
-            return None
-        elif command == "inventory":
-            if self.input_mode == "inventory":
+            if command == "command_mode":
+                self.input_mode = "command"
+                return None
+            elif command == "movement_mode":
                 self.input_mode = "normal"
-            else:
-                self.input_mode = "inventory"
-            return None
+                return None
+            elif command == "inventory":
+                if self.input_mode == "inventory":
+                    self.input_mode = "normal"
+                else:
+                    self.input_mode = "inventory"
+                return None
 
-        self.command_buffer = self.input_handler.get_command_buffer()
-        return command
+            self.command_buffer = self.input_handler.get_command_buffer()
+            return command
 
     def _process_command(self, parsed_command_output):
         if self.game_state != GameState.PLAYING:
