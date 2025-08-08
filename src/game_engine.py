@@ -383,7 +383,7 @@ class GameEngine:
             world_map_to_render=self.visible_maps.get(
                 self.player.current_floor_id, self.world_maps.get(0)
             ),
-            input_mode="",
+            input_mode=InputMode.GAME_OVER,
             current_command_buffer="",
             message_log=self.message_log,
             debug_render_to_list=True,

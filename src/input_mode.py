@@ -5,3 +5,4 @@ class InputMode(Enum):
     MOVEMENT = auto()
     COMMAND = auto()
     INVENTORY = auto()
+    GAME_OVER = auto()
