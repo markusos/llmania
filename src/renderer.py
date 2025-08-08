@@ -1,6 +1,7 @@
 import curses  # Changed from shutil to curses for terminal size
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
+from src.input_mode import InputMode
 from src.message_log import MessageLog
 from src.tile import TILE_SYMBOLS
 from src.world_map import WorldMap
@@ -56,7 +57,7 @@ class Renderer:
         player_y: int,
         player_health: int,
         world_map_to_render: WorldMap,
-        input_mode: str,
+        input_mode: InputMode,
         current_command_buffer: str,
         message_log: MessageLog,
         current_floor_id: int,
@@ -110,11 +111,11 @@ class Renderer:
 
             output_buffer.append(f"HP: {player_health}")
             output_buffer.append(f"Floor: {current_floor_id}")
-            output_buffer.append(f"MODE: {input_mode.upper()}")
+            output_buffer.append(f"MODE: {input_mode.name.upper()}")
             if ai_state:
                 output_buffer.append(f"AI State: {ai_state}")
                 output_buffer.append(f"Position: ({player_x}, {player_y})")
-            if input_mode == "command":
+            if input_mode == InputMode.COMMAND:
                 output_buffer.append(f"> {current_command_buffer}")
 
             messages_for_debug = message_log.get_messages()  # Use MessageLog method
@@ -234,7 +235,7 @@ class Renderer:
                 self.stdscr.addstr(
                     next_line_y,
                     0,
-                    f"MODE: {input_mode.upper()}",
+                    f"MODE: {input_mode.name.upper()}",
                     curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR),
                 )
                 next_line_y += 1
@@ -266,7 +267,7 @@ class Renderer:
                     pass
 
         message_start_y = next_line_y
-        if input_mode == "command":
+        if input_mode == InputMode.COMMAND:
             if message_start_y < curses_lines:
                 try:
                     prompt = f"> {current_command_buffer}"

@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from src.input_mode import InputMode
+
 from .base_command import Command
 
 if TYPE_CHECKING:
@@ -35,8 +37,8 @@ class InventoryCommand(Command):
             return {"game_over": False}
 
         # Toggle inventory mode
-        if self.game_engine.input_mode == "inventory":
-            self.game_engine.input_mode = "normal"
+        if self.game_engine.input_mode == InputMode.INVENTORY:
+            self.game_engine.input_mode = InputMode.MOVEMENT
             if self.game_engine.renderer:
                 self.game_engine.renderer.render_all(
                     player_x=self.player.x,
@@ -49,7 +51,7 @@ class InventoryCommand(Command):
                     current_floor_id=self.player.current_floor_id,
                 )
         else:
-            self.game_engine.input_mode = "inventory"
+            self.game_engine.input_mode = InputMode.INVENTORY
             # The renderer will handle drawing the inventory screen
             # based on the new input_mode.
         return {"game_over": False}

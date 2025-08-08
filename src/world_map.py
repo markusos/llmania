@@ -1,3 +1,4 @@
+from src.input_mode import InputMode
 from src.monster import Monster
 from src.player import Player
 from src.tile import Tile
@@ -235,7 +236,7 @@ class WorldMap:
             player_y=-1,
             player_health=0,
             world_map_to_render=self,
-            input_mode="",
+            input_mode=InputMode.MOVEMENT,
             current_command_buffer="",
             message_log=message_log,
             debug_render_to_list=True,

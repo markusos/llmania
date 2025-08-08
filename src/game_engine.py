@@ -8,6 +8,7 @@ from src.ai_logic import AILogic
 from src.command_processor import CommandProcessor
 from src.game_state import GameState
 from src.input_handler import InputHandler
+from src.input_mode import InputMode
 from src.message_log import MessageLog
 from src.monster_ai.main import MonsterAILogic
 from src.parser import Parser
@@ -86,7 +87,7 @@ class GameEngine:
             self.renderer.stdscr, self.parser, debug_mode=self.debug_mode
         )
         self.command_processor = CommandProcessor()
-        self.input_mode = "normal"  # Added this line
+        self.input_mode = InputMode.MOVEMENT
         self.command_buffer = ""  # Added this line
 
         self.player = Player(
@@ -297,16 +298,16 @@ class GameEngine:
             command = self.input_handler.handle_input_and_get_command(self.input_mode)
 
             if command == "command_mode":
-                self.input_mode = "command"
+                self.input_mode = InputMode.COMMAND
                 return None
             elif command == "movement_mode":
-                self.input_mode = "normal"
+                self.input_mode = InputMode.MOVEMENT
                 return None
             elif command == "inventory":
-                if self.input_mode == "inventory":
-                    self.input_mode = "normal"
+                if self.input_mode == InputMode.INVENTORY:
+                    self.input_mode = InputMode.MOVEMENT
                 else:
-                    self.input_mode = "inventory"
+                    self.input_mode = InputMode.INVENTORY
                 return None
 
             self.command_buffer = self.input_handler.get_command_buffer()
@@ -356,7 +357,7 @@ class GameEngine:
         if self.ai_active and self.ai_logic:
             ai_path = self.ai_logic.current_path
 
-        if self.input_mode == "inventory":
+        if self.input_mode == InputMode.INVENTORY:
             self.renderer.render_inventory(self.player)
         else:
             self.renderer.render_all(

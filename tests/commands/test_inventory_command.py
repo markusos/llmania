@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 from src.commands.inventory_command import InventoryCommand
 from src.game_engine import GameEngine
+from src.input_mode import InputMode
 from src.player import Player
 from src.world_map import WorldMap
 
@@ -17,7 +18,7 @@ class TestInventoryCommand(unittest.TestCase):
         self.game_engine.command_buffer = ""
 
     def test_execute_toggles_inventory_mode_on(self):
-        self.game_engine.input_mode = "normal"
+        self.game_engine.input_mode = InputMode.MOVEMENT
         cmd = InventoryCommand(
             player=self.player,
             world_map=self.world_map,
@@ -26,10 +27,10 @@ class TestInventoryCommand(unittest.TestCase):
             game_engine=self.game_engine,
         )
         cmd.execute()
-        self.assertEqual(self.game_engine.input_mode, "inventory")
+        self.assertEqual(self.game_engine.input_mode, InputMode.INVENTORY)
 
     def test_execute_toggles_inventory_mode_off(self):
-        self.game_engine.input_mode = "inventory"
+        self.game_engine.input_mode = InputMode.INVENTORY
         cmd = InventoryCommand(
             player=self.player,
             world_map=self.world_map,
@@ -38,7 +39,7 @@ class TestInventoryCommand(unittest.TestCase):
             game_engine=self.game_engine,
         )
         cmd.execute()
-        self.assertEqual(self.game_engine.input_mode, "normal")
+        self.assertEqual(self.game_engine.input_mode, InputMode.MOVEMENT)
         self.assertTrue(self.game_engine.renderer.render_all.called)
 
 
