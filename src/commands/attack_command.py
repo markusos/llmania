@@ -143,8 +143,6 @@ class AttackCommand(Command):
                 return {"game_over": True}
 
             if self._perform_attack(self.player, self.entity):
-                monster_tile = self.world_map.get_tile_by_monster(self.entity)
-                if monster_tile:
-                    self.world_map.remove_monster(monster_tile.x, monster_tile.y)
+                self.world_map.remove_monster(self.entity.x, self.entity.y)
 
         return {"game_over": False}
