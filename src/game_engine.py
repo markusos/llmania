@@ -144,6 +144,7 @@ class GameEngine:
                             self.player,
                             self.world_maps,
                             self.message_log,
+                            game_engine=self,
                         )
 
     def _update_fog_of_war_visibility(self) -> None:

@@ -145,6 +145,7 @@ class CommandProcessor:
         player: "Player",
         world_maps: WorldMaps,
         message_log: "MessageLog",
+        game_engine: "GameEngine",
     ) -> Dict[str, Any]:
         """
         Processes a parsed command tuple for a monster.
@@ -155,6 +156,7 @@ class CommandProcessor:
             player: The Player instance.
             world_maps: All WorldMap instances, keyed by floor_id.
             message_log: The MessageLog instance.
+            game_engine: The GameEngine instance.
 
         Returns:
             Command execution results, typically an empty dictionary or specific
@@ -183,6 +185,7 @@ class CommandProcessor:
                 winning_position=DEFAULT_WINNING_POSITION,
                 argument=argument,
                 entity=monster,
+                game_engine=game_engine,
             )
             return command_instance.execute()
         else:

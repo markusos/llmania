@@ -401,6 +401,29 @@ class TestGameEngine(unittest.TestCase):
                     self.assertEqual(tile1.is_portal, tile2.is_portal)
                     self.assertEqual(tile1.portal_to_floor_id, tile2.portal_to_floor_id)
 
+    def test_monster_attack_does_not_crash(self):
+        # Arrange
+        monster_mock = MagicMock()
+        monster_mock.health = 10
+        monster_mock.move_energy = 10
+        monster_mock.move_speed = 10
+        monster_mock.ai.get_next_action.return_value = ("attack", None)
+
+        self.mock_world_map_instance.get_monsters.return_value = [monster_mock]
+
+        # Act
+        self.game_engine._handle_monster_actions()
+
+        # Assert
+        self.mock_command_processor_instance.process_monster_command.assert_called_once_with(
+            ("attack", None),
+            monster_mock,
+            self.game_engine.player,
+            self.game_engine.world_maps,
+            self.game_engine.message_log,
+            game_engine=self.game_engine,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
