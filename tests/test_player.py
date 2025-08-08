@@ -162,6 +162,21 @@ class TestPlayer(unittest.TestCase):
                 self.player.use_item("Boots of Speed", self.game_engine)
                 self.assertEqual(self.player.get_speed(), 2)
 
+    def test_get_attack_speed(self):
+        self.assertEqual(self.player.get_attack_speed(), 5)
+        item_data = (
+            '{"gloves": {"name": "Gloves of Haste", "description": '
+            '"Gloves that increase your attack speed.", "properties": '
+            '{"type": "equippable", "attack_speed_bonus": 2, "slot": "main_hand"}}}'
+        )
+        with patch("builtins.open", mock_open(read_data=item_data)):
+            self.item_factory = ItemFactory("dummy/path/items.json")
+            gloves = self.item_factory.create_item("gloves")
+            if gloves:
+                self.player.take_item(gloves)
+                self.player.use_item("Gloves of Haste", self.game_engine)
+                self.assertEqual(self.player.get_attack_speed(), 7)
+
     def test_use_invisibility_potion(self):
         item_data = (
             '{"invisibility_potion": {"name": "Invisibility Potion", '

@@ -11,7 +11,9 @@ class InputHandler:
     and uses a Parser to interpret commands.
     """
 
-    def __init__(self, stdscr: Optional[object], parser: Parser, debug_mode: bool = False):
+    def __init__(
+        self, stdscr: Optional[object], parser: Parser, debug_mode: bool = False
+    ):
         """
         Initializes the InputHandler.
         """
