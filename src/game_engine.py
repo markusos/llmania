@@ -82,7 +82,9 @@ class GameEngine:
             player_symbol=player_symbol,
         )
 
-        self.input_handler = InputHandler(self.renderer.stdscr, self.parser)
+        self.input_handler = InputHandler(
+            self.renderer.stdscr, self.parser, debug_mode=self.debug_mode
+        )
         self.command_processor = CommandProcessor()
         self.input_mode = "normal"  # Added this line
         self.command_buffer = ""  # Added this line
