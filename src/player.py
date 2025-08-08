@@ -57,11 +57,7 @@ class Player:
         """
         Calculates the player's total attack speed, including equipment bonuses.
         """
-        total_attack_speed = self.base_attack_speed
-        for item in self.equipment.values():
-            if item:
-                total_attack_speed += item.attack_speed_bonus
-        return total_attack_speed
+        return self.base_attack_speed + self.equipment.get_total_bonus("attack_speed")
 
     def attack_monster(self, monster: Monster) -> dict[str, str | int | bool]:
         """
