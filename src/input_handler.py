@@ -1,6 +1,7 @@
 import curses
 from typing import Optional
 
+from src.input_mode import InputMode
 from src.parser import Parser
 
 
@@ -23,7 +24,7 @@ class InputHandler:
         self.debug_mode = debug_mode
 
     def handle_input_and_get_command(
-        self, input_mode: str
+        self, input_mode: InputMode
     ) -> tuple[str, str | None] | None | str:
         """
         Captures a key press and processes it based on the current input mode.
@@ -45,12 +46,12 @@ class InputHandler:
         except curses.error:
             return None
 
-        if input_mode == "inventory":
+        if input_mode == InputMode.INVENTORY:
             if key in ["`", "~", "i", "I"]:
                 return "inventory"  # Special command to toggle inventory
             return None
 
-        if input_mode == "movement":
+        if input_mode == InputMode.MOVEMENT:
             curses.curs_set(0)
             if key in ["KEY_UP", "w", "W"]:
                 return ("move", "north")
@@ -68,7 +69,7 @@ class InputHandler:
                 self.stdscr.clear()
                 return ("resize_event", None)
 
-        elif input_mode == "command":
+        elif input_mode == InputMode.COMMAND:
             curses.curs_set(1)
             if key in ["\n", "\r", "KEY_ENTER"]:
                 if self.current_command_buffer:

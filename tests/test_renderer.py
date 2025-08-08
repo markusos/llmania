@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from src.input_mode import InputMode
 from src.message_log import MessageLog
 from src.renderer import Renderer
 from src.tile import Tile
@@ -65,7 +66,7 @@ def setup_renderer():
     player_health = 100
     message_log = MessageLog()
     current_floor_id = 0
-    input_mode = "main"
+    input_mode = InputMode.MOVEMENT
     current_command_buffer = ""
     return (
         renderer,
@@ -113,7 +114,7 @@ def test_render_all_basic_structure(setup_renderer):
     ui_and_message_section = "\n".join(output[world_map.height :])
     assert f"HP: {player_health}" in ui_and_message_section
     assert f"Floor: {current_floor_id}" in ui_and_message_section
-    assert f"MODE: {input_mode.upper()}" in ui_and_message_section
+    assert f"MODE: {input_mode.name.upper()}" in ui_and_message_section
     assert "Msg1" in ui_and_message_section
     assert "Msg2" in ui_and_message_section
 
@@ -217,7 +218,7 @@ def test_render_adapts_to_small_terminal_curses_mode(
             player_y=0,
             player_health=100,
             world_map_to_render=MockWorldMap(large_map_w, large_map_h),
-            input_mode="main",
+            input_mode=InputMode.MOVEMENT,
             current_command_buffer="",
             message_log=MessageLog(),
             current_floor_id=0,

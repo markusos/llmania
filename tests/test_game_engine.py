@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 from src.game_engine import GameEngine
 from src.game_state import GameState
+from src.input_mode import InputMode
 from src.message_log import MessageLog
 from src.world_map import WorldMap
 
@@ -85,7 +86,6 @@ class TestGameEngine(unittest.TestCase):
         self.mock_renderer_instance.stdscr = self.mock_stdscr  # Mock stdscr
         self.mock_command_processor_instance = MockCommandProcessor.return_value
         self.game_engine = GameEngine(map_width=20, map_height=10, debug_mode=False)
-        self.game_engine.input_mode = "normal"
 
         self.game_engine.world_generator = self.mock_world_gen_instance
         self.game_engine.parser = self.mock_parser_instance
@@ -136,6 +136,9 @@ class TestGameEngine(unittest.TestCase):
         self.assertIsInstance(self.game_engine.message_log, MessageLog)
         self.assertEqual(self.game_engine.debug_mode, False)
 
+    def test_initial_input_mode(self):
+        self.assertEqual(self.game_engine.input_mode, InputMode.MOVEMENT)
+
     @patch("src.game_engine.curses.napms")
     def test_run_loop_single_command_then_quit(self, mock_napms):
         self.mock_input_handler_instance.handle_input_and_get_command.side_effect = [
@@ -167,7 +170,7 @@ class TestGameEngine(unittest.TestCase):
             world_map_to_render=self.game_engine.visible_maps[
                 self.game_engine.player.current_floor_id
             ],
-            input_mode="normal",
+            input_mode=InputMode.MOVEMENT,
             current_command_buffer="",
             message_log=self.game_engine.message_log,
             current_floor_id=self.game_engine.player.current_floor_id,
