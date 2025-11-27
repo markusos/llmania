@@ -55,10 +55,11 @@ class SurvivalEvaluator(Evaluator):
             goals.append(
                 Goal(
                     name="use_healing_item",
-                    score=urgency + 0.5,  # Bonus to prioritize using over finding
+                    score=1.0,  # Always highest priority
                     context={"item": best_healing_item},
                 )
             )
+            return goals
 
         # Option 2: Find a healing item on the map
         healing_items_on_map = self.target_finder.find_health_potions()
