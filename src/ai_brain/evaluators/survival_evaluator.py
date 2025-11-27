@@ -49,9 +49,7 @@ class SurvivalEvaluator(Evaluator):
             best_healing_item = max(
                 healing_items_in_inventory,
                 key=lambda item: max(
-                    e.heal_amount
-                    for e in item.effects
-                    if isinstance(e, HealingEffect)
+                    e.heal_amount for e in item.effects if isinstance(e, HealingEffect)
                 ),
             )
             goals.append(
@@ -72,9 +70,7 @@ class SurvivalEvaluator(Evaluator):
                 Goal(
                     name="move_to_health_potion",
                     score=score,
-                    context={
-                        "target_position": (target_x, target_y, target_floor)
-                    },
+                    context={"target_position": (target_x, target_y, target_floor)},
                 )
             )
 

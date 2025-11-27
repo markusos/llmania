@@ -54,8 +54,8 @@ class TargetFinder:
         """
         Finds health potions, typically when the player is at low health.
         """
-        from src.items import ConsumableItem
         from src.effects import HealingEffect
+        from src.items import ConsumableItem
 
         def item_filter(item: "Item") -> bool:
             if not isinstance(item, ConsumableItem):
@@ -70,8 +70,8 @@ class TargetFinder:
         """
         Finds any items that are not health potions.
         """
-        from src.items import ConsumableItem
         from src.effects import HealingEffect
+        from src.items import ConsumableItem
 
         def item_filter(item: "Item") -> bool:
             if isinstance(item, ConsumableItem):
