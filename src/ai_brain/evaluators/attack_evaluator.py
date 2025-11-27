@@ -11,8 +11,9 @@ if TYPE_CHECKING:
 
 class AttackEvaluator(Evaluator):
     """
-    This evaluator assesses threats and encourages the AI to attack nearby monsters,
-    but only when it's safe to do so.
+    This evaluator makes the AI extremely cautious. It will only attack if its
+    health is very high, and its desire to fight will drop off sharply as it
+    takes damage.
     """
 
     def __init__(self, weight: float = 1.0):
@@ -23,8 +24,8 @@ class AttackEvaluator(Evaluator):
         player = game_engine.player
         current_map = game_engine.get_current_map()
 
-        # Don't attack if health is below 40%
-        if player.health < player.max_health * 0.4:
+        health_ratio = player.health / player.get_max_health()
+        if health_ratio < 0.9:  # Only attack if health is above 90%
             return []
 
         adjacent_monsters = []
@@ -36,11 +37,13 @@ class AttackEvaluator(Evaluator):
 
         if adjacent_monsters:
             weakest_monster = min(adjacent_monsters, key=lambda m: m.health)
-            health_ratio = player.health / player.max_health
+            # The score is heavily influenced by the AI's current health.
+            # The high exponent makes the desire to attack drop off very quickly.
+            score = 0.8 * (health_ratio**5)
             goals.append(
                 Goal(
                     name="attack_monster",
-                    score=0.8 * health_ratio,
+                    score=score,
                     context={"monster": weakest_monster},
                 )
             )

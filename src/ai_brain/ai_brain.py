@@ -173,7 +173,7 @@ class AIBrain:
 
     def _plan_action_for_goal(self, goal: Goal) -> Action:
         player = self.game_engine.player
-        if goal.name == "use_health_potion":
+        if goal.name == "use_healing_item":
             return Action(command=("use", goal.context["item"].name))
         if goal.name == "take_item":
             return Action(command=("take", goal.context["item"].name))
@@ -182,6 +182,16 @@ class AIBrain:
 
         if "target_position" in goal.context:
             target_pos = goal.context["target_position"]
+            current_pos = (player.x, player.y, player.current_floor_id)
+
+            if current_pos == target_pos:
+                current_map = self.game_engine.get_current_map()
+                tile = current_map.get_tile(target_pos[0], target_pos[1])
+                if tile and tile.item:
+                    return Action(command=("take", tile.item.name))
+                else:
+                    return Action(command=("look", None))
+
             path = self.path_finder.find_path_bfs(
                 self.game_engine.visible_maps,
                 (player.x, player.y),
