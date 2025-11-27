@@ -29,29 +29,45 @@ class AIBrain:
         self.path_finder = PathFinder()
         self.current_path: Optional[List[Tuple[int, int, int]]] = None
         self.last_move_command: Optional[Tuple[str, Optional[str]]] = None
+        self.command_history: List[Optional[Tuple[str, Optional[str]]]] = []
+        self.position_history: List[Tuple[int, int]] = []
+        self.loop_breaker_moves_left = 0
 
     def get_next_action(self) -> Tuple[str, Optional[str]]:
         """
         Evaluates all goals and selects the best action to perform.
         """
-        # If following a path, check for interruptions
+        player_pos = (self.game_engine.player.x, self.game_engine.player.y)
+        self.position_history.append(player_pos)
+        if len(self.position_history) > 10:
+            self.position_history.pop(0)
+
+        if self._is_in_loop():
+            self._break_loop()
+
+        if self.loop_breaker_moves_left > 0:
+            self.loop_breaker_moves_left -= 1
+            action_command = self._explore_randomly()
+            self.command_history.append(action_command)
+            return action_command
+
         if self.current_path:
-            # High-priority goals that can interrupt pathing
             interrupt_goals = self._get_interrupt_goals()
             if interrupt_goals:
                 best_interrupt = max(interrupt_goals, key=lambda g: g.score)
-                if best_interrupt.score > 0.8:  # Interrupt threshold
-                    self.current_path = None  # Clear path and handle new goal
-                    return self._plan_action_for_goal(best_interrupt).command
+                if best_interrupt.score > 0.8:
+                    self.current_path = None
+                    action = self._plan_action_for_goal(best_interrupt)
+                    self.command_history.append(action.command)
+                    return action.command
 
-            # Otherwise, continue following the path
             action = self._follow_path()
             if action:
+                self.command_history.append(action.command)
                 return action.command
             else:
-                self.current_path = None  # Path is complete or blocked
+                self.current_path = None
 
-        # If not following a path, evaluate all goals
         all_goals: List[Goal] = []
         for evaluator in self.evaluators:
             goals = evaluator.evaluate(self.game_engine)
@@ -60,18 +76,34 @@ class AIBrain:
                 all_goals.append(goal)
 
         if not all_goals:
-            return ("look", None)
+            action_command = ("look", None)
+            self.command_history.append(action_command)
+            return action_command
 
         best_goal = max(all_goals, key=lambda g: g.score)
         action = self._plan_action_for_goal(best_goal)
+        self.command_history.append(action.command)
         return action.command
 
+    def _is_in_loop(self, lookback: int = 4) -> bool:
+        if len(self.command_history) < lookback:
+            return False
+        last_commands = self.command_history[-lookback:]
+        if len(set(last_commands)) <= 2:
+            if len(self.position_history) >= 4:
+                if len(set(self.position_history[-4:])) <= 2:
+                    return True
+        return False
+
+    def _break_loop(self) -> None:
+        """
+        Initiates the loop-breaking mechanism.
+        """
+        self.current_path = None
+        self.loop_breaker_moves_left = 5  # Number of random moves to make
+
     def _get_interrupt_goals(self) -> List[Goal]:
-        """
-        Checks for high-priority goals that should interrupt pathfinding.
-        """
         interrupt_goals: List[Goal] = []
-        # Survival and attacking are high-priority
         for evaluator in [SurvivalEvaluator(), AttackEvaluator(), LootingEvaluator()]:
             goals = evaluator.evaluate(self.game_engine)
             for goal in goals:
@@ -80,12 +112,7 @@ class AIBrain:
         return interrupt_goals
 
     def _plan_action_for_goal(self, goal: Goal) -> Action:
-        """
-        Determines the specific command to execute based on the chosen goal.
-        """
         player = self.game_engine.player
-
-        # Immediate actions
         if goal.name == "use_health_potion":
             return Action(command=("use", goal.context["item"].name))
         if goal.name == "take_item":
@@ -93,7 +120,6 @@ class AIBrain:
         if goal.name == "attack_monster":
             return Action(command=("attack", goal.context["monster"].name))
 
-        # Pathfinding actions
         if "target_position" in goal.context:
             target_pos = goal.context["target_position"]
             path = self.path_finder.find_path_bfs(
@@ -107,20 +133,15 @@ class AIBrain:
                 self.current_path = path
                 return self._follow_path() or Action(command=("look", None))
 
-        # Fallback to random exploration if no path is found
         return Action(command=self._explore_randomly())
 
     def _follow_path(self) -> Optional[Action]:
-        """
-        Follows the current path, returning the next move command.
-        """
         if not self.current_path:
             return None
 
         player = self.game_engine.player
         current_pos_xyz = (player.x, player.y, player.current_floor_id)
 
-        # If we are at the start of the path, pop it
         if self.current_path and self.current_path[0] == current_pos_xyz:
             self.current_path.pop(0)
 
@@ -151,9 +172,6 @@ class AIBrain:
         return None
 
     def _explore_randomly(self) -> Tuple[str, Optional[str]]:
-        """
-        Selects a random valid move to explore the map.
-        """
         player = self.game_engine.player
         current_map = self.game_engine.get_current_map()
         possible_moves = []
