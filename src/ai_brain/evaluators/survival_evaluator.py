@@ -32,7 +32,9 @@ class SurvivalEvaluator(Evaluator):
 
         # Only create a goal if there's a healing item available.
         healing_potions = [
-            item for item in player.inventory if item.name == "Health Potion"
+            item
+            for item in player.inventory.items
+            if item.name == "Health Potion"
         ]
 
         if healing_potions:
