@@ -123,10 +123,10 @@ class TestMoveCommand(unittest.TestCase):
         self.assertFalse(result.get("game_over", False))
 
     def test_portal_gets_marked_as_visited_by_ai(self):
-        # Setup AI logic and explorer
-        ai_logic_mock = MagicMock()
+        # Setup AI brain and explorer
+        ai_brain_mock = MagicMock()
         game_engine_mock = MagicMock()
-        game_engine_mock.ai_logic = ai_logic_mock
+        game_engine_mock.ai_brain = ai_brain_mock
 
         # Player setup
         self.player.x, self.player.y = 0, 0
@@ -150,7 +150,9 @@ class TestMoveCommand(unittest.TestCase):
         move_cmd.execute()
 
         # Verify that the explorer's method was called
-        ai_logic_mock.explorer.mark_portal_as_visited.assert_called_once_with(1, 0, 0)
+        ai_brain_mock.explorer.mark_portal_as_visited.assert_called_once_with(
+            1, 0, 0
+        )
 
     def test_move_to_winning_position_on_correct_floor(self):
         self.player.x, self.player.y = 1, 2

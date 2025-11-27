@@ -73,10 +73,13 @@ class MoveAction:
                 self.message_log.add_message(
                     f"You step through the portal to floor {new_floor_id}!"
                 )
-                if self.game_engine and self.game_engine.ai_logic:
-                    self.game_engine.ai_logic.explorer.mark_portal_as_visited(
-                        new_x, new_y, floor_before_move
-                    )
+                if self.game_engine and self.game_engine.ai_brain:
+                    # Clear the AI's path and mark the portal as visited
+                    self.game_engine.ai_brain.current_path = None
+                    if hasattr(self.game_engine.ai_brain, "explorer"):
+                        self.game_engine.ai_brain.explorer.mark_portal_as_visited(
+                            new_x, new_y, floor_before_move
+                        )
             elif target_tile and target_tile.monster:
                 msg = f"You bump into a {target_tile.monster.name}!"
                 self.message_log.add_message(msg)
