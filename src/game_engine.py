@@ -4,7 +4,7 @@ import curses
 import random
 import time
 
-from src.ai_logic import AILogic
+from src.ai_brain.ai_brain import AIBrain
 from src.command_processor import CommandProcessor
 from src.game_state import GameState
 from src.input_handler import InputHandler
@@ -37,7 +37,7 @@ class GameEngine:
         self.debug_mode = debug_mode
         self.ai_active = ai_active
         self.ai_sleep_duration = ai_sleep_duration
-        self.ai_logic = None
+        self.ai_brain = None
         self.verbose = verbose
         self.random = random.Random(seed)
         self._debug_commands: list[tuple[str, str | None]] | None = None
@@ -100,14 +100,7 @@ class GameEngine:
         self.message_log = MessageLog(max_messages=5)
 
         if self.ai_active:
-            self.ai_logic = AILogic(
-                player=self.player,
-                real_world_maps=self.world_maps,
-                ai_visible_maps=self.visible_maps,
-                message_log=self.message_log,
-                random_generator=self.random,
-                verbose=self.verbose,
-            )
+            self.ai_brain = AIBrain(game_engine=self)
 
         self._initialize_monster_ai()
         self._update_fog_of_war_visibility()
@@ -217,6 +210,10 @@ class GameEngine:
             if not self.debug_mode:
                 self.renderer.cleanup_curses()
 
+    def get_current_map(self) -> WorldMap:
+        """Returns the current WorldMap instance the player is on."""
+        return self.world_maps[self.player.current_floor_id]
+
     def _setup_debug_mode(self):
         print("--- Starting Game in Debug Mode ---")
         print(f"\nPlayer initial position: ({self.player.x}, {self.player.y})")
@@ -227,7 +224,6 @@ class GameEngine:
     def _main_game_loop(self):
         start_time = time.time()
         timeout_seconds = 30
-        ai_state = None
 
         self._update_fog_of_war_visibility()
         if not self.debug_mode:
@@ -249,14 +245,9 @@ class GameEngine:
 
             if parsed_command_output:
                 self._process_command(parsed_command_output)
-                ai_state = (
-                    self.ai_logic.state.__class__.__name__
-                    if self.ai_active and self.ai_logic
-                    else None
-                )
 
             if self.game_state == GameState.PLAYING and not self.debug_mode:
-                self._render(ai_state=ai_state)
+                self._render()
 
             if self.player.health <= 0:
                 self.game_state = GameState.GAME_OVER
@@ -266,33 +257,22 @@ class GameEngine:
             if self.player.health <= 0:
                 self.message_log.add_message("You have been defeated. Game Over.")
 
-            ai_state = (
-                self.ai_logic.state.__class__.__name__
-                if self.ai_active and self.ai_logic
-                else None
-            )
-
             if self.debug_mode:
-                self._render_debug_end_screen(ai_state=ai_state)
+                self._render_debug_end_screen()
             else:
-                self._render(ai_state=ai_state)
+                self._render()
                 curses.napms(2000)
                 self.input_handler.handle_input_and_get_command(InputMode.GAME_OVER)
                 self.game_state = GameState.QUIT
 
         elif self.game_state == GameState.QUIT and self.debug_mode:
-            ai_state = (
-                self.ai_logic.state.__class__.__name__
-                if self.ai_active and self.ai_logic
-                else None
-            )
-            self._render_debug_end_screen(ai_state=ai_state)
+            self._render_debug_end_screen()
 
     def _get_next_command(self):
-        if self.ai_active and self.ai_logic:
+        if self.ai_active and self.ai_brain:
             # AI is active, get command from AI logic
             time.sleep(self.ai_sleep_duration)
-            return self.ai_logic.get_next_action()
+            return self.ai_brain.get_next_action()
         else:
             # AI is not active, get command from player input
             command = self.input_handler.handle_input_and_get_command(self.input_mode)
@@ -318,7 +298,6 @@ class GameEngine:
             self.message_log.add_message("The game is over.")
             return
 
-        floor_before_command = self.player.current_floor_id
         results = self.command_processor.process_command(
             parsed_command_output,
             self.player,
@@ -337,25 +316,12 @@ class GameEngine:
             self._handle_monster_actions()
             self._update_fog_of_war_visibility()
 
-        floor_after_command = self.player.current_floor_id
-        if (
-            self.ai_active
-            and self.ai_logic
-            and floor_before_command != floor_after_command
-        ):
-            self.ai_logic.current_path = None
-            self.message_log.add_message("AI: Floor changed, clearing path.")
-
-    def _render(self, ai_state=None):
+    def _render(self):
         current_visible_map = self.visible_maps.get(self.player.current_floor_id)
         if not current_visible_map:
             current_visible_map = WorldMap(
                 self.renderer.map_width, self.renderer.map_height
             )
-
-        ai_path = None
-        if self.ai_active and self.ai_logic:
-            ai_path = self.ai_logic.current_path
 
         if self.input_mode == InputMode.INVENTORY:
             self.renderer.render_inventory(self.player)
@@ -369,12 +335,12 @@ class GameEngine:
                 current_command_buffer=self.command_buffer,
                 message_log=self.message_log,
                 debug_render_to_list=self.debug_mode,
-                ai_path=ai_path,
+                ai_path=None,  # AI path rendering is disabled for now
                 current_floor_id=self.player.current_floor_id,
-                ai_state=ai_state,
+                ai_state=None,  # AI state rendering is disabled for now
             )
 
-    def _render_debug_end_screen(self, ai_state=None):
+    def _render_debug_end_screen(self):
         print("\n--- Game Over ---")
         final_map_render = self.renderer.render_all(
             player_x=self.player.x,
@@ -387,9 +353,9 @@ class GameEngine:
             current_command_buffer="",
             message_log=self.message_log,
             debug_render_to_list=True,
-            ai_path=self.ai_logic.current_path if self.ai_logic else None,
+            ai_path=None,  # AI path rendering is disabled for now
             current_floor_id=self.player.current_floor_id,
-            ai_state=ai_state,
+            ai_state=None,  # AI state rendering is disabled for now
         )
         if final_map_render:
             for row in final_map_render:
