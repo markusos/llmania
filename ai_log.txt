@@ -1,0 +1,576 @@
+--- Starting Game in Debug Mode ---
+
+Player initial position: (27, 11)
+Player initial health: 20
+Winning position: (11, 3, 1)
+
+--- World Map Layout ---
+
+--- Floor 0 ---
+##############################
+###########...######...#######
+###########....##.#....▢######
+#####..#.........$#.....##.###
+#..........................###
+#..###..................#..###
+#.#####.#..#..##M.....$.#..###
+#.#####............$.......###
+#.###...#$..$.#######...#.####
+#.#####....##.########..#.####
+#........$.$#.#######.$...####
+#.$######..##$########...$..##
+#############.########$#.....#
+######################.......#
+##############################
+HP: 0
+Floor: 0
+MODE: MOVEMENT
+Portals:
+- Portal at (23, 2) -> Floor 1
+
+--- Floor 1 ---
+##############################
+#####################.########
+#.##.######............▢#..###
+#..........$..............$..#
+#..#..#.▢............##..##.##
+#.#..................M..###M##
+#.#.................####.##.##
+####.....................##..#
+###....$.##.#.............#.##
+####..........####.##.#...#.##
+#####.#####.#.#######..#.##..#
+####..####..#########.########
+#####.########################
+##############################
+##############################
+HP: 0
+Floor: 0
+MODE: MOVEMENT
+Portals:
+- Portal at (23, 2) -> Floor 0
+- Portal at (8, 4) -> Floor 2
+
+--- Floor 2 ---
+##############################
+############..#...############
+####...#####..##........######
+####..#######.#...##.#..######
+#####..$▢.###..#.###.#.#.##.##
+#####......##.#..........##.##
+####...#...#$........###..#.##
+#####..#......#..#.#..#......#
+###.#..#....#.........###...##
+#................#.#######..##
+#.####.#$#....####.#..#.##...#
+######.##...................##
+######.###.$..#..#..#..#.#####
+######.###....################
+##############################
+HP: 0
+Floor: 0
+MODE: MOVEMENT
+Portals:
+- Portal at (8, 4) -> Floor 1
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (27, 11, Floor 0)
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (26, 11, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (26, 11, 0). Length: 2
+Chosen Action: ('move', 'west')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (26, 11, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: move_to_other_item (raw: 0.50, weighted: 0.15) | Context: target_position: (25, 11, 0), type: other_item
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (25, 11, 0)
+Best Goal: move_to_other_item (Score: 0.15)
+Path found to (25, 11, 0). Length: 2
+Chosen Action: ('move', 'west')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (25, 11, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+  - Interrupt? LootingEvaluator: take_item (raw: 0.60, weighted: 0.30)
+Evaluating Goals:
+  - LootingEvaluator: take_item (raw: 0.60, weighted: 0.30) | Context: item: <src.items.equippable.EquippableItem object at 0x7fa0247fc470>
+  - ExplorationEvaluator: move_to_other_item (raw: 1.00, weighted: 0.30) | Context: target_position: (25, 11, 0), type: other_item
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (25, 10, 0)
+Best Goal: take_item (Score: 0.30)
+Chosen Action: ('take', 'Greatsword')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (25, 11, Floor 0)
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (25, 10, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (25, 10, 0). Length: 2
+Chosen Action: ('move', 'north')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (25, 10, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (25, 9, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (25, 9, 0). Length: 2
+Chosen Action: ('move', 'north')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (25, 9, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (25, 8, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (25, 8, 0). Length: 2
+Chosen Action: ('move', 'north')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (25, 8, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (25, 7, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (25, 7, 0). Length: 2
+Chosen Action: ('move', 'north')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (25, 7, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (25, 6, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (25, 6, 0). Length: 2
+Chosen Action: ('move', 'north')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (25, 6, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (25, 5, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (25, 5, 0). Length: 2
+Chosen Action: ('move', 'north')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (25, 5, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (25, 4, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (25, 4, 0). Length: 2
+Chosen Action: ('move', 'north')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (25, 4, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (24, 4, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (24, 4, 0). Length: 2
+Chosen Action: ('move', 'west')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (24, 4, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (23, 4, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (23, 4, 0). Length: 2
+Chosen Action: ('move', 'west')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 4, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (23, 3, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (23, 3, 0). Length: 2
+Chosen Action: ('move', 'north')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 3, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: move_to_unvisited_portal (raw: 0.50, weighted: 0.15) | Context: target_position: (23, 2, 0), type: unvisited_portal
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (23, 2, 0)
+Best Goal: move_to_unvisited_portal (Score: 0.15)
+Path found to (23, 2, 0). Length: 2
+Chosen Action: ('move', 'north')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 2, Floor 1)
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (22, 2, 1)
+Best Goal: explore_map (Score: 0.03)
+Path found to (22, 2, 1). Length: 2
+Chosen Action: ('move', 'west')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 2, Floor 1)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: move_to_unvisited_portal (raw: 0.50, weighted: 0.15) | Context: target_position: (23, 2, 1), type: unvisited_portal
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (21, 2, 1)
+Best Goal: move_to_unvisited_portal (Score: 0.15)
+Path found to (23, 2, 1). Length: 2
+Chosen Action: ('move', 'east')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 2, Floor 0)
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (22, 2, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (22, 2, 0). Length: 2
+Chosen Action: ('move', 'west')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 2, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: move_to_unvisited_portal (raw: 0.50, weighted: 0.15) | Context: target_position: (23, 2, 0), type: unvisited_portal
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (22, 1, 0)
+Best Goal: move_to_unvisited_portal (Score: 0.15)
+Path found to (23, 2, 0). Length: 2
+Chosen Action: ('move', 'east')
+AI: Detected a loop, breaking.
+Exploring randomly.
+Exploring randomly.
+Exploring randomly.
+Exploring randomly.
+Exploring randomly.
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (21, 3, Floor 1)
+Evaluating Goals:
+  - ExplorationEvaluator: move_to_unvisited_portal (raw: 0.25, weighted: 0.07) | Context: target_position: (23, 2, 1), type: unvisited_portal
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (20, 3, 1)
+Best Goal: move_to_unvisited_portal (Score: 0.07)
+Path found to (23, 2, 1). Length: 4
+Chosen Action: ('move', 'north')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (21, 2, Floor 1)
+Following path. Steps left: 3
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 2, Floor 1)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 2, Floor 0)
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (22, 1, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (22, 1, 0). Length: 3
+Chosen Action: ('move', 'west')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 2, Floor 0)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 1, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: move_to_unvisited_portal (raw: 0.33, weighted: 0.10) | Context: target_position: (23, 2, 0), type: unvisited_portal
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (21, 1, 0)
+Best Goal: move_to_unvisited_portal (Score: 0.10)
+Path found to (23, 2, 0). Length: 3
+Chosen Action: ('move', 'south')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 2, Floor 0)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 2, Floor 1)
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (24, 3, 1)
+Best Goal: explore_map (Score: 0.03)
+Path found to (24, 3, 1). Length: 3
+Chosen Action: ('move', 'south')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 3, Floor 1)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (24, 3, Floor 1)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: move_to_unvisited_portal (raw: 0.33, weighted: 0.10) | Context: target_position: (23, 2, 1), type: unvisited_portal
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (25, 3, 1)
+Best Goal: move_to_unvisited_portal (Score: 0.10)
+Path found to (23, 2, 1). Length: 3
+Chosen Action: ('move', 'west')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 3, Floor 1)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 2, Floor 0)
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (21, 2, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (21, 2, 0). Length: 3
+Chosen Action: ('move', 'west')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 2, Floor 0)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (21, 2, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: move_to_unvisited_portal (raw: 0.33, weighted: 0.10) | Context: target_position: (23, 2, 0), type: unvisited_portal
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (20, 2, 0)
+Best Goal: move_to_unvisited_portal (Score: 0.10)
+Path found to (23, 2, 0). Length: 3
+Chosen Action: ('move', 'east')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 2, Floor 0)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 2, Floor 1)
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (23, 4, 1)
+Best Goal: explore_map (Score: 0.03)
+Path found to (23, 4, 1). Length: 3
+Chosen Action: ('move', 'south')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 3, Floor 1)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 4, Floor 1)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: move_to_unvisited_portal (raw: 0.33, weighted: 0.10) | Context: target_position: (23, 2, 1), type: unvisited_portal
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (23, 5, 1)
+Best Goal: move_to_unvisited_portal (Score: 0.10)
+Path found to (23, 2, 1). Length: 3
+Chosen Action: ('move', 'north')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 3, Floor 1)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 2, Floor 0)
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (20, 2, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (20, 2, 0). Length: 4
+Chosen Action: ('move', 'west')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 2, Floor 0)
+Following path. Steps left: 3
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (21, 2, Floor 0)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (20, 2, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: move_to_unvisited_portal (raw: 0.25, weighted: 0.07) | Context: target_position: (23, 2, 0), type: unvisited_portal
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (20, 1, 0)
+Best Goal: move_to_unvisited_portal (Score: 0.07)
+Path found to (23, 2, 0). Length: 4
+Chosen Action: ('move', 'east')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (21, 2, Floor 0)
+Following path. Steps left: 3
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 2, Floor 0)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 2, Floor 1)
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (21, 1, 1)
+Best Goal: explore_map (Score: 0.03)
+Path found to (21, 1, 1). Length: 4
+Chosen Action: ('move', 'west')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 2, Floor 1)
+Following path. Steps left: 3
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (21, 2, Floor 1)
+Following path. Steps left: 2
+Checking for interrupt goals:
+  - Interrupt? AttackEvaluator: attack_monster (raw: 0.80, weighted: 0.80)
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (21, 1, Floor 1)
+Following path. Steps left: 1
+Checking for interrupt goals:
+Evaluating Goals:
+  - ExplorationEvaluator: move_to_unvisited_portal (raw: 0.25, weighted: 0.07) | Context: target_position: (23, 2, 1), type: unvisited_portal
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (20, 2, 1)
+Best Goal: move_to_unvisited_portal (Score: 0.07)
+Path found to (23, 2, 1). Length: 4
+Chosen Action: ('move', 'south')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (21, 2, Floor 1)
+Following path. Steps left: 3
+Checking for interrupt goals:
+  - Interrupt? AttackEvaluator: attack_monster (raw: 0.80, weighted: 0.80)
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 2, Floor 1)
+Following path. Steps left: 2
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 2, Floor 0)
+Evaluating Goals:
+  - ExplorationEvaluator: explore_map (raw: 0.10, weighted: 0.03) | Context: target_position: (21, 3, 0)
+Best Goal: explore_map (Score: 0.03)
+Path found to (21, 3, 0). Length: 4
+Chosen Action: ('move', 'south')
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (23, 3, Floor 0)
+Following path. Steps left: 3
+Checking for interrupt goals:
+
+--- AI Decision Cycle ---
+Player HP: 20/20 | Pos: (22, 3, Floor 0)
+Following path. Steps left: 2
+Checking for interrupt goals:
+  - Interrupt? AttackEvaluator: attack_monster (raw: 0.80, weighted: 0.80)
+
+--- AI Decision Cycle ---
+Player HP: 16/20 | Pos: (22, 3, Floor 0)
+Following path. Steps left: 1
+Checking for interrupt goals:
+  - Interrupt? AttackEvaluator: attack_monster (raw: 0.64, weighted: 0.64)
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+Exploring randomly.
+Exploring randomly.
+Exploring randomly.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+Exploring randomly.
+Exploring randomly.
+Exploring randomly.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+AI: Detected a loop, breaking.
+Exploring randomly.
+
+--- Game Over ---
+                    ###
+                    #.###
+                    ...▢#.
+                    ....M.
+                    .##M@#
+                      ..##
+
+
+
+
+
+
+
+
+
+HP: 0
+Floor: 1
+MODE: GAME_OVER
+You attack the Troll for 0 damage.
+You bump into a Troll!
+The Troll attacks you for 5 damage.
+You have been defeated. Game Over.
+You have been defeated. Game Over.
+
+--- Final Messages ---
+You attack the Troll for 0 damage.
+You bump into a Troll!
+The Troll attacks you for 5 damage.
+You have been defeated. Game Over.
+You have been defeated. Game Over.
+
+--- Debug Mode Finished ---

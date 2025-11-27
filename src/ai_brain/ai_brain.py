@@ -9,7 +9,9 @@ from .data_structures import Action, Goal
 from .evaluators.attack_evaluator import AttackEvaluator
 from .evaluators.exploration_evaluator import ExplorationEvaluator
 from .evaluators.looting_evaluator import LootingEvaluator
+from .evaluators.quest_evaluator import QuestEvaluator
 from .evaluators.survival_evaluator import SurvivalEvaluator
+from .explorer import Explorer
 
 if TYPE_CHECKING:
     from src.game_engine import GameEngine
@@ -21,23 +23,39 @@ class AIBrain:
     def __init__(self, game_engine: "GameEngine"):
         self.game_engine = game_engine
         self.evaluators = [
+            QuestEvaluator(),
             SurvivalEvaluator(),
             LootingEvaluator(),
             AttackEvaluator(),
             ExplorationEvaluator(),
         ]
         self.path_finder = PathFinder()
+        self.explorer = Explorer(game_engine)
         self.current_path: Optional[List[Tuple[int, int, int]]] = None
         self.last_move_command: Optional[Tuple[str, Optional[str]]] = None
         self.command_history: List[Optional[Tuple[str, Optional[str]]]] = []
-        self.position_history: List[Tuple[int, int]] = []
+        self.position_history: List[Tuple[Tuple[int, int], int]] = []
         self.loop_breaker_moves_left = 0
 
     def get_next_action(self) -> Tuple[str, Optional[str]]:
         """
         Evaluates all goals and selects the best action to perform.
         """
-        player_pos = (self.game_engine.player.x, self.game_engine.player.y)
+        player = self.game_engine.player
+        player_pos = ((player.x, player.y), player.current_floor_id)
+
+        if self.position_history:
+            last_pos, last_floor = self.position_history[-1]
+            if last_floor != player.current_floor_id:
+                self.explorer.mark_portal_as_visited(
+                    last_pos[0], last_pos[1], last_floor
+                )
+                if self.game_engine.verbose > 0:
+                    print(
+                        f"AI: Portal at {last_pos} on floor {last_floor} "
+                        "marked as visited."
+                    )
+
         self.position_history.append(player_pos)
         if len(self.position_history) > 10:
             self.position_history.pop(0)
@@ -51,11 +69,25 @@ class AIBrain:
             self.command_history.append(action_command)
             return action_command
 
+        if self.game_engine.verbose > 0:
+            print("\n--- AI Decision Cycle ---")
+            print(
+                f"Player HP: {player.health}/{player.get_max_health()} | "
+                f"Pos: ({player.x}, {player.y}, Floor {player.current_floor_id})"
+            )
+            if self.current_path:
+                print(f"Following path. Steps left: {len(self.current_path)}")
+
         if self.current_path:
-            interrupt_goals = self._get_interrupt_goals()
+            interrupt_goals = self._get_interrupt_goals(log=True)
             if interrupt_goals:
                 best_interrupt = max(interrupt_goals, key=lambda g: g.score)
                 if best_interrupt.score > 0.8:
+                    if self.game_engine.verbose > 0:
+                        print(
+                            "Path interrupted by high-priority goal: "
+                            f"{best_interrupt.name} (Score: {best_interrupt.score:.2f})"
+                        )
                     self.current_path = None
                     action = self._plan_action_for_goal(best_interrupt)
                     self.command_history.append(action.command)
@@ -69,11 +101,24 @@ class AIBrain:
                 self.current_path = None
 
         all_goals: List[Goal] = []
+        if self.game_engine.verbose > 0:
+            print("Evaluating Goals:")
+
         for evaluator in self.evaluators:
             goals = evaluator.evaluate(self.game_engine)
             for goal in goals:
+                original_score = goal.score
                 goal.score *= evaluator.weight
                 all_goals.append(goal)
+                if self.game_engine.verbose > 0:
+                    context_str = ", ".join(
+                        f"{k}: {v}" for k, v in goal.context.items()
+                    )
+                    print(
+                        f"  - {evaluator.name}: {goal.name} "
+                        f"(raw: {original_score:.2f}, weighted: {goal.score:.2f}) "
+                        f"| Context: {context_str}"
+                    )
 
         if not all_goals:
             action_command = ("look", None)
@@ -81,7 +126,13 @@ class AIBrain:
             return action_command
 
         best_goal = max(all_goals, key=lambda g: g.score)
+        if self.game_engine.verbose > 0:
+            print(f"Best Goal: {best_goal.name} (Score: {best_goal.score:.2f})")
+
         action = self._plan_action_for_goal(best_goal)
+        if self.game_engine.verbose > 0:
+            print(f"Chosen Action: {action.command}")
+
         self.command_history.append(action.command)
         return action.command
 
@@ -91,24 +142,33 @@ class AIBrain:
         last_commands = self.command_history[-lookback:]
         if len(set(last_commands)) <= 2:
             if len(self.position_history) >= 4:
-                if len(set(self.position_history[-4:])) <= 2:
+                recent_xy_pos = [pos[0] for pos in self.position_history[-4:]]
+                if len(set(recent_xy_pos)) <= 2:
                     return True
         return False
 
     def _break_loop(self) -> None:
-        """
-        Initiates the loop-breaking mechanism.
-        """
+        if self.game_engine.verbose > 0:
+            print("AI: Detected a loop, breaking.")
         self.current_path = None
-        self.loop_breaker_moves_left = 5  # Number of random moves to make
+        self.loop_breaker_moves_left = 5
 
-    def _get_interrupt_goals(self) -> List[Goal]:
+    def _get_interrupt_goals(self, log: bool = False) -> List[Goal]:
         interrupt_goals: List[Goal] = []
+        if self.game_engine.verbose > 0 and log:
+            print("Checking for interrupt goals:")
+
         for evaluator in [SurvivalEvaluator(), AttackEvaluator(), LootingEvaluator()]:
             goals = evaluator.evaluate(self.game_engine)
             for goal in goals:
+                original_score = goal.score
                 goal.score *= evaluator.weight
                 interrupt_goals.append(goal)
+                if self.game_engine.verbose > 0 and log:
+                    print(
+                        f"  - Interrupt? {evaluator.name}: {goal.name} "
+                        f"(raw: {original_score:.2f}, weighted: {goal.score:.2f})"
+                    )
         return interrupt_goals
 
     def _plan_action_for_goal(self, goal: Goal) -> Action:
@@ -130,8 +190,12 @@ class AIBrain:
                 target_pos[2],
             )
             if path:
+                if self.game_engine.verbose > 0:
+                    print(f"Path found to {target_pos}. Length: {len(path)}")
                 self.current_path = path
                 return self._follow_path() or Action(command=("look", None))
+            elif self.game_engine.verbose > 0:
+                print(f"No path found to {target_pos}.")
 
         return Action(command=self._explore_randomly())
 
@@ -172,6 +236,8 @@ class AIBrain:
         return None
 
     def _explore_randomly(self) -> Tuple[str, Optional[str]]:
+        if self.game_engine.verbose > 0:
+            print("Exploring randomly.")
         player = self.game_engine.player
         current_map = self.game_engine.get_current_map()
         possible_moves = []

@@ -15,22 +15,21 @@ class SurvivalEvaluator(Evaluator):
     the use of healing items when health is low.
     """
 
-    def __init__(self, weight: float = 1.5):
+    def __init__(self, weight: float = 1.8):  # Increased weight
         super().__init__(name="SurvivalEvaluator", weight=weight)
 
     def evaluate(self, game_engine: "GameEngine") -> List[Goal]:
         goals: List[Goal] = []
         player = game_engine.player
 
-        # If health is full, no need to heal.
-        if player.health >= player.max_health:
+        # Start considering healing at 75% health
+        health_threshold = player.max_health * 0.75
+        if player.health >= health_threshold:
             return []
 
-        # Calculate the urgency to heal. The lower the health, the higher the score.
         health_percentage = player.health / player.max_health
         urgency = 1.0 - health_percentage
 
-        # Only create a goal if there's a healing item available.
         healing_potions = [
             item
             for item in player.inventory.items

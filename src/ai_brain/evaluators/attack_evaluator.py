@@ -11,7 +11,8 @@ if TYPE_CHECKING:
 
 class AttackEvaluator(Evaluator):
     """
-    This evaluator assesses threats and encourages the AI to attack nearby monsters.
+    This evaluator assesses threats and encourages the AI to attack nearby monsters,
+    but only when it's safe to do so.
     """
 
     def __init__(self, weight: float = 1.0):
@@ -22,7 +23,10 @@ class AttackEvaluator(Evaluator):
         player = game_engine.player
         current_map = game_engine.get_current_map()
 
-        # Find adjacent monsters
+        # Don't attack if health is below 40%
+        if player.health < player.max_health * 0.4:
+            return []
+
         adjacent_monsters = []
         for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
             x, y = player.x + dx, player.y + dy
@@ -30,11 +34,8 @@ class AttackEvaluator(Evaluator):
             if tile and tile.monster:
                 adjacent_monsters.append(tile.monster)
 
-        # Prioritize the weakest monster
         if adjacent_monsters:
             weakest_monster = min(adjacent_monsters, key=lambda m: m.health)
-            # The score is higher if the player's health is high, encouraging
-            # aggressive behavior when safe.
             health_ratio = player.health / player.max_health
             goals.append(
                 Goal(
