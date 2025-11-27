@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, List
 
 from ..data_structures import Goal
 from ..evaluator import Evaluator
+from ..target_finder import TargetFinder
 
 if TYPE_CHECKING:
     from src.game_engine import GameEngine
@@ -11,41 +12,50 @@ if TYPE_CHECKING:
 
 class AttackEvaluator(Evaluator):
     """
-    This evaluator makes the AI extremely cautious. It will only attack if its
-    health is very high, and its desire to fight will drop off sharply as it
-    takes damage.
+    This evaluator encourages the AI to attack nearby monsters.
     """
 
     def __init__(self, weight: float = 1.0):
         super().__init__(name="AttackEvaluator", weight=weight)
+        self.target_finder: TargetFinder | None = None
 
     def evaluate(self, game_engine: "GameEngine") -> List[Goal]:
+        if self.target_finder is None:
+            self.target_finder = TargetFinder(game_engine)
+
         goals: List[Goal] = []
         player = game_engine.player
         current_map = game_engine.get_current_map()
 
-        health_ratio = player.health / player.get_max_health()
-        if health_ratio < 0.9:  # Only attack if health is above 90%
+        # Find all monsters on the current floor
+        monsters = [
+            (monster, abs(monster.x - player.x) + abs(monster.y - player.y))
+            for monster in current_map.get_monsters()
+        ]
+
+        if not monsters:
             return []
 
-        adjacent_monsters = []
-        for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
-            x, y = player.x + dx, player.y + dy
-            tile = current_map.get_tile(x, y)
-            if tile and tile.monster:
-                adjacent_monsters.append(tile.monster)
+        # Find the closest monster
+        closest_monster, dist = min(monsters, key=lambda m: m[1])
 
-        if adjacent_monsters:
-            weakest_monster = min(adjacent_monsters, key=lambda m: m.health)
-            # The score is heavily influenced by the AI's current health.
-            # The high exponent makes the desire to attack drop off very quickly.
-            score = 0.8 * (health_ratio**5)
-            goals.append(
-                Goal(
-                    name="attack_monster",
-                    score=score,
-                    context={"monster": weakest_monster},
-                )
+        # The desire to attack is inversely proportional to the distance to the monster
+        # and directly proportional to the player's health.
+        health_ratio = player.health / player.get_max_health()
+        score = (1.0 / (dist + 1)) * health_ratio
+        goals.append(
+            Goal(
+                name="attack_monster",
+                score=score,
+                context={
+                    "target_position": (
+                        closest_monster.x,
+                        closest_monster.y,
+                        player.current_floor_id,
+                    ),
+                    "monster": closest_monster,
+                },
             )
+        )
 
         return goals

@@ -30,7 +30,7 @@ class SurvivalEvaluator(Evaluator):
         goals: List[Goal] = []
         player = game_engine.player
 
-        health_threshold = player.get_max_health() * 0.75
+        health_threshold = player.get_max_health() * 0.9
         if player.health >= health_threshold:
             return []
 
@@ -55,10 +55,11 @@ class SurvivalEvaluator(Evaluator):
             goals.append(
                 Goal(
                     name="use_healing_item",
-                    score=urgency + 0.5,  # Bonus to prioritize using over finding
+                    score=1.0,  # Always highest priority
                     context={"item": best_healing_item},
                 )
             )
+            return goals
 
         # Option 2: Find a healing item on the map
         healing_items_on_map = self.target_finder.find_health_potions()

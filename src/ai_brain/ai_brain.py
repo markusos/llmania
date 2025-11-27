@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from src.map_algorithms.pathfinding import PathFinder
@@ -10,6 +9,7 @@ from .evaluators.attack_evaluator import AttackEvaluator
 from .evaluators.exploration_evaluator import ExplorationEvaluator
 from .evaluators.looting_evaluator import LootingEvaluator
 from .evaluators.quest_evaluator import QuestEvaluator
+from .evaluators.retreat_evaluator import RetreatEvaluator
 from .evaluators.survival_evaluator import SurvivalEvaluator
 from .explorer import Explorer
 
@@ -23,11 +23,12 @@ class AIBrain:
     def __init__(self, game_engine: "GameEngine"):
         self.game_engine = game_engine
         self.evaluators = [
-            QuestEvaluator(),
-            SurvivalEvaluator(),
-            LootingEvaluator(),
-            AttackEvaluator(),
-            ExplorationEvaluator(),
+            SurvivalEvaluator(weight=3.5),
+            QuestEvaluator(weight=3.0),
+            AttackEvaluator(weight=2.5),
+            RetreatEvaluator(weight=1.8),
+            LootingEvaluator(weight=1.5),
+            ExplorationEvaluator(weight=0.5),
         ]
         self.path_finder = PathFinder()
         self.explorer = Explorer(game_engine)
@@ -35,39 +36,60 @@ class AIBrain:
         self.last_move_command: Optional[Tuple[str, Optional[str]]] = None
         self.command_history: List[Optional[Tuple[str, Optional[str]]]] = []
         self.position_history: List[Tuple[Tuple[int, int], int]] = []
-        self.loop_breaker_moves_left = 0
+        self.committed_goal: Optional[Goal] = None
+        self.commitment_turns: int = 0
+        self.stuck_counter: int = 0
+        self.original_exploration_weight: float = [
+            e.weight for e in self.evaluators if isinstance(e, ExplorationEvaluator)
+        ][0]
 
     def get_next_action(self) -> Tuple[str, Optional[str]]:
         """
         Evaluates all goals and selects the best action to perform.
         """
+        if self.commitment_turns > 0:
+            self.commitment_turns -= 1
+            if self.committed_goal:
+                if self.game_engine.verbose > 0:
+                    print(f"Continuing committed goal: {self.committed_goal.name}")
+                action = self._plan_action_for_goal(self.committed_goal)
+                self.command_history.append(action.command)
+                return action.command
+            else:
+                self.commitment_turns = 0  # Should not happen, but reset if it does
         player = self.game_engine.player
         player_pos = ((player.x, player.y), player.current_floor_id)
 
         if self.position_history:
             last_pos, last_floor = self.position_history[-1]
             if last_floor != player.current_floor_id:
-                self.explorer.mark_portal_as_visited(
-                    last_pos[0], last_pos[1], last_floor
-                )
-                if self.game_engine.verbose > 0:
-                    print(
-                        f"AI: Portal at {last_pos} on floor {last_floor} "
-                        "marked as visited."
-                    )
+                # The AI has just used a portal. Mark it as visited.
+                tile = self.game_engine.get_map(last_floor).get_tile(last_pos[0], last_pos[1])
+                if tile and tile.is_portal:
+                    self.explorer.visited_portals.add((last_pos[0], last_pos[1], last_floor))
+                    if self.game_engine.verbose > 0:
+                        print(
+                            f"AI: Portal at {last_pos} on floor {last_floor} "
+                            "marked as visited."
+                        )
 
         self.position_history.append(player_pos)
         if len(self.position_history) > 10:
             self.position_history.pop(0)
 
         if self._is_in_loop():
-            self._break_loop()
-
-        if self.loop_breaker_moves_left > 0:
-            self.loop_breaker_moves_left -= 1
-            action_command = self._explore_randomly()
-            self.command_history.append(action_command)
-            return action_command
+            self.stuck_counter += 1
+            if self.stuck_counter > 3:
+                if self.game_engine.verbose > 0:
+                    print("AI is stuck, temporarily lowering exploration priority.")
+                for e in self.evaluators:
+                    if isinstance(e, ExplorationEvaluator):
+                        e.weight = 0.1
+        else:
+            self.stuck_counter = 0
+            for e in self.evaluators:
+                if isinstance(e, ExplorationEvaluator):
+                    e.weight = self.original_exploration_weight
 
         if self.game_engine.verbose > 0:
             print("\n--- AI Decision Cycle ---")
@@ -129,6 +151,16 @@ class AIBrain:
         if self.game_engine.verbose > 0:
             print(f"Best Goal: {best_goal.name} (Score: {best_goal.score:.2f})")
 
+        # Goal Commitment Logic
+        if best_goal.name in ["attack_monster", "retreat", "move_to_item"] and best_goal.score > 0.7:
+            if self.game_engine.verbose > 0:
+                print(f"Committing to goal: {best_goal.name}")
+            self.committed_goal = best_goal
+            self.commitment_turns = 5  # Commit for 5 turns
+        else:
+            self.committed_goal = None
+            self.commitment_turns = 0
+
         action = self._plan_action_for_goal(best_goal)
         if self.game_engine.verbose > 0:
             print(f"Chosen Action: {action.command}")
@@ -146,12 +178,6 @@ class AIBrain:
                 if len(set(recent_xy_pos)) <= 2:
                     return True
         return False
-
-    def _break_loop(self) -> None:
-        if self.game_engine.verbose > 0:
-            print("AI: Detected a loop, breaking.")
-        self.current_path = None
-        self.loop_breaker_moves_left = 5
 
     def _get_interrupt_goals(self, log: bool = False) -> List[Goal]:
         interrupt_goals: List[Goal] = []
