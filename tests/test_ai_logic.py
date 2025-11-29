@@ -24,11 +24,14 @@ class TestAILogic(unittest.TestCase):
         self.mock_player.health = 100
         self.mock_player.max_health = 100
         self.mock_player.inventory = MagicMock()
+        self.mock_player.inventory.items = []  # No items in inventory
+        # Mock combat stats for should_engage_monster
+        self.mock_player.get_attack_power.return_value = 5
+        self.mock_player.get_defense.return_value = 0
+        self.mock_player.equipment = MagicMock()
+        self.mock_player.equipment.slots = {}
 
         self.ai_visible_maps: Dict[int, WorldMap] = {0: WorldMap(10, 10)}
-        self.mock_real_world_maps: Dict[int, MagicMock] = {0: MagicMock(spec=WorldMap)}
-        self.mock_real_world_maps[0].width = 10
-        self.mock_real_world_maps[0].height = 10
 
         self.message_log = MagicMock(spec=MessageLog)
 
@@ -38,7 +41,6 @@ class TestAILogic(unittest.TestCase):
         ):
             self.ai = AILogic(
                 player=self.mock_player,
-                real_world_maps=self.mock_real_world_maps,
                 ai_visible_maps=self.ai_visible_maps,
                 message_log=self.message_log,
                 random_generator=random.Random(),
@@ -100,23 +102,6 @@ class TestAILogic(unittest.TestCase):
 
         if is_ai_map:
             self.ai_visible_maps[floor_id] = world_map
-            if floor_id not in self.mock_real_world_maps:
-                mock_real_map = MagicMock(spec=WorldMap)
-                mock_real_map.width = width
-                mock_real_map.height = height
-                mock_real_map.get_tile.side_effect = (
-                    lambda mx, my, current_map=world_map: current_map.get_tile(mx, my)
-                )
-                self.mock_real_world_maps[floor_id] = mock_real_map
-        else:
-            real_map_mock_local = MagicMock(spec=WorldMap)
-            real_map_mock_local.width = width
-            real_map_mock_local.height = height
-            real_map_mock_local.grid = world_map.grid
-            real_map_mock_local.get_tile.side_effect = (
-                lambda mx, my: world_map.get_tile(mx, my)
-            )
-            self.mock_real_world_maps[floor_id] = real_map_mock_local
         return world_map
 
     def _setup_tile_at(
@@ -132,11 +117,6 @@ class TestAILogic(unittest.TestCase):
     ):
         if floor_id not in self.ai_visible_maps:
             self.ai_visible_maps[floor_id] = WorldMap(10, 10)
-            if floor_id not in self.mock_real_world_maps:
-                self.mock_real_world_maps[floor_id] = MagicMock(spec=WorldMap)
-                tile = Tile(tile_type="floor")
-                tile.is_explored = True
-                self.mock_real_world_maps[floor_id].get_tile.return_value = tile
 
         target_map = self.ai_visible_maps[floor_id]
         tile = target_map.get_tile(x, y)
@@ -152,37 +132,6 @@ class TestAILogic(unittest.TestCase):
         tile.is_portal = portal_to is not None
         tile.portal_to_floor_id = portal_to
 
-        if floor_id in self.mock_real_world_maps:
-            mock_real_tile = Tile(
-                tile_type=tile_type,
-                item=item,
-                monster=monster,
-                portal_to_floor_id=portal_to,
-            )
-            mock_real_tile.is_portal = portal_to is not None
-
-            original_side_effect = self.mock_real_world_maps[
-                floor_id
-            ].get_tile.side_effect
-
-            def new_side_effect(
-                mx,
-                my,
-                current_x_val=x,
-                current_y_val=y,
-                new_tile_val=mock_real_tile,
-                orig_effect_val=original_side_effect,
-            ):
-                if mx == current_x_val and my == current_y_val:
-                    return new_tile_val
-                if orig_effect_val and callable(orig_effect_val):
-                    try:
-                        return orig_effect_val(mx, my)
-                    except TypeError:
-                        return Tile(tile_type="floor")
-                return Tile(tile_type="floor")
-
-            self.mock_real_world_maps[floor_id].get_tile.side_effect = new_side_effect
         return tile
 
     def test_ai_transitions_to_looting_state(self):

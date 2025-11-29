@@ -10,18 +10,37 @@ from src.ai_logic.states.survival_state import SurvivalState
 class TestSurvivalState(unittest.TestCase):
     def setUp(self):
         self.ai_logic = MagicMock()
+        # Mock player_view with proper numeric values
+        self.ai_logic.player_view = MagicMock()
+        self.ai_logic.player_view.health = 100
+        self.ai_logic.player_view.max_health = 100
+        self.ai_logic.player_view.current_floor_id = 0
+        self.ai_logic.player_view.x = 1
+        self.ai_logic.player_view.y = 1
+        # Mock verbose for debug logging
+        self.ai_logic.verbose = 0
+        # Mock new methods from Phase 1
+        self.ai_logic.should_enter_survival_mode.return_value = True
+        self.ai_logic.get_safest_adjacent_monster.return_value = None
+        self.ai_logic._get_adjacent_monsters.return_value = []
         self.state = SurvivalState(self.ai_logic)
         self.ai_logic.state = self.state
 
     def test_handle_transitions(self):
-        # Test transition to ExploringState
-        self.ai_logic.player.health = 6
-        self.ai_logic.player.max_health = 10
+        # Test transition to ExploringState (no longer in survival mode)
+        self.ai_logic.should_enter_survival_mode.return_value = False
+        self.ai_logic._get_adjacent_monsters.return_value = []
         self.assertEqual(self.state.handle_transitions(), "ExploringState")
 
-        # Test no transition
-        self.ai_logic.player.health = 5
-        self.ai_logic.player.max_health = 10
+        # Test transition to AttackingState (healthy and safe monster nearby)
+        monster = MagicMock()
+        monster.name = "Goblin"
+        self.ai_logic._get_adjacent_monsters.return_value = [monster]
+        self.ai_logic.get_safest_adjacent_monster.return_value = monster
+        self.assertEqual(self.state.handle_transitions(), "AttackingState")
+
+        # Test no transition (still in survival mode)
+        self.ai_logic.should_enter_survival_mode.return_value = True
         self.assertEqual(self.state.handle_transitions(), "SurvivalState")
 
     def test_get_next_action(self):
@@ -90,20 +109,21 @@ class TestSurvivalState(unittest.TestCase):
         self.assertNotEqual(action, ("move", "south"))
 
     def test_path_to_potion_avoids_monsters(self):
-        # Test that the AI avoids monsters when pathing to a health potion
+        # Test that the AI uses risk-aware pathfinding in SurvivalState
         self.state._use_item = MagicMock(return_value=None)
         self.ai_logic._get_adjacent_monsters.return_value = []
         self.state._pickup_item = MagicMock(return_value=None)
         self.ai_logic.target_finder.find_health_potions.return_value = [
             (1, 1, 0, "health_potion", 1)
         ]
-        self.ai_logic.path_finder.find_path_bfs.return_value = None
+        self.ai_logic.path_finder.find_path_risk_aware.return_value = None
         self.state.get_next_action()
-        self.ai_logic.path_finder.find_path_bfs.assert_called_with(
+        self.ai_logic.path_finder.find_path_risk_aware.assert_called_with(
             self.ai_logic.ai_visible_maps,
-            (self.ai_logic.player.x, self.ai_logic.player.y),
-            self.ai_logic.player.current_floor_id,
+            (self.ai_logic.player_view.x, self.ai_logic.player_view.y),
+            self.ai_logic.player_view.current_floor_id,
             (1, 1),
             0,
-            avoid_monsters=True,
+            player_health_ratio=1.0,  # health/max_health = 100/100
+            require_explored=True,
         )

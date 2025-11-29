@@ -102,7 +102,6 @@ class GameEngine:
         if self.ai_active:
             self.ai_logic = AILogic(
                 player=self.player,
-                real_world_maps=self.world_maps,
                 ai_visible_maps=self.visible_maps,
                 message_log=self.message_log,
                 random_generator=self.random,
@@ -149,6 +148,8 @@ class GameEngine:
                         )
 
     def _update_fog_of_war_visibility(self) -> None:
+        from src.map_algorithms.line_of_sight import calculate_visible_tiles
+
         player_x, player_y = self.player.x, self.player.y
         current_floor_id = self.player.current_floor_id
 
@@ -169,41 +170,37 @@ class GameEngine:
                 tile = current_visible_map.get_tile(x, y)
                 if tile:
                     tile.monster = None
+                    tile.is_currently_visible = False
 
-        # This is for revealing the map, items, and portals
-        for dy_offset in range(-1, 2):
-            for dx_offset in range(-1, 2):
-                map_x, map_y = player_x + dx_offset, player_y + dy_offset
+        # Get player's view radius (can be affected by equipment)
+        player_view_radius = self.player.get_view_radius()
 
-                if not (
-                    0 <= map_x < current_real_map.width
-                    and 0 <= map_y < current_real_map.height
-                ):
-                    continue
+        # Calculate visible tiles using line of sight
+        visible_tiles = calculate_visible_tiles(
+            current_real_map, player_x, player_y, player_view_radius
+        )
 
-                real_tile = current_real_map.get_tile(map_x, map_y)
-                if real_tile:
-                    visible_tile = current_visible_map.get_tile(map_x, map_y)
-                    if visible_tile:
-                        visible_tile.type = real_tile.type
-                        # Don't update monster here, handle it separately
-                        visible_tile.item = real_tile.item
-                        visible_tile.is_portal = real_tile.is_portal
-                        visible_tile.portal_to_floor_id = real_tile.portal_to_floor_id
-                        visible_tile.is_explored = True
+        # Update visibility for all tiles in line of sight
+        for map_x, map_y in visible_tiles:
+            if not (
+                0 <= map_x < current_real_map.width
+                and 0 <= map_y < current_real_map.height
+            ):
+                continue
 
-        # Now, specifically handle monster visibility on currently visible tiles.
-        for y in range(player_y - 1, player_y + 2):
-            for x in range(player_x - 1, player_x + 2):
-                if not (
-                    0 <= x < current_real_map.width and 0 <= y < current_real_map.height
-                ):
-                    continue
+            real_tile = current_real_map.get_tile(map_x, map_y)
+            if real_tile:
+                visible_tile = current_visible_map.get_tile(map_x, map_y)
+                if visible_tile:
+                    visible_tile.type = real_tile.type
+                    visible_tile.item = real_tile.item
+                    visible_tile.is_portal = real_tile.is_portal
+                    visible_tile.portal_to_floor_id = real_tile.portal_to_floor_id
+                    visible_tile.is_explored = True
+                    visible_tile.is_currently_visible = True
 
-                real_tile = current_real_map.get_tile(x, y)
-                if real_tile and real_tile.monster:
-                    visible_tile = current_visible_map.get_tile(x, y)
-                    if visible_tile:
+                    # Update monster visibility for currently visible tiles
+                    if real_tile.monster:
                         visible_tile.monster = real_tile.monster
 
     def run(self):

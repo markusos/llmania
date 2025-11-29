@@ -28,6 +28,8 @@ class Renderer:
             self.ITEM_COLOR_PAIR = 0
             self.DEFAULT_TEXT_COLOR_PAIR = 0
             self.PATH_COLOR_PAIR = 0
+            self.FLOOR_DIM_COLOR_PAIR = 0
+            self.WALL_DIM_COLOR_PAIR = 0
         else:
             self.stdscr = curses.initscr()
             curses.start_color()
@@ -50,6 +52,11 @@ class Renderer:
             self.DEFAULT_TEXT_COLOR_PAIR = 6
             curses.init_pair(7, curses.COLOR_BLUE, curses.COLOR_GREEN)
             self.PATH_COLOR_PAIR = 7
+            # Dim colors for explored but not currently visible tiles
+            curses.init_pair(8, curses.COLOR_BLACK, curses.COLOR_CYAN)
+            self.FLOOR_DIM_COLOR_PAIR = 8
+            curses.init_pair(9, curses.COLOR_WHITE, curses.COLOR_BLACK)
+            self.WALL_DIM_COLOR_PAIR = 9
 
     def render_all(
         self,
@@ -135,25 +142,51 @@ class Renderer:
         except curses.error:
             curses_lines, curses_cols = 24, 80
 
-        max_y_curses_rows = min(self.map_height, curses_lines - UI_LINES_BUFFER)
-        max_x_curses_cols = curses_cols - 1
+        # Calculate viewport dimensions (how many tiles we can display)
+        viewport_height = min(self.map_height, curses_lines - UI_LINES_BUFFER)
+        viewport_width = min(self.map_width, curses_cols - 1)
 
-        for y_map_idx in range(max_y_curses_rows):
+        # Calculate viewport offset to center on player
+        # If the map is smaller than the viewport, offset is 0
+        # Otherwise, center the viewport on the player, clamping to map bounds
+        if self.map_height <= viewport_height:
+            viewport_y_offset = 0
+        else:
+            # Center vertically on player
+            viewport_y_offset = player_y - viewport_height // 2
+            # Clamp to valid range [0, map_height - viewport_height]
+            viewport_y_offset = max(
+                0, min(viewport_y_offset, self.map_height - viewport_height)
+            )
+
+        if self.map_width <= viewport_width:
+            viewport_x_offset = 0
+        else:
+            # Center horizontally on player
+            viewport_x_offset = player_x - viewport_width // 2
+            # Clamp to valid range [0, map_width - viewport_width]
+            viewport_x_offset = max(
+                0, min(viewport_x_offset, self.map_width - viewport_width)
+            )
+
+        for screen_y in range(viewport_height):
             current_screen_x = 0
-            for x_tile_idx in range(self.map_width):
-                if current_screen_x >= max_x_curses_cols:
+            map_y = screen_y + viewport_y_offset
+            for screen_x in range(viewport_width):
+                if current_screen_x >= viewport_width:
                     break
+                map_x = screen_x + viewport_x_offset
                 char_to_draw = ""
                 color_attribute = curses.color_pair(self.DEFAULT_TEXT_COLOR_PAIR)
 
-                if x_tile_idx == player_x and y_map_idx == player_y:
+                if map_x == player_x and map_y == player_y:
                     char_to_draw = self.player_symbol
                     color_attribute = curses.color_pair(self.PLAYER_COLOR_PAIR)
                 elif ai_path:
                     path_segment = [
                         (px, py) for px, py, fid in ai_path if fid == current_floor_id
                     ]
-                    current_xy = (x_tile_idx, y_map_idx)
+                    current_xy = (map_x, map_y)
                     if current_xy in path_segment:
                         # If current_xy is the last point of ai_path on current floor
                         if (
@@ -166,11 +199,12 @@ class Renderer:
                         color_attribute = curses.color_pair(self.PATH_COLOR_PAIR)
 
                 if not char_to_draw:  # If not player or path tile already set
-                    tile = world_map_to_render.get_tile(x_tile_idx, y_map_idx)
+                    tile = world_map_to_render.get_tile(map_x, map_y)
                     if tile:
                         # Fog is handled by get_display_info based on tile.is_explored
+                        # show_visibility enables dim rendering for explored-not-visible
                         char_to_draw, display_type = tile.get_display_info(
-                            apply_fog=True
+                            apply_fog=True, show_visibility=True
                         )
                         if display_type == "monster":
                             color_attribute = curses.color_pair(self.MONSTER_COLOR_PAIR)
@@ -178,8 +212,20 @@ class Renderer:
                             color_attribute = curses.color_pair(self.ITEM_COLOR_PAIR)
                         elif display_type == "wall":
                             color_attribute = curses.color_pair(self.WALL_COLOR_PAIR)
+                        elif display_type == "wall_dim":
+                            color_attribute = curses.color_pair(
+                                self.WALL_DIM_COLOR_PAIR
+                            )
                         elif display_type == "floor":
                             color_attribute = curses.color_pair(self.FLOOR_COLOR_PAIR)
+                        elif display_type == "floor_dim":
+                            color_attribute = curses.color_pair(
+                                self.FLOOR_DIM_COLOR_PAIR
+                            )
+                        elif display_type == "portal_dim":
+                            color_attribute = curses.color_pair(
+                                self.FLOOR_DIM_COLOR_PAIR
+                            )
                         elif display_type == "fog":
                             color_attribute = curses.color_pair(
                                 self.DEFAULT_TEXT_COLOR_PAIR
@@ -199,13 +245,13 @@ class Renderer:
 
                 try:
                     self.stdscr.addstr(
-                        y_map_idx, current_screen_x, char_to_draw, color_attribute
+                        screen_y, current_screen_x, char_to_draw, color_attribute
                     )
                 except curses.error:
                     break
                 current_screen_x += 1
 
-        next_line_y = max_y_curses_rows
+        next_line_y = viewport_height
         if next_line_y < curses_lines:
             try:
                 self.stdscr.addstr(
@@ -358,20 +404,27 @@ class Renderer:
         self.stdscr.addstr(7, 2, f"Speed: {player.get_speed()}")
 
         # Equipment
-        self.stdscr.addstr(9, 2, "Equipment", curses.A_UNDERLINE)
+        if 9 < height - 1:
+            self.stdscr.addstr(9, 2, "Equipment", curses.A_UNDERLINE)
         row = 10
         for slot, item in player.equipment.slots.items():
+            if row >= height - 1:
+                break
             item_name = item.name if item else "Empty"
             self.stdscr.addstr(row, 2, f"{slot.capitalize()}: {item_name}")
             row += 1
 
         # Inventory
-        self.stdscr.addstr(row + 1, 2, "Items", curses.A_UNDERLINE)
+        if row + 1 < height - 1:
+            self.stdscr.addstr(row + 1, 2, "Items", curses.A_UNDERLINE)
         row += 2
         if not player.inventory.items:
-            self.stdscr.addstr(row, 2, "Your inventory is empty.")
+            if row < height - 1:
+                self.stdscr.addstr(row, 2, "Your inventory is empty.")
         else:
             for item in player.inventory.items:
+                if row >= height - 1:
+                    break
                 self.stdscr.addstr(row, 2, f"- {item.name}")
                 row += 1
 

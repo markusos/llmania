@@ -1,33 +1,56 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import Optional, Tuple
 
 from .base_state import AIState
-
-if TYPE_CHECKING:
-    pass
 
 
 class ExploringState(AIState):
     def handle_transitions(self) -> str:
-        player = self.ai_logic.player
-        if player.health <= player.max_health / 2:
+        player_view = self.ai_logic.player_view
+        # Use dynamic survival threshold
+        if self.ai_logic.should_enter_survival_mode():
             return "SurvivalState"
         if self.ai_logic._get_adjacent_monsters():
+            # Always transition to attacking when monsters are adjacent
+            # AttackingState will handle the combat evaluation
             return "AttackingState"
-        current_ai_map = self.ai_logic.ai_visible_maps.get(player.current_floor_id)
+        current_ai_map = self.ai_logic.ai_visible_maps.get(player_view.current_floor_id)
         if current_ai_map:
-            current_tile = current_ai_map.get_tile(player.x, player.y)
+            current_tile = current_ai_map.get_tile(player_view.x, player_view.y)
             if current_tile and current_tile.item:
                 return "LootingState"
         return "ExploringState"
 
     def get_next_action(self) -> Optional[Tuple[str, Optional[str]]]:
-        self.ai_logic.current_path = None
-        player_pos_xy = (self.ai_logic.player.x, self.ai_logic.player.y)
-        player_floor_id = self.ai_logic.player.current_floor_id
+        player_pos_xy = (self.ai_logic.player_view.x, self.ai_logic.player_view.y)
+        player_floor_id = self.ai_logic.player_view.current_floor_id
 
-        # 1. Exploration
+        # Equip any beneficial items in inventory
+        action = self._equip_beneficial_items()
+        if action:
+            return action
+
+        # 1. If we have an existing path, follow it
+        if self.ai_logic.current_path:
+            path_action = self._follow_path()
+            if path_action:
+                return path_action
+            # Path exhausted or invalid, clear it
+            self.ai_logic.current_path = None
+
+        # Check for optimal quest route across floors
+        quest_route = self.ai_logic.calculate_optimal_quest_route()
+        if quest_route and len(quest_route) > 1:
+            self.ai_logic.current_path = quest_route
+            target_coord = quest_route[-1]
+            self.ai_logic.message_log.add_message(
+                f"AI: Calculated optimal route to quest item at "
+                f"({target_coord[0]},{target_coord[1]}) on floor {target_coord[2]}."
+            )
+            return self._follow_path()
+
+        # 2. Find exploration targets
         exploration_path = self.ai_logic.explorer.find_exploration_targets(
             player_pos_xy, player_floor_id
         )
@@ -56,18 +79,27 @@ class ExploringState(AIState):
 
     def _find_best_target(self, player_pos_xy, player_floor_id):
         targets = []
-        # 1. Survival: Find health potions if low on health
-        if self.ai_logic.player.health <= self.ai_logic.player.max_health / 2:
+        # Health Potions (if health < 70%)
+        health_threshold = self.ai_logic.player_view.max_health * 0.7
+        if self.ai_logic.player_view.health < health_threshold:
             targets.extend(
                 self.ai_logic.target_finder.find_health_potions(
                     player_pos_xy, player_floor_id
                 )
             )
-        # 2. Quest Items
+        # 2. Weapons (if better than current)
+        targets.extend(
+            self.ai_logic.target_finder.find_weapons(player_pos_xy, player_floor_id)
+        )
+        # 3. Armor pieces
+        targets.extend(
+            self.ai_logic.target_finder.find_armor(player_pos_xy, player_floor_id)
+        )
+        # 4. Quest Items
         targets.extend(
             self.ai_logic.target_finder.find_quest_items(player_pos_xy, player_floor_id)
         )
-        # 3. Other targets
+        # 5. Portals
         targets.extend(
             self.ai_logic.explorer.find_unvisited_portals(
                 player_pos_xy, player_floor_id
@@ -78,9 +110,11 @@ class ExploringState(AIState):
                 player_pos_xy, player_floor_id
             )
         )
+        # 6. Other items
         targets.extend(
             self.ai_logic.target_finder.find_other_items(player_pos_xy, player_floor_id)
         )
+        # 7. Monsters (lowest priority)
         targets.extend(
             self.ai_logic.target_finder.find_monsters(player_pos_xy, player_floor_id)
         )
@@ -88,15 +122,15 @@ class ExploringState(AIState):
 
     def _target_sort_key(self, target_data):
         _, _, _, target_type, dist = target_data
-        priority = 6
-        if target_type == "quest_item":
-            priority = 1
-        elif target_type == "unvisited_portal":
-            priority = 2
-        elif target_type == "portal_to_unexplored":
-            priority = 3
-        elif target_type == "health_potion":
-            priority = 4
-        elif target_type == "monster":
-            priority = 5
+        priority_map = {
+            "health_potion": 1,
+            "weapon": 2,
+            "armor": 3,
+            "quest_item": 4,
+            "unvisited_portal": 5,
+            "portal_to_unexplored": 6,
+            "other_item": 7,
+            "monster": 8,
+        }
+        priority = priority_map.get(target_type, 9)
         return (priority, dist)

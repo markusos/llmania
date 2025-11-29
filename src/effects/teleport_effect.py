@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 from typing import TYPE_CHECKING
 
 from .base_effect import Effect
@@ -20,7 +19,8 @@ class TeleportEffect(Effect):
             if current_map.get_tile(x, y) and current_map.get_tile(x, y).type == "floor"
         ]
         if walkable_tiles:
-            new_x, new_y = random.choice(walkable_tiles)
+            # Use game engine's random generator for consistent behavior
+            new_x, new_y = game_engine.random.choice(walkable_tiles)
             current_map.remove_player(player.x, player.y)
             player.x, player.y = new_x, new_y
             current_map.place_player(player, new_x, new_y)

@@ -105,11 +105,11 @@
   "lich": {
     "name": "Lich",
     "health": 40,
-    "attack_power": 6,
+    "attack_power": 5,
     "rarity": 3,
     "resistance": "necrotic",
     "line_of_sight": 8,
-    "attack_range": 4,
+    "attack_range": 3,
     "move_speed": 4,
     "attack_speed": 5
   },
@@ -202,11 +202,11 @@
   "beholder": {
     "name": "Beholder",
     "health": 35,
-    "attack_power": 7,
+    "attack_power": 5,
     "rarity": 2,
     "resistance": "magic",
     "line_of_sight": 8,
-    "attack_range": 5,
+    "attack_range": 4,
     "move_speed": 2,
     "attack_speed": 2
   },

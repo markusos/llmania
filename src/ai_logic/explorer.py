@@ -3,23 +3,32 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 from src.map_algorithms.pathfinding import PathFinder
 
 if TYPE_CHECKING:
-    from src.player import Player
     from src.world_map import WorldMap
+
+    from .ai_player_view import AIPlayerView
 
 
 class Explorer:
     def __init__(
         self,
-        player: "Player",
+        player_view: "AIPlayerView",
         ai_visible_maps: Dict[int, "WorldMap"],
     ):
-        self.player = player
+        self.player_view = player_view
         self.ai_visible_maps = ai_visible_maps
         self.path_finder = PathFinder()
         self.visited_portals: Set[Tuple[int, int, int]] = set()
 
     def mark_portal_as_visited(self, x: int, y: int, floor_id: int):
+        """Mark a portal as visited, including both ends of the portal."""
         self.visited_portals.add((x, y, floor_id))
+        # Also mark the destination portal as visited to prevent ping-pong
+        ai_map = self.ai_visible_maps.get(floor_id)
+        if ai_map:
+            tile = ai_map.get_tile(x, y)
+            if tile and tile.is_portal and tile.portal_to_floor_id is not None:
+                # The destination portal is at the same (x, y) on the other floor
+                self.visited_portals.add((x, y, tile.portal_to_floor_id))
 
     def find_unvisited_portals(
         self, player_pos_xy: Tuple[int, int], player_floor_id: int
@@ -69,6 +78,7 @@ class Explorer:
                     and tile.is_explored
                     and tile.is_portal
                     and not (x == player_pos_xy[0] and y == player_pos_xy[1])
+                    and (x, y, floor_id) not in self.visited_portals
                 ):
                     portal_dest_floor_id = tile.portal_to_floor_id
                     if (
@@ -120,10 +130,47 @@ class Explorer:
                     player_floor_id,
                     coord_xy,
                     player_floor_id,
+                    require_explored=True,
                 )
                 if path:
                     paths_to_edge_frontiers.append(path)
             if paths_to_edge_frontiers:
                 paths_to_edge_frontiers.sort(key=len)
                 return paths_to_edge_frontiers[0]
+
+        # Current floor fully explored - find a portal to an unexplored floor
+        portals_to_unexplored = self.find_portal_to_unexplored_floor(
+            player_pos_xy, player_floor_id
+        )
+        if portals_to_unexplored:
+            # Sort by distance and get closest portal
+            portals_to_unexplored.sort(key=lambda t: t[4])  # Sort by dist
+            for portal_x, portal_y, portal_floor, _, _ in portals_to_unexplored:
+                path = self.path_finder.find_path_bfs(
+                    self.ai_visible_maps,
+                    player_pos_xy,
+                    player_floor_id,
+                    (portal_x, portal_y),
+                    portal_floor,
+                    require_explored=True,
+                )
+                if path:
+                    return path
+
+        # Also try unvisited portals as a fallback
+        unvisited_portals = self.find_unvisited_portals(player_pos_xy, player_floor_id)
+        if unvisited_portals:
+            unvisited_portals.sort(key=lambda t: t[4])  # Sort by dist
+            for portal_x, portal_y, portal_floor, _, _ in unvisited_portals:
+                path = self.path_finder.find_path_bfs(
+                    self.ai_visible_maps,
+                    player_pos_xy,
+                    player_floor_id,
+                    (portal_x, portal_y),
+                    portal_floor,
+                    require_explored=True,
+                )
+                if path:
+                    return path
+
         return None

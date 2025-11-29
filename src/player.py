@@ -26,6 +26,7 @@ class Player:
         self.base_defense = 0
         self.base_speed = 1
         self.base_attack_speed = 5
+        self.base_view_radius = 5
         self.invisibility_turns = 0
 
     def move(self, dx: int, dy: int):
@@ -34,6 +35,12 @@ class Player:
         """
         self.x += dx
         self.y += dy
+
+    def get_view_radius(self) -> int:
+        """
+        Calculates the player's total view radius, including equipment bonuses.
+        """
+        return self.base_view_radius + self.equipment.get_total_bonus("view_radius")
 
     def get_attack_power(self) -> int:
         """

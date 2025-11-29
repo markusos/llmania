@@ -91,6 +91,7 @@ class PathFinder:
         goal_pos_xy: Tuple[int, int],
         goal_floor_id: int,
         avoid_monsters: bool = False,
+        require_explored: bool = False,
     ) -> Optional[List[Tuple[int, int, int]]]:
         """
         Finds a path from (start_pos_xy, start_floor_id) to
@@ -105,6 +106,8 @@ class PathFinder:
             goal_pos_xy: The target (x, y) coordinates.
             goal_floor_id: The target floor ID.
             avoid_monsters: If True, treats tiles with monsters as obstacles.
+            require_explored: If True, only paths through explored tiles (for AI
+                visible maps where unexplored tiles are default floor type).
 
         Returns:
             A list of (x, y, floor_id) tuples representing the path,
@@ -135,6 +138,10 @@ class PathFinder:
 
                 if current_map.is_valid_move(next_x, next_y):
                     target_tile = current_map.get_tile(next_x, next_y)
+                    # Don't path through unexplored tiles when require_explored
+                    # (AI visible map has default floor tiles for unexplored areas)
+                    if require_explored and target_tile and not target_tile.is_explored:
+                        continue
                     if target_tile and target_tile.monster:
                         if avoid_monsters:
                             continue
@@ -190,6 +197,136 @@ class PathFinder:
                     queue.append((next_node_via_portal, new_path_portal))
 
         return None  # No path found
+
+    def find_path_risk_aware(
+        self,
+        world_maps: Dict[int, WorldMap],
+        start_pos_xy: Tuple[int, int],
+        start_floor_id: int,
+        goal_pos_xy: Tuple[int, int],
+        goal_floor_id: int,
+        player_health_ratio: float = 1.0,
+        require_explored: bool = False,
+    ) -> Optional[List[Tuple[int, int, int]]]:
+        """
+        Pathfinding that adds cost penalty for tiles adjacent to monsters.
+        Uses Dijkstra's algorithm with variable costs.
+
+        Args:
+            world_maps: A dictionary mapping floor_id to WorldMap objects.
+            start_pos_xy: The starting (x, y) coordinates.
+            start_floor_id: The starting floor ID.
+            goal_pos_xy: The target (x, y) coordinates.
+            goal_floor_id: The target floor ID.
+            player_health_ratio: Current health / max health (0.0 to 1.0).
+                Lower values increase danger avoidance.
+            require_explored: If True, only paths through explored tiles.
+
+        Returns:
+            A list of (x, y, floor_id) tuples representing the path,
+            or None if no path is found.
+        """
+        import heapq
+
+        # Higher penalty when low on health
+        danger_penalty = 5 if player_health_ratio < 0.5 else 2
+
+        start_node = (start_pos_xy[0], start_pos_xy[1], start_floor_id)
+        goal_node = (goal_pos_xy[0], goal_pos_xy[1], goal_floor_id)
+
+        # Priority queue: (cost, counter, node, path)
+        # Use a counter to break ties and ensure consistent ordering
+        counter = 0
+        pq: List[Tuple[int, int, Tuple[int, int, int], List[Tuple[int, int, int]]]] = [
+            (0, counter, start_node, [start_node])
+        ]
+        visited: Dict[Tuple[int, int, int], int] = {}  # node -> best cost to reach it
+
+        while pq:
+            cost, _, (cx, cy, cf), path = heapq.heappop(pq)
+
+            if (cx, cy, cf) == goal_node:
+                return path
+
+            # Skip if we've already found a better path to this node
+            if (cx, cy, cf) in visited and visited[(cx, cy, cf)] <= cost:
+                continue
+            visited[(cx, cy, cf)] = cost
+
+            current_map = world_maps.get(cf)
+            if not current_map:
+                continue
+
+            # Explore neighbors on the current floor
+            for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+                nx, ny = cx + dx, cy + dy
+                next_node = (nx, ny, cf)
+
+                if next_node in visited:
+                    continue
+
+                if not current_map.is_valid_move(nx, ny):
+                    continue
+
+                tile = current_map.get_tile(nx, ny)
+                if not tile:
+                    continue
+
+                # Skip unexplored tiles if required
+                if require_explored and not tile.is_explored:
+                    continue
+
+                # Don't path through monsters (unless goal)
+                if tile.monster and next_node != goal_node:
+                    continue
+
+                # Base movement cost
+                move_cost = 1
+
+                # Add penalty if adjacent to a monster
+                for ddx, ddy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+                    adj_tile = current_map.get_tile(nx + ddx, ny + ddy)
+                    if adj_tile and adj_tile.monster:
+                        move_cost += danger_penalty
+                        break  # Only penalize once per tile
+
+                new_cost = cost + move_cost
+                counter += 1
+                heapq.heappush(pq, (new_cost, counter, next_node, path + [next_node]))
+
+            # Check for portals
+            current_tile = current_map.get_tile(cx, cy)
+            if (
+                current_tile
+                and current_tile.is_portal
+                and current_tile.portal_to_floor_id is not None
+            ):
+                portal_to_floor = current_tile.portal_to_floor_id
+                next_node_via_portal = (cx, cy, portal_to_floor)
+
+                if (
+                    portal_to_floor in world_maps
+                    and next_node_via_portal not in visited
+                ):
+                    dest_map = world_maps[portal_to_floor]
+                    dest_tile = dest_map.get_tile(cx, cy)
+
+                    if dest_tile and dest_tile.type != "wall":
+                        if not dest_tile.monster or next_node_via_portal == goal_node:
+                            # Portal cost is 1 (same as normal move)
+                            new_cost = cost + 1
+                            counter += 1
+                            heapq.heappush(
+                                pq,
+                                (
+                                    new_cost,
+                                    counter,
+                                    next_node_via_portal,
+                                    path + [next_node_via_portal],
+                                ),
+                            )
+
+        return None  # No path found (risk-aware)
 
     def find_furthest_point(
         self,

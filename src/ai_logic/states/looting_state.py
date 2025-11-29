@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import Optional, Tuple
 
 from .base_state import AIState
-
-if TYPE_CHECKING:
-    pass
 
 
 class LootingState(AIState):
     def handle_transitions(self) -> str:
-        player = self.ai_logic.player
-        if player.health <= player.max_health / 2:
+        # Use dynamic survival threshold
+        if self.ai_logic.should_enter_survival_mode():
             return "SurvivalState"
         if self.ai_logic._get_adjacent_monsters():
+            # Always transition to attacking - let AttackingState decide
             return "AttackingState"
         # If no items are visible, switch to ExploringState
         if not self._has_visible_items():
@@ -26,8 +24,8 @@ class LootingState(AIState):
         if action:
             return action
 
-        # 2. Equip better weapons
-        action = self._equip_better_weapon()
+        # Equip beneficial items (weapons and armor)
+        action = self._equip_beneficial_items()
         if action:
             return action
 
@@ -47,8 +45,8 @@ class LootingState(AIState):
         return self._explore_randomly()
 
     def _has_visible_items(self) -> bool:
-        player_pos_xy = (self.ai_logic.player.x, self.ai_logic.player.y)
-        player_floor_id = self.ai_logic.player.current_floor_id
+        player_pos_xy = (self.ai_logic.player_view.x, self.ai_logic.player_view.y)
+        player_floor_id = self.ai_logic.player_view.current_floor_id
         items = self.ai_logic.target_finder.find_other_items(
             player_pos_xy, player_floor_id
         )

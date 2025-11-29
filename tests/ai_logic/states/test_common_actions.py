@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, PropertyMock
 
+from src.ai_logic.ai_player_view import AIPlayerView
 from src.ai_logic.states import common_actions
 from src.items import EquippableItem as Equippable
 from src.player import Player
@@ -23,8 +24,11 @@ class TestCommonActions(unittest.TestCase):
         )
         player.inventory.add_item(weapon)
 
+        # Create a proper AIPlayerView wrapper
+        player_view = AIPlayerView(player)
+
         ai_logic = MagicMock()
-        type(ai_logic).player = PropertyMock(return_value=player)
+        type(ai_logic).player_view = PropertyMock(return_value=player_view)
 
         # Act
         action = common_actions.equip_better_weapon(ai_logic)

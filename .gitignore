@@ -126,3 +126,9 @@ dmypy.json
 
 # Ruff
 .ruff_cache
+
+#Logs
+.crash_logs/
+.benchmark_logs/
+*.log
+timeout_seeds.txt

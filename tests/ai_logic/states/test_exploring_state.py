@@ -10,18 +10,28 @@ from src.ai_logic.states.exploring_state import ExploringState
 class TestExploringState(unittest.TestCase):
     def setUp(self):
         self.ai_logic = MagicMock()
+        # Mock player_view with proper numeric values
+        self.ai_logic.player_view = MagicMock()
+        self.ai_logic.player_view.health = 100
+        self.ai_logic.player_view.max_health = 100
+        self.ai_logic.player_view.current_floor_id = 0
+        self.ai_logic.player_view.x = 1
+        self.ai_logic.player_view.y = 1
+        # Mock new methods from Phase 1
+        self.ai_logic.should_enter_survival_mode.return_value = False
+        self.ai_logic.get_safest_adjacent_monster.return_value = None
         self.state = ExploringState(self.ai_logic)
 
     def test_handle_transitions(self):
-        # Test transition to SurvivalState
-        self.ai_logic.player.health = 1
-        self.ai_logic.player.max_health = 10
+        # Test transition to SurvivalState (via dynamic threshold)
+        self.ai_logic.should_enter_survival_mode.return_value = True
         self.assertEqual(self.state.handle_transitions(), "SurvivalState")
 
-        # Test transition to AttackingState
-        self.ai_logic.player.health = 10
-        self.ai_logic.player.max_health = 10
-        self.ai_logic._get_adjacent_monsters.return_value = [MagicMock()]
+        # Test transition to AttackingState (when monsters adjacent)
+        self.ai_logic.should_enter_survival_mode.return_value = False
+        monster = MagicMock()
+        monster.name = "Goblin"
+        self.ai_logic._get_adjacent_monsters.return_value = [monster]
         self.assertEqual(self.state.handle_transitions(), "AttackingState")
 
         # Test transition to LootingState
@@ -48,6 +58,7 @@ class TestExploringState(unittest.TestCase):
 
         # Test pathfinding to a target
         self.ai_logic.explorer.find_exploration_targets.return_value = None
+        self.ai_logic.current_path = None  # Clear path from previous test
         self.state._path_to_best_target = MagicMock(return_value=("move", "north"))
         action = self.state.get_next_action()
         self.assertEqual(action, ("move", "north"))

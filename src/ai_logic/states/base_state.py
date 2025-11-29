@@ -25,6 +25,10 @@ class AIState:
     def _equip_better_weapon(self) -> Optional[Tuple[str, str]]:
         return common_actions.equip_better_weapon(self.ai_logic)
 
+    def _equip_beneficial_items(self) -> Optional[Tuple[str, str]]:
+        """Equip armor and better weapons automatically."""
+        return common_actions.equip_beneficial_items(self.ai_logic)
+
     def _pickup_item(self) -> Optional[Tuple[str, str]]:
         return common_actions.pickup_item(self.ai_logic)
 
@@ -48,9 +52,9 @@ class AIState:
 
         if self.ai_logic.current_path:
             current_pos_xyz = (
-                self.ai_logic.player.x,
-                self.ai_logic.player.y,
-                self.ai_logic.player.current_floor_id,
+                self.ai_logic.player_view.x,
+                self.ai_logic.player_view.y,
+                self.ai_logic.player_view.current_floor_id,
             )
             if self.ai_logic.current_path[0] == current_pos_xyz:
                 self.ai_logic.current_path.pop(0)
@@ -82,35 +86,53 @@ class AIState:
             return None
 
         current_ai_map = self.ai_logic.ai_visible_maps.get(
-            self.ai_logic.player.current_floor_id
+            self.ai_logic.player_view.current_floor_id
         )
         if not current_ai_map:
             return None
 
         possible_moves = []
+        monster_moves = []  # Track moves that would walk into monsters
         for direction, (dx, dy) in [
             ("north", (0, -1)),
             ("south", (0, 1)),
             ("west", (-1, 0)),
             ("east", (1, 0)),
         ]:
-            check_x, check_y = self.ai_logic.player.x + dx, self.ai_logic.player.y + dy
+            player_view = self.ai_logic.player_view
+            check_x, check_y = player_view.x + dx, player_view.y + dy
             if current_ai_map.is_valid_move(check_x, check_y):
-                possible_moves.append(("move", direction))
+                tile = current_ai_map.get_tile(check_x, check_y)
+                # Avoid walking into monsters during random exploration
+                if tile and tile.monster:
+                    monster_moves.append(("move", direction))
+                else:
+                    possible_moves.append(("move", direction))
+
+        # If no safe moves, allow monster moves as last resort (cornered)
+        if not possible_moves:
+            possible_moves = monster_moves
 
         if not possible_moves:
             return ("look", None)
 
-        # Try to avoid the last move if possible
+        # Try to avoid going back to where we just came from
+        opposite_moves = {
+            ("move", "north"): ("move", "south"),
+            ("move", "south"): ("move", "north"),
+            ("move", "east"): ("move", "west"),
+            ("move", "west"): ("move", "east"),
+        }
         if len(possible_moves) > 1:
             last_cmd = self.ai_logic.last_move_command
-            # Ensure last_cmd is not None and is a valid move tuple
-            if last_cmd and last_cmd in possible_moves:
-                # Create a new list of moves excluding the last command
-                filtered_moves = [move for move in possible_moves if move != last_cmd]
-                # If there are still moves left after filtering, use them
-                if filtered_moves:
-                    return self.ai_logic.random.choice(filtered_moves)
+            if last_cmd:
+                # Get the opposite of the last move (which would take us back)
+                opposite = opposite_moves.get(last_cmd)
+                if opposite and opposite in possible_moves:
+                    # Filter out the opposite move to avoid oscillation
+                    filtered_moves = [m for m in possible_moves if m != opposite]
+                    if filtered_moves:
+                        return self.ai_logic.random.choice(filtered_moves)
 
         # Fallback to choosing any possible move if no other options
         return self.ai_logic.random.choice(possible_moves)
