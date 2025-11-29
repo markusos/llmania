@@ -1,7 +1,9 @@
+import argparse
 import multiprocessing
 import os
 import subprocess
 import sys
+from functools import partial
 from typing import Dict, Literal
 
 # Add project root to the Python path
@@ -18,7 +20,9 @@ for d in [LOG_DIR, CRASH_LOG_DIR]:
 
 
 def run_game_with_timeout(
-    seed: int, timeout_seconds: int = 1, log_limit: int = 1000
+    seed: int,
+    timeout_seconds: int = 1,
+    log_limit: int = 1000,
 ) -> tuple[ResultType, int]:
     """
     Runs the game in a separate process with a timeout.
@@ -90,13 +94,38 @@ def main():
     """
     Main function to run the benchmark.
     """
-    num_seeds = 1000
+    parser = argparse.ArgumentParser(description="Run AI benchmark")
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        default=1000,
+        help="Number of seeds to run (default: 1000).",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=1,
+        help="Timeout per game in seconds (default: 1).",
+    )
+    args = parser.parse_args()
+
+    num_seeds = args.seeds
+    timeout_seconds = args.timeout
+
+    print(
+        f"Running benchmark with Utility AI on {num_seeds} seeds "
+        f"(timeout={timeout_seconds}s)..."
+    )
+
     results: Dict[ResultType, int] = {"win": 0, "loss": 0, "timeout": 0, "crash": 0}
     timeout_seeds = []
     crash_seeds = []
 
+    # Create a partial function with the timeout
+    run_func = partial(run_game_with_timeout, timeout_seconds=timeout_seconds)
+
     with multiprocessing.Pool() as pool:
-        run_results = pool.map(run_game_with_timeout, range(num_seeds))
+        run_results = pool.map(run_func, range(num_seeds))
 
     for result, seed in run_results:
         results[result] += 1
@@ -120,7 +149,7 @@ def main():
     total_runs = sum(results.values())
     win_percentage = (results["win"] / total_runs) * 100 if total_runs > 0 else 0
 
-    print("\n--- AI Benchmark Results ---")
+    print("\n--- AI Benchmark Results (Utility AI) ---")
     print(f"Total runs: {total_runs}")
     print(f"Wins: {results['win']}")
     print(f"Losses: {results['loss']}")

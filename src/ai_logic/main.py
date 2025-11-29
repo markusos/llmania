@@ -6,10 +6,6 @@ from .ai_monster_view import AIMonsterView
 from .ai_player_view import AIPlayerView
 from .bestiary import Bestiary
 from .explorer import Explorer
-from .states.attacking_state import AttackingState
-from .states.exploring_state import ExploringState
-from .states.looting_state import LootingState
-from .states.survival_state import SurvivalState
 from .target_finder import TargetFinder
 
 if TYPE_CHECKING:
@@ -19,22 +15,11 @@ if TYPE_CHECKING:
     from src.player import Player
     from src.world_map import WorldMap
 
-    from .states import AIState
+    from .context import AIContext
+    from .utility_calculator import UtilityCalculator
 
 
 class AILogic:
-    def _get_state(self, state_name: str) -> "AIState":
-        if state_name == "ExploringState":
-            return ExploringState(self)
-        elif state_name == "AttackingState":
-            return AttackingState(self)
-        elif state_name == "LootingState":
-            return LootingState(self)
-        elif state_name == "SurvivalState":
-            return SurvivalState(self)
-        else:
-            raise ValueError(f"Unknown state name: {state_name}")
-
     """
     Handles the decision-making for AI-controlled characters, primarily the player
     when AI mode is active.
@@ -61,12 +46,88 @@ class AILogic:
         self.last_move_command: Optional[Tuple[str, Optional[str]]] = None
         self.target_finder = TargetFinder(self.player_view, self.ai_visible_maps)
         self.explorer = Explorer(self.player_view, self.ai_visible_maps)
-        self.state: "AIState" = ExploringState(self)
         self.last_player_floor_id = player.current_floor_id
         self.last_player_pos = (player.x, player.y)
         self.player_pos_history: list[tuple[int, int]] = []
         self.command_history: List[Optional[Tuple[str, Optional[str]]]] = []
         self.loop_breaker_moves_left = 0
+
+        # Initialize utility calculator
+        from .utility_calculator import create_default_utility_calculator
+
+        self.utility_calculator: "UtilityCalculator" = (
+            create_default_utility_calculator()
+        )
+
+    def _build_context(self) -> "AIContext":
+        """
+        Build immutable context snapshot for utility calculation.
+
+        Creates an AIContext containing all information needed by actions
+        to calculate their utility scores and execute.
+        """
+        from .context import AIContext
+
+        current_ai_map = self.ai_visible_maps.get(self.player_view.current_floor_id)
+        current_tile = (
+            current_ai_map.get_tile(self.player_view.x, self.player_view.y)
+            if current_ai_map
+            else None
+        )
+
+        # Check for fire potions in inventory
+        has_fire_potion = any(
+            "fire" in item.name.lower()
+            for item in self.player_view.inventory_items
+            if any(
+                effect.get("type") == "damage"
+                for effect in item.properties.get("effects", [])
+            )
+        )
+
+        return AIContext(
+            player_x=self.player_view.x,
+            player_y=self.player_view.y,
+            player_floor_id=self.player_view.current_floor_id,
+            player_health=self.player_view.health,
+            player_max_health=self.player_view.max_health,
+            player_attack=self.player_view.get_attack_power(),
+            player_defense=self.player_view.get_defense(),
+            health_ratio=self.player_view.health / self.player_view.max_health,
+            survival_threshold=self.calculate_survival_threshold(),
+            is_cornered=self._is_cornered(),
+            is_in_loop=self._is_in_loop(),
+            loop_breaker_active=self.loop_breaker_moves_left > 0,
+            adjacent_monsters=self._get_adjacent_monsters(),
+            current_tile_has_item=bool(current_tile and current_tile.item),
+            current_tile_item_name=(
+                current_tile.item.name if current_tile and current_tile.item else None
+            ),
+            current_tile_item=(
+                current_tile.item if current_tile and current_tile.item else None
+            ),
+            inventory_items=list(self.player_view.inventory_items),
+            has_healing_item=self.player_view.has_item_type("heal"),
+            has_fire_potion=has_fire_potion,
+            equipped_items={
+                slot: self.player_view.get_equipped_item(slot)
+                for slot in [
+                    "main_hand",
+                    "head",
+                    "chest",
+                    "legs",
+                    "off_hand",
+                    "boots",
+                ]
+            },
+            current_path=self.current_path,
+            visible_maps=self.ai_visible_maps,
+            path_finder=self.path_finder,
+            bestiary=Bestiary.get_instance(),
+            explorer=self.explorer,
+            target_finder=self.target_finder,
+            random=self.random,
+        )
 
     def _is_in_loop(self, lookback: int = 4) -> bool:
         if len(self.command_history) < lookback:
@@ -335,7 +396,6 @@ class AILogic:
         # Sort by danger rating (lowest first)
         safe_monsters.sort(key=lambda m: bestiary.get_danger_rating(m.name))
         return safe_monsters[0]
-        return adjacent_monsters
 
     def _coordinates_to_move_command(
         self, start_pos_xy: Tuple[int, int], end_pos_xy: Tuple[int, int]
@@ -365,21 +425,7 @@ class AILogic:
         return action
 
     def _get_next_action_logic(self) -> Optional[Tuple[str, Optional[str]]]:
-        # Check state transitions FIRST - survival takes priority over loop breaking
-        next_state_name = self.state.handle_transitions()
-        if next_state_name != self.state.__class__.__name__:
-            self.state = self._get_state(next_state_name)
-            # If we just entered SurvivalState, let it handle the action
-            # (it will try to heal or flee properly)
-            if next_state_name == "SurvivalState":
-                self.loop_breaker_moves_left = 0  # Cancel loop breaker
-                return self.state.get_next_action()
-
-        if self.loop_breaker_moves_left > 0:
-            self.loop_breaker_moves_left -= 1
-            self.message_log.add_message("AI: Taking a random action to break a loop.")
-            return self.state._explore_randomly(break_loop=True)
-
+        # Portal tracking - must happen before any decision making
         if self.player_view.current_floor_id != self.last_player_floor_id:
             prev_map = self.ai_visible_maps.get(self.last_player_floor_id)
             if prev_map:
@@ -412,13 +458,35 @@ class AILogic:
             if len(set(self.player_pos_history[-4:])) <= 2:
                 self._break_loop()
                 self.player_pos_history = []
-                return self.state._explore_randomly(break_loop=True)
+                # Loop breaker is handled via context flag in utility AI
 
         # Check for stuck in small area (3 positions in 8 moves)
         if self._is_stuck_in_area():
             self._break_loop()
             self.player_pos_history = []
-            return self.state._explore_randomly(break_loop=True)
+            # Loop breaker is handled via context flag in utility AI
 
-        # Delegate action to the current state (transitions already handled above)
-        return self.state.get_next_action()
+        # Utility-based decision making
+        return self._get_utility_action()
+
+    def _get_utility_action(self) -> Optional[Tuple[str, Optional[str]]]:
+        """Get next action using utility-based AI."""
+
+        ctx = self._build_context()
+
+        # Handle loop breaker - RandomMoveAction will have high utility
+        if ctx.loop_breaker_active:
+            self.loop_breaker_moves_left -= 1
+            self.message_log.add_message("AI: Taking a random action to break a loop.")
+
+        # Log action scores if verbose
+        if self.verbose > 1:
+            scores = self.utility_calculator.get_action_scores(ctx)
+            print("AI Action Scores:")
+            for name, score, available in sorted(
+                scores, key=lambda x: -x[1] if x[2] else -999
+            ):
+                status = "✓" if available else "✗"
+                print(f"  {status} {name}: {score:.2f}")
+
+        return self.utility_calculator.execute_best_action(ctx, self, self.message_log)

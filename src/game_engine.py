@@ -224,7 +224,6 @@ class GameEngine:
     def _main_game_loop(self):
         start_time = time.time()
         timeout_seconds = 30
-        ai_state = None
 
         self._update_fog_of_war_visibility()
         if not self.debug_mode:
@@ -246,14 +245,9 @@ class GameEngine:
 
             if parsed_command_output:
                 self._process_command(parsed_command_output)
-                ai_state = (
-                    self.ai_logic.state.__class__.__name__
-                    if self.ai_active and self.ai_logic
-                    else None
-                )
 
             if self.game_state == GameState.PLAYING and not self.debug_mode:
-                self._render(ai_state=ai_state)
+                self._render()
 
             if self.player.health <= 0:
                 self.game_state = GameState.GAME_OVER
@@ -263,27 +257,16 @@ class GameEngine:
             if self.player.health <= 0:
                 self.message_log.add_message("You have been defeated. Game Over.")
 
-            ai_state = (
-                self.ai_logic.state.__class__.__name__
-                if self.ai_active and self.ai_logic
-                else None
-            )
-
             if self.debug_mode:
-                self._render_debug_end_screen(ai_state=ai_state)
+                self._render_debug_end_screen()
             else:
-                self._render(ai_state=ai_state)
+                self._render()
                 curses.napms(2000)
                 self.input_handler.handle_input_and_get_command(InputMode.GAME_OVER)
                 self.game_state = GameState.QUIT
 
         elif self.game_state == GameState.QUIT and self.debug_mode:
-            ai_state = (
-                self.ai_logic.state.__class__.__name__
-                if self.ai_active and self.ai_logic
-                else None
-            )
-            self._render_debug_end_screen(ai_state=ai_state)
+            self._render_debug_end_screen()
 
     def _get_next_command(self):
         if self.ai_active and self.ai_logic:
@@ -343,7 +326,7 @@ class GameEngine:
             self.ai_logic.current_path = None
             self.message_log.add_message("AI: Floor changed, clearing path.")
 
-    def _render(self, ai_state=None):
+    def _render(self):
         current_visible_map = self.visible_maps.get(self.player.current_floor_id)
         if not current_visible_map:
             current_visible_map = WorldMap(
@@ -368,10 +351,9 @@ class GameEngine:
                 debug_render_to_list=self.debug_mode,
                 ai_path=ai_path,
                 current_floor_id=self.player.current_floor_id,
-                ai_state=ai_state,
             )
 
-    def _render_debug_end_screen(self, ai_state=None):
+    def _render_debug_end_screen(self):
         print("\n--- Game Over ---")
         final_map_render = self.renderer.render_all(
             player_x=self.player.x,
@@ -386,7 +368,6 @@ class GameEngine:
             debug_render_to_list=True,
             ai_path=self.ai_logic.current_path if self.ai_logic else None,
             current_floor_id=self.player.current_floor_id,
-            ai_state=ai_state,
         )
         if final_map_render:
             for row in final_map_render:

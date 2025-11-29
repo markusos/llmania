@@ -99,4 +99,70 @@ These can be used for more advanced world generation, AI decision-making, or gam
 -   When adding new features or modifying existing ones, ensure corresponding tests are added or updated.
 -   You can run tests using a test runner like `pytest` (which should be configured via `pyproject.toml` and `uv`).
 
+## AI System Architecture
+
+The game includes a Utility-Based AI system that can control the player character.
+
+### Running with AI
+
+To run the game with AI:
+```bash
+python src/main.py --ai --seed 42
+```
+
+### AI Components (`src/ai_logic/`)
+
+-   **`AILogic` (`main.py`)**: Main AI controller that orchestrates decision-making using utility-based action selection.
+-   **`AIContext` (`context.py`)**: Immutable snapshot of game state passed to utility actions for decision-making.
+-   **`UtilityCalculator` (`utility_calculator.py`)**: Selects and executes the highest-utility action from available actions.
+-   **`actions/` directory**: Contains utility-based action classes:
+    -   `HealAction`: Use healing items when health is low
+    -   `FleeAction`: Escape from monsters when in danger
+    -   `AttackAction`: Attack adjacent monsters
+    -   `UseCombatItemAction`: Use combat items (fire potions, etc.)
+    -   `PickupItemAction`: Pick up items on current tile
+    -   `EquipAction`: Equip better gear from inventory
+    -   `PathToHealthAction`, `PathToWeaponAction`, `PathToArmorAction`, `PathToQuestAction`, `PathToPortalAction`, `PathToLootAction`: Path to various targets
+    -   `ExploreAction`: Explore unexplored areas
+    -   `RandomMoveAction`: Random movement as fallback/loop breaker
+
+### Adding New AI Actions (Utility-Based)
+
+1.  Create a new action class in `src/ai_logic/actions/` that inherits from `AIAction`:
+    ```python
+    from .base_action import AIAction
+    
+    class MyNewAction(AIAction):
+        @property
+        def name(self) -> str:
+            return "MyNewAction"
+        
+        def is_available(self, ctx: "AIContext") -> bool:
+            # Return True if this action can be executed
+            return True
+        
+        def calculate_utility(self, ctx: "AIContext") -> float:
+            # Return utility score 0.0-1.0 based on context
+            return 0.5
+        
+        def execute(self, ctx, ai_logic, message_log):
+            # Execute the action and return command tuple
+            return ("command", "argument")
+    ```
+
+2.  Register the action in `utility_calculator.py`'s `create_default_utility_calculator()` function.
+
+3.  Add tests in `tests/ai_logic/actions/`.
+
+### Reproducibility
+
+**Important**: All randomness in the AI must use the seeded `Random` instance passed through the context (`ctx.random`) or `ai_logic.random`. **Do NOT use `import random`** directly, as this breaks reproducibility when running with `--seed`.
+
+### Benchmarking
+
+Use `benchmark.py` to measure AI performance:
+```bash
+python benchmark.py --seeds 500 --timeout 5
+```
+
 By following these guidelines, you can effectively contribute to the development of this game.
