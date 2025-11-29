@@ -1,7 +1,7 @@
 import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from .effects import (
+from src.effects import (
     DamageEffect,
     Effect,
     HealingEffect,
@@ -9,7 +9,7 @@ from .effects import (
     StatBuffEffect,
     TeleportEffect,
 )
-from .items import (
+from src.items import (
     ConsumableItem,
     ContainerItem,
     EquippableItem,

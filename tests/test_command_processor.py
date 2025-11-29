@@ -18,7 +18,8 @@ class TestCommandProcessor(unittest.TestCase):
         self.mock_player.y = 1
         self.mock_player.health = 100
         self.mock_player.inventory = MagicMock()
-        self.mock_player.equipment = {
+        self.mock_player.equipment = MagicMock()
+        self.mock_player.equipment.slots = {
             "main_hand": None,
             "off_hand": None,
         }

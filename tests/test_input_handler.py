@@ -11,7 +11,7 @@ class TestInputHandler(unittest.TestCase):
     def setUp(self):
         self.mock_stdscr = MagicMock()
         self.mock_parser = MagicMock(spec=Parser)
-        self.input_handler = InputHandler(self.mock_stdscr, self.mock_parser)
+        self.input_handler = InputHandler(self.mock_stdscr, self.mock_parser)  # type: ignore[arg-type]
         self.curs_set_patcher = patch("curses.curs_set")
         self.mock_curs_set = self.curs_set_patcher.start()
         self.addCleanup(self.curs_set_patcher.stop)

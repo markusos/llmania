@@ -401,7 +401,8 @@ class PathToPortalAction(PathActionBase):
     """
     Path to unvisited portals or portals to unexplored floors.
 
-    Utility Score: 0.45 (base), modified by distance
+    Utility Score: 0.45-0.55 (base), modified by distance and floor exploration status.
+    Higher utility when current floor is mostly explored.
     """
 
     @property
@@ -422,7 +423,12 @@ class PathToPortalAction(PathActionBase):
         return len(unvisited) > 0 or len(portal_to_unexplored) > 0
 
     def calculate_utility(self, ctx: "AIContext") -> float:
-        """Calculate utility based on distance."""
+        """
+        Calculate utility based on distance and floor exploration status.
+
+        Base utility is 0.45, but increases to 0.55 when current floor is
+        >80% explored to encourage cross-floor progression.
+        """
         if not self.is_available(ctx):
             return 0.0
 
@@ -443,8 +449,17 @@ class PathToPortalAction(PathActionBase):
         if not targets:
             return 0.0
 
+        # Higher base utility if current floor is mostly explored
+        exploration_ratio = ctx.explorer.get_floor_exploration_ratio(
+            ctx.player_floor_id
+        )
+        if exploration_ratio > 0.8:
+            base_utility = 0.55  # Prioritize portal usage when floor is mostly done
+        else:
+            base_utility = 0.45
+
         nearest = min(targets, key=lambda t: t[4])
-        return apply_distance_modifier(0.45, nearest[4])
+        return apply_distance_modifier(base_utility, nearest[4])
 
     def execute(
         self,

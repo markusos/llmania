@@ -129,30 +129,28 @@ class AILogic:
             random=self.random,
         )
 
-    def _is_in_loop(self, lookback: int = 4) -> bool:
-        if len(self.command_history) < lookback:
+    def _is_in_loop(self, lookback: int = 6) -> bool:
+        if len(self.player_pos_history) < lookback:
             return False
-        # Check if the last `lookback` commands are stuck in a loop of 2 commands
-        last_commands = self.command_history[-lookback:]
-        if len(set(last_commands)) <= 2:
-            # Check if we are alternating between two positions
-            if len(self.player_pos_history) >= 4:
-                # Check if the last 4 positions are just 2 unique positions
-                if len(set(self.player_pos_history[-4:])) <= 2:
-                    return True
+        # Check if we are oscillating between just 2 positions in the last N moves
+        # Only trigger if we have made actual movement commands
+        last_positions = self.player_pos_history[-lookback:]
+        unique_positions = set(last_positions)
+        if len(unique_positions) <= 2 and len(last_positions) >= lookback:
+            return True
         return False
 
     def _is_stuck_in_area(self) -> bool:
-        """Check if AI is stuck moving in a small area (within 3 unique positions)."""
-        if len(self.player_pos_history) < 8:
+        """Check if AI is stuck moving in a small area (within 4 unique positions)."""
+        if len(self.player_pos_history) < 12:
             return False
-        # If we've only visited 3 or fewer positions in the last 8 moves, we're stuck
-        return len(set(self.player_pos_history[-8:])) <= 3
+        # If we've only visited 4 or fewer positions in the last 12 moves, we're stuck
+        return len(set(self.player_pos_history[-12:])) <= 4
 
     def _break_loop(self) -> None:
         self.message_log.add_message("AI: Detected a loop, breaking.")
         self.current_path = None
-        self.loop_breaker_moves_left = 8  # Increased from 5 to give more room to escape
+        self.loop_breaker_moves_left = 5  # Give 5 random moves to escape the loop
 
     def calculate_optimal_quest_route(
         self,
@@ -445,26 +443,39 @@ class AILogic:
                             f"on floor {self.last_player_floor_id} marked as visited."
                         )
 
+        current_pos = (self.player_view.x, self.player_view.y)
+
+        # Only add to position history if the position actually changed
+        if current_pos != self.last_player_pos:
+            self.player_pos_history.append(current_pos)
+            if len(self.player_pos_history) > 15:
+                self.player_pos_history.pop(0)
+
         self.last_player_floor_id = self.player_view.current_floor_id
-        self.last_player_pos = (self.player_view.x, self.player_view.y)
+        self.last_player_pos = current_pos
 
         # Stuck detection - check for oscillation and small area movement
-        self.player_pos_history.append(self.last_player_pos)
-        if len(self.player_pos_history) > 10:
-            self.player_pos_history.pop(0)
-
-        # Check for 2-position oscillation (strict loop)
-        if len(self.player_pos_history) >= 4:
-            if len(set(self.player_pos_history[-4:])) <= 2:
+        # Only check if we have enough movement history
+        if len(self.player_pos_history) >= 6:
+            # Check for 2-position oscillation (strict loop)
+            if self._is_in_loop():
+                if self.verbose > 0:
+                    print(
+                        f"AI: Loop detected - positions: {self.player_pos_history[-6:]}"
+                    )
                 self._break_loop()
                 self.player_pos_history = []
                 # Loop breaker is handled via context flag in utility AI
-
-        # Check for stuck in small area (3 positions in 8 moves)
-        if self._is_stuck_in_area():
-            self._break_loop()
-            self.player_pos_history = []
-            # Loop breaker is handled via context flag in utility AI
+            # Check for stuck in small area
+            elif self._is_stuck_in_area():
+                if self.verbose > 0:
+                    print(
+                        f"AI: Stuck in area - positions: "
+                        f"{self.player_pos_history[-12:]}"
+                    )
+                self._break_loop()
+                self.player_pos_history = []
+                # Loop breaker is handled via context flag in utility AI
 
         # Utility-based decision making
         return self._get_utility_action()

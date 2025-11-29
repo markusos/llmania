@@ -37,11 +37,11 @@ class DropCommand(Command):
             return {"game_over": False}
 
         item_is_equipped = (
-            self.player.equipment["main_hand"] is not None
-            and self.player.equipment["main_hand"].name.lower() == self.argument.lower()
+            self.player.equipment.slots["main_hand"] is not None
+            and self.player.equipment.slots["main_hand"].name.lower() == self.argument.lower()
         ) or (
-            self.player.equipment["off_hand"] is not None
-            and self.player.equipment["off_hand"].name.lower() == self.argument.lower()
+            self.player.equipment.slots["off_hand"] is not None
+            and self.player.equipment.slots["off_hand"].name.lower() == self.argument.lower()
         )
 
         dropped_item = self.player.drop_item(self.argument)

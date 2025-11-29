@@ -40,7 +40,7 @@ def create_mock_context(**kwargs):
         "random": None,
     }
     defaults.update(kwargs)
-    return AIContext(**defaults)
+    return AIContext(**defaults)  # type: ignore[arg-type]
 
 
 class TestRandomMoveAction:
@@ -81,7 +81,8 @@ class TestRandomMoveAction:
         for y in range(10):
             for x in range(10):
                 tile = world_map.get_tile(x, y)
-                tile.type = "floor"
+                if tile:
+                    tile.type = "floor"
 
         action = RandomMoveAction()
         ctx = create_mock_context(

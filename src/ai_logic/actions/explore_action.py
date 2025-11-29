@@ -39,10 +39,34 @@ class ExploreAction(AIAction):
         return exploration_path is not None and len(exploration_path) > 0
 
     def calculate_utility(self, ctx: "AIContext") -> float:
-        """Fixed low utility for exploration (fallback action)."""
+        """
+        Calculate utility for exploration.
+
+        Higher utility (0.50) when exploring leads to a different floor (via portal).
+        Standard utility (0.35) for same-floor exploration.
+        """
         if not self.is_available(ctx):
             return 0.0
-        return 0.30
+
+        if not ctx.explorer:
+            return 0.35
+
+        exploration_path = ctx.explorer.find_exploration_targets(
+            ctx.player_pos, ctx.player_floor_id
+        )
+
+        if not exploration_path:
+            return 0.0
+
+        # Check if the exploration path involves going to a different floor
+        # This indicates cross-floor exploration via portal
+        target_floor = (
+            exploration_path[-1][2] if exploration_path else ctx.player_floor_id
+        )
+        if target_floor != ctx.player_floor_id:
+            return 0.50  # Higher priority for cross-floor exploration
+
+        return 0.35  # Standard exploration priority
 
     def execute(
         self,

@@ -40,6 +40,10 @@ class MoveAction:
         return {"game_over": False}
 
     def _handle_player_move(self) -> Dict[str, Any]:
+        from src.player import Player
+
+        assert isinstance(self.entity, Player)
+        entity: Player = self.entity
         current_game_over_state = False
         dx, dy = 0, 0
         if self.argument == "north":
@@ -54,9 +58,9 @@ class MoveAction:
             self.message_log.add_message(f"Unknown direction: {self.argument}")
             return {"game_over": current_game_over_state}
 
-        new_x, new_y = self.entity.x + dx, self.entity.y + dy
+        new_x, new_y = entity.x + dx, entity.y + dy
 
-        floor_before_move = self.entity.current_floor_id
+        floor_before_move = entity.current_floor_id
 
         if self.world_map.is_valid_move(new_x, new_y):
             target_tile = self.world_map.get_tile(new_x, new_y)
@@ -66,10 +70,10 @@ class MoveAction:
                 and target_tile.is_portal
                 and target_tile.portal_to_floor_id is not None
             ):
-                self.entity.x = new_x
-                self.entity.y = new_y
+                entity.x = new_x
+                entity.y = new_y
                 new_floor_id = target_tile.portal_to_floor_id
-                self.entity.current_floor_id = new_floor_id
+                entity.current_floor_id = new_floor_id
                 self.message_log.add_message(
                     f"You step through the portal to floor {new_floor_id}!"
                 )
@@ -81,15 +85,15 @@ class MoveAction:
                 msg = f"You bump into a {target_tile.monster.name}!"
                 self.message_log.add_message(msg)
             else:
-                self.world_map.remove_player(self.entity.x, self.entity.y)
-                self.entity.move(dx, dy)
-                self.world_map.place_player(self.entity, self.entity.x, self.entity.y)
+                self.world_map.remove_player(entity.x, entity.y)
+                entity.move(dx, dy)
+                self.world_map.place_player(entity, entity.x, entity.y)
                 self.message_log.add_message(f"You move {self.argument}.")
 
                 if (
-                    self.entity.x,
-                    self.entity.y,
-                    self.entity.current_floor_id,
+                    entity.x,
+                    entity.y,
+                    entity.current_floor_id,
                 ) == self.winning_position:
                     win_tile = self.world_map.get_tile(
                         self.winning_position[0], self.winning_position[1]
@@ -108,6 +112,10 @@ class MoveAction:
         return {"game_over": current_game_over_state}
 
     def _handle_monster_move(self) -> Dict[str, Any]:
+        from src.monster import Monster
+
+        assert isinstance(self.entity, Monster)
+        entity: Monster = self.entity
         current_game_over_state = False
         dx, dy = 0, 0
         if self.argument == "north":
@@ -119,7 +127,7 @@ class MoveAction:
         elif self.argument == "west":
             dx = -1
 
-        new_x, new_y = self.entity.x + dx, self.entity.y + dy
+        new_x, new_y = entity.x + dx, entity.y + dy
 
         if self.world_map.is_valid_move(new_x, new_y):
             target_tile = self.world_map.get_tile(new_x, new_y)
@@ -129,8 +137,8 @@ class MoveAction:
             elif target_tile and target_tile.player:
                 pass  # Monster bumps into player, do nothing
             else:
-                self.world_map.remove_monster(self.entity.x, self.entity.y)
-                self.world_map.place_monster(self.entity, new_x, new_y)
+                self.world_map.remove_monster(entity.x, entity.y)
+                self.world_map.place_monster(entity, new_x, new_y)
 
         return {"game_over": current_game_over_state}
 

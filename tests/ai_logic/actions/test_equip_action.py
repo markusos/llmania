@@ -38,7 +38,7 @@ def create_mock_context(**kwargs):
         "random": None,
     }
     defaults.update(kwargs)
-    return AIContext(**defaults)
+    return AIContext(**defaults)  # type: ignore[arg-type]
 
 
 def create_mock_equippable(name, slot, attack_bonus=0, defense_bonus=0):

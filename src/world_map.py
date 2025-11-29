@@ -3,7 +3,7 @@ from src.monster import Monster
 from src.player import Player
 from src.tile import Tile
 
-from .items import Item
+from src.items import Item
 
 
 class WorldMap:

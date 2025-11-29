@@ -42,7 +42,7 @@ class TestAttackCommand(unittest.TestCase):
         """
         # Arrange
         # Monster attacks player, player survives
-        self.monster.attack = MagicMock(
+        self.monster.attack = MagicMock(  # type: ignore[method-assign]
             return_value={"damage_dealt_to_player": 1, "player_is_defeated": False}
         )
         # Player counter-attacks and defeats monster

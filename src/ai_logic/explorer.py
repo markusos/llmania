@@ -64,6 +64,23 @@ class Explorer:
                 return False
         return True
 
+    def get_floor_exploration_ratio(self, floor_id: int) -> float:
+        """Return the ratio of explored non-wall tiles on a floor (0.0 to 1.0)."""
+        ai_map = self.ai_visible_maps.get(floor_id)
+        if not ai_map:
+            return 0.0
+        explored_count = 0
+        total_count = 0
+        for y, x in ai_map.iter_coords():
+            tile = ai_map.get_tile(x, y)
+            if tile and tile.type != "wall":
+                total_count += 1
+                if tile.is_explored:
+                    explored_count += 1
+        if total_count == 0:
+            return 1.0
+        return explored_count / total_count
+
     def find_portal_to_unexplored_floor(
         self, player_pos_xy: Tuple[int, int], player_floor_id: int
     ) -> List[Tuple[int, int, int, str, int]]:

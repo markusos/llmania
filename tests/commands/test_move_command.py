@@ -201,9 +201,13 @@ class TestMoveCommand(unittest.TestCase):
 
         self.assertEqual(monster.x, 1)
         self.assertEqual(monster.y, 0)
-        self.assertIsNone(self.world_map_f0.get_tile(1, 1).monster)
-        self.assertIsNotNone(self.world_map_f0.get_tile(1, 0).monster)
-        self.assertEqual(self.world_map_f0.get_tile(1, 0).monster.name, "Goblin")
+        tile_1_1 = self.world_map_f0.get_tile(1, 1)
+        tile_1_0 = self.world_map_f0.get_tile(1, 0)
+        assert tile_1_1 is not None and tile_1_0 is not None
+        self.assertIsNone(tile_1_1.monster)
+        self.assertIsNotNone(tile_1_0.monster)
+        assert tile_1_0.monster is not None
+        self.assertEqual(tile_1_0.monster.name, "Goblin")
 
         # Check for duplicates
         monsters_on_map = self.world_map_f0.get_monsters()

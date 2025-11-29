@@ -1,8 +1,11 @@
 import curses
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from src.input_mode import InputMode
 from src.parser import Parser
+
+if TYPE_CHECKING:
+    from curses import window as CursesWindow
 
 
 class InputHandler:
@@ -13,12 +16,15 @@ class InputHandler:
     """
 
     def __init__(
-        self, stdscr: Optional[object], parser: Parser, debug_mode: bool = False
+        self,
+        stdscr: Optional["CursesWindow"],
+        parser: Parser,
+        debug_mode: bool = False,
     ):
         """
         Initializes the InputHandler.
         """
-        self.stdscr = stdscr
+        self.stdscr: Optional[Any] = stdscr  # type: ignore[assignment]
         self.parser = parser
         self.current_command_buffer = ""
         self.debug_mode = debug_mode

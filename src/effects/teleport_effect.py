@@ -16,7 +16,7 @@ class TeleportEffect(Effect):
             (x, y)
             for y in range(current_map.height)
             for x in range(current_map.width)
-            if current_map.get_tile(x, y) and current_map.get_tile(x, y).type == "floor"
+            if (tile := current_map.get_tile(x, y)) and tile.type == "floor"
         ]
         if walkable_tiles:
             # Use game engine's random generator for consistent behavior

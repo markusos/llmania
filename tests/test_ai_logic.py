@@ -46,7 +46,7 @@ class TestAILogic(unittest.TestCase):
                 message_log=self.message_log,
                 random_generator=random.Random(),
             )
-            self.ai.target_finder.find_health_potions.return_value = []
+            self.ai.target_finder.find_health_potions.return_value = []  # type: ignore[union-attr]
 
     def _create_floor_layout(
         self,
@@ -146,6 +146,7 @@ class TestAILogic(unittest.TestCase):
         action = self.ai.get_next_action()
         # Utility AI should return a take command for the item
         self.assertIsNotNone(action)
+        assert action is not None
         self.assertEqual(action[0], "take")
 
     def test_ai_attacks_adjacent_monster(self):
@@ -166,17 +167,18 @@ class TestAILogic(unittest.TestCase):
         action = self.ai.get_next_action()
         # Utility AI should return an attack command
         self.assertIsNotNone(action)
+        assert action is not None
         self.assertEqual(action[0], "attack")
 
     def test_ai_explores_when_no_other_targets(self):
         """Test AI explores when no items or monsters nearby."""
-        self.ai.target_finder.find_quest_items.return_value = []
-        self.ai.target_finder.find_health_potions.return_value = []
-        self.ai.target_finder.find_other_items.return_value = []
-        self.ai.target_finder.find_monsters.return_value = []
-        self.ai.explorer.find_unvisited_portals.return_value = []
-        self.ai.explorer.find_portal_to_unexplored_floor.return_value = []
-        self.ai.explorer.find_exploration_targets.return_value = [
+        self.ai.target_finder.find_quest_items.return_value = []  # type: ignore[union-attr]
+        self.ai.target_finder.find_health_potions.return_value = []  # type: ignore[union-attr]
+        self.ai.target_finder.find_other_items.return_value = []  # type: ignore[union-attr]
+        self.ai.target_finder.find_monsters.return_value = []  # type: ignore[union-attr]
+        self.ai.explorer.find_unvisited_portals.return_value = []  # type: ignore[union-attr]
+        self.ai.explorer.find_portal_to_unexplored_floor.return_value = []  # type: ignore[union-attr]
+        self.ai.explorer.find_exploration_targets.return_value = [  # type: ignore[union-attr]
             (1, 2, 0),
             (1, 1, 0),
         ]
@@ -189,9 +191,10 @@ class TestAILogic(unittest.TestCase):
 
     def test_ai_breaks_out_of_stuck_loop(self):
         """Test AI breaks out when stuck in oscillation loop."""
-        self.ai.player_pos_history = [(1, 1), (1, 2), (1, 1), (1, 2)]
+        # Need 6 positions with only 2 unique to trigger loop detection
+        self.ai.player_pos_history = [(1, 1), (1, 2), (1, 1), (1, 2), (1, 1), (1, 2)]
         self.ai.current_path = [(1, 3, 0)]
-        self.ai.explorer.find_exploration_targets.return_value = None
+        self.ai.explorer.find_exploration_targets.return_value = None  # type: ignore[union-attr]
 
         self.ai.get_next_action()
 

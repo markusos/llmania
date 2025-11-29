@@ -95,6 +95,7 @@ class AttackCommand(Command):
         hit_chance = 0.5 + (attacker_speed - defender_speed) * 0.1
         hit_chance = max(0.1, min(0.9, hit_chance))  # Clamp between 10% and 90%
 
+        assert self.game_engine is not None and self.game_engine.random is not None
         if self.game_engine.random.random() > hit_chance:
             self.message_log.add_message(f"{attacker_name} miss {defender_name}.")
             return False

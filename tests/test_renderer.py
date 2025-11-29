@@ -31,7 +31,7 @@ class MockTile(Tile):
         if is_portal and portal_to_floor_id is None:
             self.portal_to_floor_id = 0
 
-    def get_display_info(self, apply_fog=False):
+    def get_display_info(self, apply_fog: bool = False, show_visibility: bool = False) -> tuple[str, str]:
         if apply_fog and not self.is_explored:
             return " ", "fog"
         if self.monster:

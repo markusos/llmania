@@ -38,7 +38,7 @@ def create_mock_context(**kwargs):
         "random": None,
     }
     defaults.update(kwargs)
-    return AIContext(**defaults)
+    return AIContext(**defaults)  # type: ignore[arg-type]
 
 
 class TestHealAction:

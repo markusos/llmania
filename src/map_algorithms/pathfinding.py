@@ -292,7 +292,7 @@ class PathFinder:
 
                 new_cost = cost + move_cost
                 counter += 1
-                heapq.heappush(pq, (new_cost, counter, next_node, path + [next_node]))
+                heapq.heappush(pq, (new_cost, counter, next_node, path + [next_node]))  # type: ignore[arg-type]
 
             # Check for portals
             current_tile = current_map.get_tile(cx, cy)
@@ -317,7 +317,7 @@ class PathFinder:
                             new_cost = cost + 1
                             counter += 1
                             heapq.heappush(
-                                pq,
+                                pq,  # type: ignore[arg-type]
                                 (
                                     new_cost,
                                     counter,

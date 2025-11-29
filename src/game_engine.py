@@ -355,13 +355,15 @@ class GameEngine:
 
     def _render_debug_end_screen(self):
         print("\n--- Game Over ---")
+        world_map_to_render = self.visible_maps.get(
+            self.player.current_floor_id, self.world_maps.get(0)
+        )
+        assert world_map_to_render is not None, "No world map available for rendering"
         final_map_render = self.renderer.render_all(
             player_x=self.player.x,
             player_y=self.player.y,
             player_health=self.player.health,
-            world_map_to_render=self.visible_maps.get(
-                self.player.current_floor_id, self.world_maps.get(0)
-            ),
+            world_map_to_render=world_map_to_render,
             input_mode=InputMode.GAME_OVER,
             current_command_buffer="",
             message_log=self.message_log,
@@ -392,7 +394,7 @@ class GameEngine:
             (x, y)
             for y in range(current_map.height)
             for x in range(current_map.width)
-            if current_map.get_tile(x, y).type == "floor"
+            if (tile := current_map.get_tile(x, y)) and tile.type == "floor"
         ]
         if walkable_tiles:
             self.player.x, self.player.y = self.random.choice(walkable_tiles)

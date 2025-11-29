@@ -38,7 +38,7 @@ def create_mock_context(**kwargs):
         "random": None,
     }
     defaults.update(kwargs)
-    return AIContext(**defaults)
+    return AIContext(**defaults)  # type: ignore[arg-type]
 
 
 class TestExploreAction:
@@ -70,15 +70,27 @@ class TestExploreAction:
         ctx = create_mock_context(explorer=mock_explorer)
         assert action.is_available(ctx) is True
 
-    def test_calculate_utility_returns_0_30_when_available(self):
-        """Test calculate_utility returns 0.30 when exploration available."""
+    def test_calculate_utility_returns_0_35_when_available(self):
+        """Test calculate_utility returns 0.35 when same-floor exploration available."""
         action = ExploreAction()
 
         mock_explorer = Mock()
+        # Return a path to the same floor (floor_id=0)
         mock_explorer.find_exploration_targets.return_value = [(10, 10, 0)]
 
         ctx = create_mock_context(explorer=mock_explorer)
-        assert action.calculate_utility(ctx) == 0.30
+        assert action.calculate_utility(ctx) == 0.35
+
+    def test_calculate_utility_returns_0_50_for_cross_floor_exploration(self):
+        """Test calculate_utility returns 0.50 for cross-floor exploration."""
+        action = ExploreAction()
+
+        mock_explorer = Mock()
+        # Return a path to a different floor (floor_id=1 while player is on floor 0)
+        mock_explorer.find_exploration_targets.return_value = [(10, 10, 1)]
+
+        ctx = create_mock_context(explorer=mock_explorer)
+        assert action.calculate_utility(ctx) == 0.50
 
     def test_calculate_utility_returns_0_when_not_available(self):
         """Test calculate_utility returns 0.0 when exploration not available."""

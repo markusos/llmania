@@ -42,6 +42,7 @@ class TestUseCommand(unittest.TestCase):
         # Arrange
         self.player.health = 50
         health_potion = self.item_factory.create_item("health_potion")
+        assert health_potion is not None
         self.player.inventory.add_item(health_potion)
         command = UseCommand(
             self.player,
@@ -64,6 +65,7 @@ class TestUseCommand(unittest.TestCase):
     def test_use_scroll_of_teleportation(self):
         # Arrange
         scroll = self.item_factory.create_item("scroll_of_teleportation")
+        assert scroll is not None
         self.player.inventory.add_item(scroll)
         initial_pos = (self.player.x, self.player.y)
         command = UseCommand(
@@ -87,6 +89,7 @@ class TestUseCommand(unittest.TestCase):
     def test_toggle_equip_item(self):
         # Arrange
         sword = self.item_factory.create_item("sword")
+        assert sword is not None
         self.player.inventory.add_item(sword)
         command = UseCommand(
             self.player,
@@ -114,6 +117,7 @@ class TestUseCommand(unittest.TestCase):
     def test_use_fire_potion(self):
         # Arrange
         fire_potion = self.item_factory.create_item("fire_potion")
+        assert fire_potion is not None
         self.player.inventory.add_item(fire_potion)
         command = UseCommand(
             self.player,
@@ -138,6 +142,7 @@ class TestUseCommand(unittest.TestCase):
     def test_use_invisibility_potion(self):
         # Arrange
         invisibility_potion = self.item_factory.create_item("invisibility_potion")
+        assert invisibility_potion is not None
         self.player.inventory.add_item(invisibility_potion)
         command = UseCommand(
             self.player,
@@ -161,6 +166,7 @@ class TestUseCommand(unittest.TestCase):
     def test_equip_amulet_of_health(self):
         # Arrange
         amulet = self.item_factory.create_item("amulet_of_health")
+        assert amulet is not None
         self.player.inventory.add_item(amulet)
         initial_max_health = self.player.get_max_health()
         command = UseCommand(

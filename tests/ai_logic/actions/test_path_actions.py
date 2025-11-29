@@ -46,7 +46,7 @@ def create_mock_context(**kwargs):
         "random": None,
     }
     defaults.update(kwargs)
-    return AIContext(**defaults)
+    return AIContext(**defaults)  # type: ignore[arg-type]
 
 
 class TestDistanceModifier:
@@ -257,15 +257,28 @@ class TestPathToPortalAction:
         assert action.is_available(ctx) is True
 
     def test_calculate_utility_returns_base_0_45(self):
-        """Test calculate_utility returns base utility of 0.45."""
+        """Test utility returns 0.45 when floor < 80% explored."""
         action = PathToPortalAction()
 
         mock_explorer = Mock()
         mock_explorer.find_unvisited_portals.return_value = [(10, 10, 0, "portal", 0)]
         mock_explorer.find_portal_to_unexplored_floor.return_value = []
+        mock_explorer.get_floor_exploration_ratio.return_value = 0.5  # < 80%
 
         ctx = create_mock_context(explorer=mock_explorer)
         assert action.calculate_utility(ctx) == 0.45
+
+    def test_calculate_utility_returns_0_55_when_floor_mostly_explored(self):
+        """Test calculate_utility returns 0.55 when floor > 80% explored."""
+        action = PathToPortalAction()
+
+        mock_explorer = Mock()
+        mock_explorer.find_unvisited_portals.return_value = [(10, 10, 0, "portal", 0)]
+        mock_explorer.find_portal_to_unexplored_floor.return_value = []
+        mock_explorer.get_floor_exploration_ratio.return_value = 0.9  # > 80%
+
+        ctx = create_mock_context(explorer=mock_explorer)
+        assert action.calculate_utility(ctx) == 0.55
 
 
 class TestPathToLootAction:
